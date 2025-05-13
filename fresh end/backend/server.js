@@ -15,6 +15,16 @@ mongoose.connect('mongodb://localhost:27017/freshend', {
 .then(() => console.log('✅ Connected to MongoDB'))
 .catch((err) => console.error('❌ MongoDB connection error:', err))
 
+const Product = require('./models/Product')
+
+// API – החזרת כל המוצרים
+app.get('/api/products', async (req, res) => {
+  const products = await Product.find()
+  res.json(products)
+})
+
+
+
 // בדיקה: דף הבית של השרת
 app.get('/', (req, res) => {
   res.send('🚀 Server is running and connected to MongoDB!')
