@@ -3,6 +3,7 @@
     "axios": "^1.9.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "firebase": "^11.8.0",
     "mongoose": "^8.14.2"
   },
   "name": "fresh-end",
