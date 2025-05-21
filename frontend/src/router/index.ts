@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import CartView from '../views/CartView.vue'
 import LoginView from '../views/LoginView.vue'
-// import RegisterView from '../views/RegisterView.vue'
+import RegisterView from '../views/RegisterView.vue'
 // import ProductDetailsView from '../views/ProductDetailsView.vue'
 // import BusinessDashboardView from '../views/BusinessDashboardView.vue'
 // import NotFoundView from '../views/NotFoundView.vue'
@@ -26,11 +26,11 @@ const routes = [
     name: 'login',
     component: LoginView,
   },
-  // {
-  //   path: '/register',
-  //   name: 'register',
-  //   component: RegisterView,
-  // },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+  },
   // {
   //   path: '/product/:id',
   //   name: 'product-details',
