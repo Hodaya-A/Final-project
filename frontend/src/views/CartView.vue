@@ -1,23 +1,33 @@
 <template>
   <div class="cart">
-    <h2>🛒 My Cart</h2>
-    <p v-if="cart.length === 0">Your cart is empty.</p>
+    <h2>🛒 סל הקניות שלי</h2>
+    <p v-if="cartStore.items.length === 0">הסל שלך ריק.</p>
     <ul v-else>
-      <li v-for="item in cart" :key="item.id">
-        {{ item.name }} – ₪{{ item.price }}
+      <li v-for="item in cartStore.items" :key="item.id" class="item">
+        <div>
+          {{ item.name }} – ₪{{ item.price }}
+        </div>
+        <button @click="remove(item.id)">הסר</button>
       </li>
     </ul>
+    <div v-if="cartStore.items.length > 0" class="total">
+      סה״כ: ₪{{ total }}
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useCartStore } from '@/stores/cart'
+const cartStore = useCartStore()
 
-// דוגמה לנתוני סל קניות
-const cart = ref([
-  { id: 1, name: 'Milk', price: 5 },
-  { id: 2, name: 'Cheese', price: 10 },
-])
+function remove(id: string) {
+  cartStore.removeFromCart(id)
+}
+
+const total = computed(() =>
+  cartStore.items.reduce((sum, item) => sum + item.price, 0)
+)
 </script>
 
 <style scoped>
@@ -25,5 +35,31 @@ const cart = ref([
   padding: 2rem;
   max-width: 600px;
   margin: auto;
+}
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+}
+button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #e60000;
+}
+.total {
+  margin-top: 1rem;
+  font-weight: bold;
+  text-align: center;
+  font-size: 1.2rem;
 }
 </style>
