@@ -1,11 +1,12 @@
 <template>
   <div class="home">
     <SearchBar @search="handleSearch" />
+
     <div v-if="products.length > 0">
       <ProductList :products="products" />
     </div>
     <div v-else>
-      <p>לא נמצאו מוצרים זמינים</p>
+      <p class="empty-msg">לא נמצאו מוצרים זמינים</p>
     </div>
   </div>
 </template>
@@ -18,20 +19,21 @@ import api from '@/services/api'
 
 const products = ref([])
 
-onMounted(async () => {
+onMounted(fetchProducts)
+
+async function fetchProducts() {
   try {
     const res = await api.get('/products')
-    console.log('🎯 מוצרים מהשרת:', res.data)
     products.value = res.data
   } catch (err) {
     console.error('שגיאה בטעינת מוצרים:', err)
   }
-})
+}
 
 async function handleSearch(query: string) {
   try {
     const res = await api.get('/products', {
-      params: { q: query }
+      params: { q: query },
     })
     products.value = res.data
   } catch (err) {
@@ -43,5 +45,12 @@ async function handleSearch(query: string) {
 <style scoped>
 .home {
   padding: 2rem;
+  text-align: center;
+}
+
+.empty-msg {
+  color: #888;
+  margin-top: 2rem;
+  font-style: italic;
 }
 </style>
