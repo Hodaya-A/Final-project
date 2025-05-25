@@ -70,6 +70,8 @@ label {
   font-weight: bold;
   display: block;
   margin-bottom: 0.25rem;
+
+  color: black; /* <<< כאן קובעים את הצבע */
 }
 
 input {

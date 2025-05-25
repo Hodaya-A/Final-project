@@ -14,6 +14,6 @@ import LoginForm from '@/components/LoginForm.vue'
   justify-content: center;
   align-items: center;
   min-height: 80vh;
-  background-color: #f5f5f5;
+  background-color: #faf7f7;
 }
 </style>

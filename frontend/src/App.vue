@@ -1,11 +1,13 @@
 <template>
   <div id="app">
-    <header class="header">
-      <h1>🍽️ Fresh End</h1>
-    </header>
+    <!-- <header class="header"></header> -->
+    <div id="app">
+      <Navbar />
+      <router-view />
+    </div>
 
     <main class="content">
-      <router-view />
+      <!-- <router-view /> -->
     </main>
 
     <footer class="footer">
@@ -15,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-// אין צורך בייבוא כרגע
+import Navbar from '@/components/Navbar.vue'
 </script>
 
 <style scoped>

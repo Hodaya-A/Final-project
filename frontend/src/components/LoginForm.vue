@@ -94,6 +94,7 @@ label {
   font-weight: bold;
   display: block;
   margin-bottom: 0.25rem;
+  color: black; /* <<< כאן קובעים את הצבע */
 }
 
 input {
@@ -119,13 +120,13 @@ button[type='submit'] {
 }
 
 .google-btn {
-  background-color: #fff;
+  background-color: #f3e84b;
   color: #444;
   border: 1px solid #ccc;
 }
 
 .google-btn:hover {
-  background-color: #f1f1f1;
+  background-color: #f3eea1;
 }
 
 .separator {
@@ -144,11 +145,12 @@ button[type='submit'] {
   margin-top: 1rem;
   text-align: center;
   font-size: 0.9rem;
+  color: black; /* <<< כאן קובעים את הצבע */
 }
 
 .switch-auth a {
   font-weight: bold;
-  color: #2c3e50;
+  color: black; /* <<< כאן קובעים את הצבע */
   text-decoration: none;
 }
 </style>
