@@ -6,4 +6,4 @@ const productSchema = new mongoose.Schema({
   expiryDate: Date
 });
 
-module.exports = mongoose.model('Product', productSchema);
+module.exports = mongoose.model('Product', productSchema, 'products');
