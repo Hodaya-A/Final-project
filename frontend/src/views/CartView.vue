@@ -4,15 +4,11 @@
     <p v-if="cartStore.items.length === 0">הסל שלך ריק.</p>
     <ul v-else>
       <li v-for="item in cartStore.items" :key="item.id" class="item">
-        <div>
-          {{ item.name }} – ₪{{ item.price }}
-        </div>
+        <div>{{ item.name }} – ₪{{ item.price }}</div>
         <button @click="remove(item.id)">הסר</button>
       </li>
     </ul>
-    <div v-if="cartStore.items.length > 0" class="total">
-      סה״כ: ₪{{ total }}
-    </div>
+    <div v-if="cartStore.items.length > 0" class="total">סה״כ: ₪{{ total }}</div>
   </div>
 </template>
 
@@ -25,9 +21,7 @@ function remove(id: string) {
   cartStore.removeFromCart(id)
 }
 
-const total = computed(() =>
-  cartStore.items.reduce((sum, item) => sum + item.price, 0)
-)
+const total = computed(() => cartStore.items.reduce((sum, item) => sum + item.price, 0))
 </script>
 
 <style scoped>
@@ -41,6 +35,7 @@ const total = computed(() =>
   justify-content: space-between;
   align-items: center;
   background-color: #f4f4f4;
+  color: black;
   padding: 1rem;
   border-radius: 8px;
   margin: 0.5rem 0;

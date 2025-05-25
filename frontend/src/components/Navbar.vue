@@ -13,6 +13,7 @@
         <router-link to="/login" class="btn">התחבר</router-link>
         <router-link to="/register" class="btn btn-secondary">הרשמה</router-link>
       </template>
+      <router-link to="/cart" class="btn">סל קניות</router-link>
     </div>
   </nav>
 </template>

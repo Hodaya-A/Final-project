@@ -4,7 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import CartView from '../views/CartView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
-// import ProductDetailsView from '../views/ProductDetailsView.vue'
+import ProductCard from '../components/ProductCard.vue'
 // import BusinessDashboardView from '../views/BusinessDashboardView.vue'
 // import NotFoundView from '../views/NotFoundView.vue'
 
@@ -31,12 +31,13 @@ const routes = [
     name: 'register',
     component: RegisterView,
   },
-  // {
-  //   path: '/product/:id',
-  //   name: 'product-details',
-  //   component: ProductDetailsView,
-  //   props: true,
-  // },
+  {
+    path: '/product/:id',
+    name: 'product-details',
+    component: ProductCard,
+    props: true,
+  },
+
   // {
   //   path: '/business',
   //   name: 'business-dashboard',
