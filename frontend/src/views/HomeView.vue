@@ -21,6 +21,7 @@ const products = ref([])
 onMounted(async () => {
   try {
     const res = await api.get('/products')
+    console.log('🎯 מוצרים מהשרת:', res.data)
     products.value = res.data
   } catch (err) {
     console.error('שגיאה בטעינת מוצרים:', err)

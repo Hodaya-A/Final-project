@@ -1,29 +1,21 @@
-const express = require('express')
-const router = express.Router()
-const Product = require('../models/Product')
+const express = require('express');
+const router = express.Router();
+const Product = require('../models/Product');
 
-// GET /api/products
+// GET all products
 router.get('/', async (req, res) => {
   try {
-    const query = req.query.q
-    const products = query
-      ? await Product.find({ name: { $regex: query, $options: 'i' } })
-      : await Product.find()
-    res.json(products)
+    const products = await Product.find();
+    console.log('📦 מוצרים שנשלפו:', products)
+    res.json(products.map(p => ({
+      id: p._id,
+      name: p.name,
+      price: p.price,
+      expiryDate: p.expiryDate
+    })));
   } catch (err) {
-    res.status(500).json({ error: 'שגיאה בקבלת מוצרים' })
+    res.status(500).json({ message: err.message });
   }
-})
+});
 
-// POST /api/products
-router.post('/', async (req, res) => {
-  try {
-    const newProduct = new Product(req.body)
-    await newProduct.save()
-    res.status(201).json(newProduct)
-  } catch (err) {
-    res.status(400).json({ error: 'שגיאה בהוספת מוצר' })
-  }
-})
-
-module.exports = router
+module.exports = router;

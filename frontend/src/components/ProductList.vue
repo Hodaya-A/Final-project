@@ -2,7 +2,7 @@
   <div class="product-list">
     <ProductCard
       v-for="product in products"
-      :key="product.id"
+      :key="product._id"
       :product="product"
     />
   </div>
@@ -13,7 +13,7 @@ import ProductCard from './ProductCard.vue'
 
 defineProps<{
   products: Array<{
-    id: number
+    _id: string
     name: string
     price: number
     expiryDate: string
