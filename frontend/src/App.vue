@@ -8,9 +8,7 @@
 
     <!-- 🧱 פריסת עמוד: צד שמאל סל | צד ימין תוכן -->
     <div class="layout">
-      <aside class="cart-sidebar">
-        <Cart />
-      </aside>
+      
 
       <main class="main-content">
         <router-view />
@@ -43,7 +41,7 @@ import Cart from '@/components/Cart.vue'
 /* 🔽 Layout ראשי */
 .layout {
   display: grid;
-  grid-template-columns: 240px 1fr; /* סל צר + תוכן */
+  grid-template-columns:  1fr; /* סל צר + תוכן */
   flex: 1;
   min-height: calc(100vh - 160px); /* סך הכל פחות topbar + navbar + footer */
   overflow: hidden;

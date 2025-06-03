@@ -1,5 +1,13 @@
 import { defineStore } from 'pinia'
 
+export interface CartItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}
+
 export const useCartStore = defineStore('cart', {
   state: () => ({
     items: [] as {

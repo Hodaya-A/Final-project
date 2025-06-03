@@ -24,7 +24,6 @@
 
     <p v-if="error" class="error">{{ error }}</p>
 
-    <!-- 🔻 העברנו את זה פנימה לכאן -->
     <p class="switch-auth">
       Don't have an account?
       <router-link to="/register">Sign up</router-link>
@@ -36,20 +35,37 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { auth } from '@/services/firebase'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { auth, db } from '@/services/firebase'
+import { useUserStore } from '@/stores/user'
 
-const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
+const router = useRouter()
+const userStore = useUserStore()
+
+// ✅ התחברות עם אימייל וסיסמה
 const handleEmailLogin = async () => {
   loading.value = true
   error.value = ''
   try {
     const result = await signInWithEmailAndPassword(auth, email.value, password.value)
-    console.log('✅ Logged in:', result.user)
+    const user = result.user
+
+    const userRef = doc(db, 'users', user.uid)
+    const snapshot = await getDoc(userRef)
+
+    let role: 'user' | 'admin' = 'user'
+
+    if (snapshot.exists()) {
+      const docData = snapshot.data()
+      role = docData.role === 'admin' ? 'admin' : 'user'
+    }
+
+    userStore.setUser(user.email || '', role)
     router.push('/')
   } catch (err: any) {
     error.value = err.message || 'Login failed.'
@@ -58,12 +74,30 @@ const handleEmailLogin = async () => {
   }
 }
 
+// ✅ התחברות עם Google + בדיקת role
 const handleGoogleLogin = async () => {
   error.value = ''
   try {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
-    console.log('✅ Google login:', result.user)
+    const user = result.user
+
+    const userRef = doc(db, 'users', user.uid)
+    const snapshot = await getDoc(userRef)
+
+    let role: 'user' | 'admin' = 'user'
+
+    if (!snapshot.exists()) {
+      await setDoc(userRef, {
+        email: user.email,
+        role: role
+      })
+    } else {
+      const docData = snapshot.data()
+      role = docData.role === 'admin' ? 'admin' : 'user'
+    }
+
+    userStore.setUser(user.email || '', role)
     router.push('/')
   } catch (err: any) {
     error.value = err.message || 'Google login failed.'
@@ -94,7 +128,7 @@ label {
   font-weight: bold;
   display: block;
   margin-bottom: 0.25rem;
-  color: black; /* <<< כאן קובעים את הצבע */
+  color: black;
 }
 
 input {
@@ -145,12 +179,12 @@ button[type='submit'] {
   margin-top: 1rem;
   text-align: center;
   font-size: 0.9rem;
-  color: black; /* <<< כאן קובעים את הצבע */
+  color: black;
 }
 
 .switch-auth a {
   font-weight: bold;
-  color: black; /* <<< כאן קובעים את הצבע */
+  color: black;
   text-decoration: none;
 }
 </style>

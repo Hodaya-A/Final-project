@@ -5,30 +5,42 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-import { auth } from '@/services/firebase'
+import { auth, db } from '@/services/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 import { useUserStore } from '@/stores/user'
 
 const app = createApp(App)
-
-// 🧠 חייבים לחבר את כל ה־plugins לפני mount
 app.use(createPinia())
-app.use(router) // <<< הוסף את זה כאן!
+app.use(router)
 
-// טוען את המשתמש המחובר אם קיים
-onAuthStateChanged(auth, (user) => {
+let appHasMounted = false // ✅ מונע הרצה כפולה של mount
+
+onAuthStateChanged(auth, async (user) => {
   const userStore = useUserStore()
+
   if (user) {
-    userStore.setUser({
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName ?? '',
-      role: 'user',
-    })
+    let role: 'user' | 'admin' = 'user' // ✅ טיפוס מדויק
+
+    try {
+      const userRef = doc(db, 'users', user.uid)
+      const snapshot = await getDoc(userRef)
+
+      if (snapshot.exists()) {
+        const data = snapshot.data()
+        role = data.role === 'admin' ? 'admin' : 'user'
+      }
+    } catch (err) {
+      console.error('שגיאה בטעינת תפקיד המשתמש:', err)
+    }
+
+    userStore.setUser(user.email || '', role)
   } else {
     userStore.logout()
   }
 
-  // רק אחרי שה־router מחובר – מבצעים mount
-  app.mount('#app')
+  if (!appHasMounted) {
+    app.mount('#app')
+    appHasMounted = true
+  }
 })

@@ -1,24 +1,29 @@
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
 
-export interface User {
-  uid: string
-  email: string | null
-  displayName?: string
-  role?: string
-}
+export const useUserStore = defineStore('user', () => {
+  const email = ref('')
+  const role = ref<'user' | 'admin' | ''>('') // 👈 טיפוס מדויק
 
-export const useUserStore = defineStore('user', {
-  state: () => ({
-    currentUser: null as User | null,
-  }),
+  function setUser(userEmail: string, userRole: 'user' | 'admin') {
+    email.value = userEmail
+    role.value = userRole
+  }
 
-  actions: {
-    setUser(user: User) {
-      this.currentUser = user
-    },
+  function logout() {
+    email.value = ''
+    role.value = ''
+  }
 
-    logout() {
-      this.currentUser = null
-    },
-  },
+  const isLoggedIn = computed(() => !!email.value)
+  const isAdmin = computed(() => role.value === 'admin')
+
+  return {
+    email,
+    role,
+    isLoggedIn,
+    isAdmin,
+    setUser,
+    logout,
+  }
 })

@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
-import { getAuth } from 'firebase/auth' // ✅ ייבוא auth
+import { getAuth } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore' // ✅ מוסיפים את זה
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAbaTHQ6iJphXRUZdxqtYfEgYNQ6P4iLao',
@@ -15,8 +16,7 @@ const firebaseConfig = {
 // אתחול האפליקציה
 const app = initializeApp(firebaseConfig)
 
-// ✅ ייבוא ואתחול auth
 export const auth = getAuth(app)
+export const db = getFirestore(app) // ✅ זה מה שהיה חסר לך!
 
-// אפשר להשאיר אנליטיקס אם את רוצה
 const analytics = getAnalytics(app)

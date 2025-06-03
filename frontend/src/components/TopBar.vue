@@ -9,30 +9,68 @@
 
     <!-- שדה חיפוש -->
     <div class="search-box">
-      <input type="text" placeholder="חיפוש מוצר או מותג..." />
-      <button class="search-btn">🔍</button>
+      <input
+        type="text"
+        v-model="searchTerm"
+        @keydown.enter="submitSearch"
+        placeholder="חיפוש מוצר או מותג..."
+      />
+      <button class="search-btn" @click="submitSearch">🔍</button>
     </div>
 
-    <!-- התחברות + סל -->
-    <div class="actions">
-      <router-link to="/login" class="auth-btn">התחברות</router-link>
-      <router-link to="/register" class="auth-btn">הצטרפות</router-link>
+    
 
-      <div class="cart-summary">
+    <!-- התחברות/התנתקות + סל -->
+    <div class="actions">
+      <template v-if="userStore.isLoggedIn">
+        <span class="user-email">שלום, {{ userStore.email }}</span>
+        <router-link to="/orders" class="orders-btn">הזמנות קודמות</router-link> <!-- ✅ חדש -->
+
+        <button class="auth-btn" @click="logout">התנתקות</button>
+      </template>
+      <template v-else>
+        <router-link to="/login" class="auth-btn">התחברות</router-link>
+        <router-link to="/register" class="auth-btn">הצטרפות</router-link>
+      </template>
+
+      <!-- 🔗 כפתור לסל הקניות -->
+      <router-link to="/cart" class="cart-summary">
         🛒
         <span class="total">₪{{ totalPrice.toFixed(2) }}</span>
         <span class="count">{{ totalItems }}</span>
-      </div>
+      </router-link>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useCartStore } from '@/stores/cart'
+import { useUserStore } from '@/stores/user'
+import { signOut } from 'firebase/auth'
+import { auth } from '@/services/firebase'
 
 const cartStore = useCartStore()
 const { totalItems, totalPrice } = storeToRefs(cartStore)
+
+const userStore = useUserStore()
+const router = useRouter()
+
+const searchTerm = ref('')
+
+const logout = async () => {
+  await signOut(auth)
+  userStore.logout()
+  router.push('/')
+}
+
+const submitSearch = () => {
+  if (searchTerm.value.trim() !== '') {
+    router.push({ name: 'home', query: { search: searchTerm.value.trim() } })
+  }
+}
 </script>
 
 <style scoped>
@@ -71,7 +109,7 @@ const { totalItems, totalPrice } = storeToRefs(cartStore)
   flex: 1;
   padding: 0.6rem 1rem;
   border: 1px solid #ccc;
-  border-radius: 6px 0 0 6px;
+  border-radius: 0 6px 6px 0;
   font-size: 1rem;
 }
 
@@ -79,7 +117,7 @@ const { totalItems, totalPrice } = storeToRefs(cartStore)
   padding: 0.6rem 1rem;
   background-color: #007bff;
   border: none;
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px 0 0 6px;
   color: white;
   font-size: 1rem;
   cursor: pointer;
@@ -100,6 +138,11 @@ const { totalItems, totalPrice } = storeToRefs(cartStore)
   cursor: pointer;
 }
 
+.user-email {
+  font-weight: bold;
+  color: #333;
+}
+
 .cart-summary {
   position: relative;
   background-color: white;
@@ -111,6 +154,12 @@ const { totalItems, totalPrice } = storeToRefs(cartStore)
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.cart-summary:hover {
+  background-color: #e6f0ff;
 }
 
 .cart-summary .count {
@@ -120,4 +169,19 @@ const { totalItems, totalPrice } = storeToRefs(cartStore)
   border-radius: 50%;
   padding: 2px 6px;
 }
+
+.orders-btn {
+  background: none;
+  border: none;
+  color: #28a745;
+  font-size: 1rem;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.orders-btn:hover {
+  color: #218838;
+}
+
 </style>
