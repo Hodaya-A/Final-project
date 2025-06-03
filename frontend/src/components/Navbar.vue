@@ -1,93 +1,59 @@
 <template>
   <nav class="navbar">
-    <router-link to="/" class="logo">🍽️ Fresh End</router-link>
-
-    <div class="nav-actions">
-      <template v-if="userStore.currentUser">
-        <span class="welcome">
-          שלום, {{ userStore.currentUser.displayName || userStore.currentUser.email }}
-        </span>
-        <button class="btn logout-btn" @click="handleLogout">התנתק</button>
-      </template>
-      <template v-else>
-        <router-link to="/login" class="btn">התחבר</router-link>
-        <router-link to="/register" class="btn btn-secondary">הרשמה</router-link>
-      </template>
-      <router-link to="/cart" class="btn">סל קניות</router-link>
+    <div class="category-bar">
+      <div class="category" v-for="cat in categories" :key="cat.name">
+        <div class="icon">{{ cat.icon }}</div>
+        <div class="label">{{ cat.name }}</div>
+      </div>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { signOut } from 'firebase/auth'
-import { auth } from '@/services/firebase'
-
-const userStore = useUserStore()
-const router = useRouter()
-
-const handleLogout = async () => {
-  await signOut(auth)
-  userStore.logout()
-  router.push('/')
-}
+const categories = [
+  { name: 'לחם ומאפים טריים', icon: '🍞' },
+  { name: 'פארם ותינוקות', icon: '🍼' },
+  { name: 'חד פעמי ומטבח', icon: '🍽️' },
+  { name: 'אחזקת הבית ובע"ח', icon: '🏠' },
+  { name: 'חטיפים ומתוקים', icon: '🍬' },
+  { name: 'קטניות ודגנים', icon: '🌾' },
+  { name: 'שימורים ובישול', icon: '🥫' },
+  { name: 'קפואים', icon: '❄️' },
+  { name: 'אורגני ובריאות', icon: '🌿' },
+  { name: 'משקאות', icon: '🥤' },
+  { name: 'בשר ודגים', icon: '🥩' },
+  { name: 'חלב, ביצים וסלטים', icon: '🥚' },
+]
 </script>
 
 <style scoped>
 .navbar {
+  direction: rtl;
+  background-color: #ffffff;
+  border-bottom: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+}
+
+.category-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background-color: #2c3e50;
-  color: white;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding: 0.5rem 0;
 }
 
-.logo {
-  font-size: 1.5rem;
-  color: white;
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.nav-actions {
+.category {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1rem;
-}
-
-.welcome {
-  font-weight: bold;
-}
-
-.btn {
-  padding: 0.4rem 1rem;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  text-decoration: none;
+  font-size: 0.85rem;
+  color: #333;
+  min-width: 70px;
+  text-align: center;
   cursor: pointer;
 }
 
-.btn:hover {
-  background-color: #217dbb;
-}
-
-.btn-secondary {
-  background-color: #1abc9c;
-}
-
-.btn-secondary:hover {
-  background-color: #16a085;
-}
-
-.logout-btn {
-  background-color: #e74c3c;
-}
-
-.logout-btn:hover {
-  background-color: #c0392b;
+.category .icon {
+  font-size: 1.8rem;
+  margin-bottom: 0.4rem;
 }
 </style>

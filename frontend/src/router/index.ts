@@ -19,8 +19,6 @@ const routes = [
     name: 'cart',
     component: CartView,
   },
-
-  // הנתיבים הבאים יוחזרו רק כשיהיו קבצים תואמים:
   {
     path: '/login',
     name: 'login',
@@ -38,16 +36,12 @@ const routes = [
     props: true,
   },
 
-  // {
-  //   path: '/business',
-  //   name: 'business-dashboard',
-  //   component: BusinessDashboardView,
-  // },
+  // דוגמה לנתיב שגיאה כללי (404)
   // {
   //   path: '/:pathMatch(.*)*',
   //   name: 'not-found',
   //   component: NotFoundView,
-  // },
+  // }
 ]
 
 const router = createRouter({

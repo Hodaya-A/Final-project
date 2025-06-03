@@ -2,11 +2,13 @@ import { defineStore } from 'pinia'
 import api from '@/services/api' // ודאי שהנתיב נכון
 
 // הגדרת טיפוס בסיסי למוצר
-interface Product {
+export interface Product {
   _id: string
   name: string
   price: number
+  expiryDate: string
 }
+
 
 export const useProductStore = defineStore('products', {
   state: () => ({

@@ -1,14 +1,21 @@
 <template>
   <div id="app">
-    <!-- <header class="header"></header> -->
-    <div id="app">
-      <Navbar />
-      <router-view />
-    </div>
+    <!-- 🔝 שורת עליונה: לוגו, חיפוש, התחברות -->
+    <TopBar />
 
-    <main class="content">
-      <!-- <router-view /> -->
-    </main>
+    <!-- 🔽 שורת קטגוריות -->
+    <Navbar />
+
+    <!-- 🧱 פריסת עמוד: צד שמאל סל | צד ימין תוכן -->
+    <div class="layout">
+      <aside class="cart-sidebar">
+        <Cart />
+      </aside>
+
+      <main class="main-content">
+        <router-view />
+      </main>
+    </div>
 
     <footer class="footer">
       <p>&copy; 2025 Fresh End</p>
@@ -17,7 +24,9 @@
 </template>
 
 <script setup lang="ts">
+import TopBar from '@/components/TopBar.vue'
 import Navbar from '@/components/Navbar.vue'
+import Cart from '@/components/Cart.vue'
 </script>
 
 <style scoped>
@@ -26,25 +35,61 @@ import Navbar from '@/components/Navbar.vue'
   flex-direction: column;
   min-height: 100vh;
   font-family: Arial, sans-serif;
+  background-color: #fff;
+  width: 100vw;
+  overflow-x: hidden;
 }
 
-.header {
-  background-color: #2c3e50;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-}
-
-.content {
+/* 🔽 Layout ראשי */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr; /* סל צר + תוכן */
   flex: 1;
-  padding: 2rem;
+  min-height: calc(100vh - 160px); /* סך הכל פחות topbar + navbar + footer */
+  overflow: hidden;
 }
 
+/* 🛒 צד שמאל - סל קבוע */
+.cart-sidebar {
+  background: #fffbe6;
+  border-left: 1px solid #ddd;
+  overflow-y: hidden;
+  height: 100%;
+  position: sticky;
+  top: 160px; /* גובה TopBar + Navbar */
+}
+
+/* 🧺 תוכן ראשי */
+.main-content {
+  background-color: #f8f9fa;
+  overflow-y: auto;
+  padding: 2rem;
+  width: 100%;
+  
+}
+
+/* 🔻 תחתית הדף */
 .footer {
   background-color: #f5f5f5;
   padding: 1rem;
   text-align: center;
   font-size: 0.9rem;
   color: #666;
+}
+
+/* 📱 רספונסיביות */
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-sidebar {
+    display: none;
+  }
+
+  .main-content {
+    padding: 1rem;
+    width: 100%;  
+  }
 }
 </style>
