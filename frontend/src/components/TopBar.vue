@@ -3,7 +3,11 @@
     <!-- לוגו -->
     <div class="logo">
       <router-link to="/" class="brand">
-        <span class="blue">רמי</span><span class="red"> לוי באינטרנט</span>
+        <img
+          src="https://res.cloudinary.com/dvb1k0trx/image/upload/v1748971282/ChatGPT_Image_Jun_3_2025_07_26_22_PM_qoilfz.png"
+          alt="לוגו האתר"
+          class="logo-img"
+        />
       </router-link>
     </div>
 
@@ -12,10 +16,14 @@
       <input
         type="text"
         v-model="searchTerm"
+        ref="searchInput"
         @keydown.enter="submitSearch"
-        placeholder="חיפוש מוצר או מותג..."
+        placeholder="חיפוש פריט, קטגוריה או מותג..."
+        autocomplete="on"
       />
-      <button class="search-btn" @click="submitSearch">🔍</button>
+      <button class="search-btn" @click="submitSearch">
+  חיפוש <span style="color: white;">🔍</span>
+</button>
     </div>
 
     <!-- התחברות/התנתקות + סל -->
@@ -90,35 +98,45 @@ const submitSearch = () => {
   text-decoration: none;
 }
 
-.blue {
-  color: #007bff;
-}
-.red {
-  color: #ff0000;
-}
-
 .search-box {
   flex: 1;
   display: flex;
-  max-width: 500px;
+  max-width: 600px;
+  border: 1px solid #108a2a;
+  border-radius: 40px;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .search-box input {
   flex: 1;
-  padding: 0.6rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 0 6px 6px 0;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 0;
   font-size: 1rem;
+  outline: none;
+  text-align: right;
+  color: #333;
+  background-color: #fff;
 }
 
 .search-btn {
-  padding: 0.6rem 1rem;
-  background-color: #007bff;
-  border: none;
-  border-radius: 6px 0 0 6px;
+  padding: 0 1.5rem;
+  background-color: #108a2a;
   color: white;
+  border: none;
+  border-radius: 40px 0 0 40px;
   font-size: 1rem;
+  font-weight: bold;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.search-btn:hover {
+  background-color: #0c6f22;
 }
 
 .actions {
@@ -130,7 +148,7 @@ const submitSearch = () => {
 .auth-btn {
   background: none;
   border: none;
-  color: #007bff;
+  color: #0f571f;
   font-size: 1rem;
   text-decoration: none;
   cursor: pointer;
@@ -144,8 +162,8 @@ const submitSearch = () => {
 .cart-summary {
   position: relative;
   background-color: white;
-  border: 1px solid #007bff;
-  color: #007bff;
+  border: 1px solid #0f571f;
+  color: #0f571f;
   padding: 0.5rem 1rem;
   border-radius: 12px;
   font-size: 1rem;
@@ -181,5 +199,12 @@ const submitSearch = () => {
 .orders-btn:hover {
   color: #218838;
 }
+
+.logo-img {
+  height: 80px;
+  object-fit: contain;
+}
+
+
 
 </style>

@@ -30,9 +30,15 @@ const categories = [
 .navbar {
   direction: rtl;
   background-color: #ffffff;
-  border-bottom: 1px solid #ccc;
-  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 12px;      /* 👈 פינות עגולות */
+  padding: 0.2rem 0.8rem;
+  height: 80px;
+  display: flex;
+  align-items: center;
 }
+
+
 
 .category-bar {
   display: flex;
@@ -53,7 +59,8 @@ const categories = [
 }
 
 .category .icon {
-  font-size: 1.8rem;
-  margin-bottom: 0.4rem;
+  font-size: 1.4rem; /* 👈 הקטנה מגודל 1.8rem */
+  margin-bottom: 0.2rem; /* 👈 גם המרווח מתחת קטן יותר */
 }
+
 </style>
