@@ -24,7 +24,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '@/services/firebase'
+import { auth, db } from '@/services/firebase'
+import { doc, setDoc } from 'firebase/firestore'
 
 const router = useRouter()
 const email = ref('')
@@ -36,11 +37,22 @@ const handleRegister = async () => {
   loading.value = true
   error.value = ''
   try {
+    // יצירת המשתמש ב־Authentication
     const result = await createUserWithEmailAndPassword(auth, email.value, password.value)
-    console.log('✅ Registered user:', result.user)
+    const uid = result.user.uid
+
+    // שמירה במסד Firestore
+    await setDoc(doc(db, 'users', uid), {
+      email: email.value,
+      role: 'user', // ניתן לשנות ל־'admin' במידת הצורך
+      uid
+    })
+
+    console.log('✅ Registered and saved user:', uid)
     router.push('/')
   } catch (err: any) {
     error.value = err.message || 'Registration failed.'
+    console.error(err)
   } finally {
     loading.value = false
   }
@@ -70,8 +82,7 @@ label {
   font-weight: bold;
   display: block;
   margin-bottom: 0.25rem;
-
-  color: black; /* <<< כאן קובעים את הצבע */
+  color: black;
 }
 
 input {

@@ -1,18 +1,22 @@
+// src/stores/user.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 export const useUserStore = defineStore('user', () => {
   const email = ref('')
-  const role = ref<'user' | 'admin' | ''>('') // 👈 טיפוס מדויק
+  const name = ref('')
+  const role = ref<'user' | 'admin' | ''>('')
 
-  function setUser(userEmail: string, userRole: 'user' | 'admin') {
+  function setUser(userEmail: string, userRole: 'user' | 'admin', userName: string = '') {
     email.value = userEmail
     role.value = userRole
+    name.value = userName
   }
 
   function logout() {
     email.value = ''
     role.value = ''
+    name.value = ''
   }
 
   const isLoggedIn = computed(() => !!email.value)
@@ -20,6 +24,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     email,
+    name,
     role,
     isLoggedIn,
     isAdmin,

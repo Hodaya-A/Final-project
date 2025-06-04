@@ -18,19 +18,16 @@
       <button class="search-btn" @click="submitSearch">🔍</button>
     </div>
 
-    
-
     <!-- התחברות/התנתקות + סל -->
     <div class="actions">
       <template v-if="userStore.isLoggedIn">
-        <span class="user-email">שלום, {{ userStore.email }}</span>
-        <router-link to="/orders" class="orders-btn">הזמנות קודמות</router-link> <!-- ✅ חדש -->
-
+        <router-link v-if="userStore.isAdmin" to="/admin" class="admin-btn">ניהול מערכת</router-link>
+        <span class="user-email">שלום, {{ userStore.name || userStore.email }}</span>
+        <router-link to="/orders" class="orders-btn">הזמנות קודמות</router-link>
         <button class="auth-btn" @click="logout">התנתקות</button>
       </template>
       <template v-else>
-        <router-link to="/login" class="auth-btn">התחברות</router-link>
-        <router-link to="/register" class="auth-btn">הצטרפות</router-link>
+        <router-link to="/auth" class="auth-btn">התחברות / הצטרפות</router-link>
       </template>
 
       <!-- 🔗 כפתור לסל הקניות -->
@@ -72,6 +69,7 @@ const submitSearch = () => {
   }
 }
 </script>
+
 
 <style scoped>
 .top-bar {

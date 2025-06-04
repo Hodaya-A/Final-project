@@ -39,17 +39,11 @@ const routes = [
     name: 'cart',
     component: CartView,
   },
- 
-  {
-    path: '/login',
-    name: 'login',
-    component: LoginView,
-  },
-  {
-    path: '/register',
-    name: 'register',
-    component: RegisterView,
-  },
+{
+  path: '/auth',
+  name: 'Auth',
+  component: () => import('@/views/AuthView.vue')
+},
   {
     path: '/product/:id',
     name: 'product-details',

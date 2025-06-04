@@ -15,7 +15,9 @@
           <td>{{ user.email }}</td>
           <td>{{ user.role }}</td>
           <td>
-            <button @click="toggleRole(user)">שנה לתפקיד {{ user.role === 'admin' ? 'user' : 'admin' }}</button>
+            <button @click="toggleRole(user)">
+              שנה לתפקיד {{ user.role === 'admin' ? 'user' : 'admin' }}
+            </button>
             <button @click="deleteUser(user.id)">מחק</button>
           </td>
         </tr>
@@ -31,12 +33,14 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore'
+import { collection, getDocs } from 'firebase/firestore'
 import { db } from '@/services/firebase'
 import { useUserStore } from '@/stores/user'
+import { deleteUserByUid, updateUserRole } from '@/services/userService'
 
 interface User {
   id: string
+  uid: string
   email: string
   role: 'admin' | 'user'
 }
@@ -49,20 +53,35 @@ const loadUsers = async () => {
   const querySnapshot = await getDocs(collection(db, 'users'))
   users.value = querySnapshot.docs.map(doc => ({
     id: doc.id,
-    ...doc.data()
+    uid: doc.data().uid,
+    email: doc.data().email,
+    role: doc.data().role
   })) as User[]
 }
 
 async function deleteUser(userId: string) {
-  await deleteDoc(doc(db, 'users', userId))
-  users.value = users.value.filter(user => user.id !== userId)
+  const user = users.value.find(u => u.id === userId)
+  if (!user) return
+
+  try {
+    await deleteUserByUid(user.uid)
+    users.value = users.value.filter(u => u.id !== userId)
+  } catch (err) {
+    console.error('שגיאה במחיקת המשתמש:', err)
+    alert('שגיאה במחיקה')
+  }
 }
 
 async function toggleRole(user: User) {
   const newRole = user.role === 'admin' ? 'user' : 'admin'
-  const userRef = doc(db, 'users', user.id)
-  await updateDoc(userRef, { role: newRole })
-  user.role = newRole
+
+  try {
+    await updateUserRole(user.uid, newRole)
+    user.role = newRole
+  } catch (err) {
+    console.error('שגיאה בעדכון התפקיד:', err)
+    alert('שגיאה בעדכון התפקיד')
+  }
 }
 
 onMounted(() => {

@@ -6,12 +6,12 @@
         <img :src="bannerImg" alt="Fresh Banner" class="banner" />
       </section>
 
-      <!-- ✅ כפתורי מנהל -->
+      <!-- ✅ כפתורי מנהל
       <section v-if="userStore.isAdmin" class="admin-section">
         <div class="admin-buttons">
           <button class="btn-report" @click="goTo('/admin')">ניהול מערכת</button>
         </div>
-      </section>
+      </section> -->
 
       <!-- 🛒 מוצרים -->
       <section class="products-section">
