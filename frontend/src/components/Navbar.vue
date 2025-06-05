@@ -1,15 +1,8 @@
-<template>
-  <nav class="navbar">
-    <div class="category-bar">
-      <div class="category" v-for="cat in categories" :key="cat.name">
-        <div class="icon">{{ cat.icon }}</div>
-        <div class="label">{{ cat.name }}</div>
-      </div>
-    </div>
-  </nav>
-</template>
-
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
 const categories = [
   { name: 'לחם ומאפים טריים', icon: '🍞' },
   { name: 'פארם ותינוקות', icon: '🍼' },
@@ -24,43 +17,69 @@ const categories = [
   { name: 'בשר ודגים', icon: '🥩' },
   { name: 'חלב, ביצים וסלטים', icon: '🥚' },
 ]
+
+function toggleCategory(name: string) {
+  router.push({ name: 'home', query: { category: name } })
+}
 </script>
+
+<template>
+  <nav class="navbar">
+    <div class="category-bar">
+      <div
+        class="category-circle"
+        v-for="cat in categories"
+        :key="cat.name"
+        @click="toggleCategory(cat.name)"
+      >
+        <div class="icon">{{ cat.icon }}</div>
+        <div class="label">{{ cat.name }}</div>
+      </div>
+    </div>
+  </nav>
+</template>
 
 <style scoped>
 .navbar {
   direction: rtl;
-  background-color: #ffffff;
-  border: 1px solid #ccc;
-  border-radius: 12px;      /* 👈 פינות עגולות */
-  padding: 0.2rem 0.8rem;
-  height: 80px;
-  display: flex;
-  align-items: center;
+  padding: 1rem;
+  background-color: #f8fff8;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
 }
-
-
-
 .category-bar {
   display: flex;
   overflow-x: auto;
-  gap: 1.5rem;
+  gap: 1rem;
   padding: 0.5rem 0;
 }
-
-.category {
+.category-circle {
+  min-width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #e9f9eb;
+  border: 2px solid #108a2a;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
-  font-size: 0.85rem;
-  color: #333;
-  min-width: 70px;
-  text-align: center;
   cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-align: center;
+  padding: 0.3rem;
 }
-
-.category .icon {
-  font-size: 1.4rem; /* 👈 הקטנה מגודל 1.8rem */
-  margin-bottom: 0.2rem; /* 👈 גם המרווח מתחת קטן יותר */
+.category-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(16, 138, 42, 0.4);
+  background-color: #d5f4da;
 }
-
+.icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+.label {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #0f571f;
+}
 </style>

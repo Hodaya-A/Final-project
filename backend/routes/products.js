@@ -2,15 +2,20 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 
-// GET /api/products?q=search
+// GET /api/products?q=search&category=שםקטגוריה
 router.get("/", async (req, res) => {
   try {
     const searchQuery = req.query.q;
+    const categoryFilter = req.query.category;
+
     let query = {};
 
     if (searchQuery) {
-      // חיפוש לפי שם המוצר, לא רגיש לאותיות גדולות/קטנות
-      query = { name: { $regex: searchQuery, $options: "i" } };
+      query.name = { $regex: searchQuery, $options: "i" };
+    }
+
+    if (categoryFilter) {
+      query.category = categoryFilter;
     }
 
     const products = await Product.find(query);

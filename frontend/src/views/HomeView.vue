@@ -6,16 +6,12 @@
         <img :src="bannerImg" alt="Fresh Banner" class="banner" />
       </section>
 
-      <!-- ✅ כפתורי מנהל
-      <section v-if="userStore.isAdmin" class="admin-section">
-        <div class="admin-buttons">
-          <button class="btn-report" @click="goTo('/admin')">ניהול מערכת</button>
-        </div>
-      </section> -->
-
       <!-- 🛒 מוצרים -->
       <section class="products-section">
-        <h2>🛒 מבצעים טריים ב-Fresh End</h2>
+        <h2>
+          🛒
+          {{ activeCategory ? `מוצרים בקטגוריה: ${activeCategory}` : 'מבצעים טריים ב-Fresh End' }}
+        </h2>
 
         <div v-if="loading && products.length === 0" class="spinner">טוען מוצרים...</div>
 
@@ -25,14 +21,14 @@
 
         <p v-else class="empty-msg">לא נמצאו מוצרים זמינים</p>
 
-        <div v-if="loading && products.length > 0" class="spinner">טוען עוד...</div>
+        <div v-if="loading && products.length > 0 && !activeCategory" class="spinner">טוען עוד...</div>
       </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import ProductCard from '@/components/ProductCard.vue'
@@ -45,6 +41,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const searchTerm = ref<string>((route.query.search as string) || '')
+const activeCategory = computed(() => route.query.category as string || '')
 
 const products = ref<Product[]>([])
 const currentPage = ref(1)
@@ -62,19 +59,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
 })
 
-// ✅ מאזין לשינוי בפרמטר search ב-URL
-
 watch(
   () => route.query.search,
-  (newVal) => {
-    searchTerm.value = (newVal as string) || ''
+  () => {
+    searchTerm.value = (route.query.search as string) || ''
     fetchProducts(true)
-  },
+  }
 )
 
-function goTo(path: string) {
-  router.push(path)
-}
+watch(
+  () => route.query.category,
+  () => {
+    fetchProducts(true)
+  }
+)
 
 async function fetchProducts(reset = false) {
   if (loading.value || (!hasMore.value && !reset)) return
@@ -89,6 +87,11 @@ async function fetchProducts(reset = false) {
 
     if (searchTerm.value.trim()) {
       params.q = searchTerm.value.trim()
+    }
+
+    if (activeCategory.value) {
+      params.category = activeCategory.value
+      hasMore.value = false // אין גלילה אינסופית כשיש קטגוריה
     }
 
     const res = await api.get('/products', { params })
@@ -115,7 +118,7 @@ function onScroll() {
   const windowHeight = window.innerHeight
   const fullHeight = document.documentElement.scrollHeight
 
-  if (scrollY + windowHeight >= fullHeight * 0.9) {
+  if (scrollY + windowHeight >= fullHeight * 0.9 && !activeCategory.value) {
     fetchProducts()
   }
 }
@@ -195,44 +198,5 @@ function onScroll() {
   color: #1c75bc;
   font-weight: bold;
   padding: 2rem;
-}
-
-/* 🔧 עיצוב כפתורי אדמין */
-.admin-section {
-  background-color: #fff;
-  padding: 1rem 2rem;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.admin-buttons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-.admin-buttons button {
-  padding: 0.6rem 1.2rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-}
-
-.btn-add {
-  background-color: #28a745;
-}
-
-.btn-report {
-  background-color: #ffc107;
-  color: black;
-}
-
-.btn-users {
-  background-color: #dc3545;
 }
 </style>
