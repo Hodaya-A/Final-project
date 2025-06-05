@@ -16,13 +16,17 @@
   "dependencies": {
     "axios": "^1.9.0",
     "emailjs-com": "^3.2.0",
+    "leaflet": "^1.9.4",
     "pinia": "^3.0.1",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue-slider-component": "^3.2.24",
+    "vue3-slider": "^1.10.1"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.1",
     "@types/jsdom": "^21.1.7",
+    "@types/leaflet": "^1.9.18",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vitest/eslint-plugin": "^1.1.39",

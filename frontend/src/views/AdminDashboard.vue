@@ -5,6 +5,7 @@
     <div class="actions">
       <button @click="addProduct">➕ הוסף מוצר</button>
       <button @click="deleteExpiredProducts">🗑 מחק מוצרים שפג תוקפם</button>
+      <button @click="deleteAllProducts">🗑️ מחק את כל המוצרים</button>
       <button @click="goToUserManagement">👥 ניהול משתמשים</button>
       <button @click="generateReports">📄 הנפקת דוחות</button>
     </div>
@@ -19,21 +20,35 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const userStore = useUserStore()
 const isAdmin = userStore.isAdmin
 const router = useRouter()
 
 function addProduct() {
-  router.push('/admin/add-product') // או עמוד עתידי
+  router.push('/admin/add-product')
 }
 
 function deleteExpiredProducts() {
   alert('🔧 פונקציה למחיקת מוצרים שפג תוקפם תתווסף בהמשך')
 }
 
+async function deleteAllProducts() {
+  const confirmDelete = confirm('האם את בטוחה שברצונך למחוק את כל המוצרים? פעולה זו אינה הפיכה!')
+  if (!confirmDelete) return
+
+  try {
+    await axios.delete('http://localhost:3000/api/products')
+    alert('✅ כל המוצרים נמחקו בהצלחה!')
+  } catch (err) {
+    console.error(err)
+    alert('❌ שגיאה במחיקת המוצרים')
+  }
+}
+
 function goToUserManagement() {
-  router.push('/admin/users') // או עמוד עתידי
+  router.push('/admin/users')
 }
 
 function generateReports() {

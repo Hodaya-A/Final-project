@@ -20,4 +20,14 @@ router.get("/", async (req, res) => {
   }
 });
 
+// DELETE /api/products - מחיקת כל המוצרים
+router.delete("/", async (req, res) => {
+  try {
+    await Product.deleteMany({});
+    res.status(200).json({ message: "All products deleted successfully." });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to delete products.", error: err.message });
+  }
+});
+
 module.exports = router;

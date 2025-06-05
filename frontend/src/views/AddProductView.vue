@@ -22,7 +22,11 @@
         <input v-model="imageUrl" type="url" required />
       </label>
 
-      <button type="submit">שמור</button>
+      <h3>🌍 בחר מיקום על גבי המפה:</h3>
+      <div id="map" class="map"></div>
+      <p v-if="lat && lng">🧭 מיקום נבחר: {{ lat.toFixed(5) }}, {{ lng.toFixed(5) }}</p>
+
+      <button type="submit">💾 שמור</button>
     </form>
 
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
@@ -35,9 +39,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import axios from 'axios'
+import L from 'leaflet'
 
 const userStore = useUserStore()
 const isAdmin = userStore.isAdmin
@@ -48,20 +54,57 @@ const price = ref(0)
 const expiryDate = ref('')
 const imageUrl = ref('')
 const successMessage = ref('')
+const lat = ref<number | null>(null)
+const lng = ref<number | null>(null)
 
-function handleSubmit() {
-  // שליחה לשרת או לדאטה פיקטיבי (בהמשך את תעשי API אמיתי)
-  console.log('📦 מוצר נוסף:', {
+let marker: L.Marker | null = null
+
+onMounted(() => {
+  const map = L.map('map').setView([32.08, 34.78], 13)
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map)
+
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    lat.value = e.latlng.lat
+    lng.value = e.latlng.lng
+
+    if (marker) {
+      marker.setLatLng(e.latlng)
+    } else {
+      marker = L.marker(e.latlng).addTo(map)
+    }
+  })
+})
+
+async function handleSubmit() {
+  if (!lat.value || !lng.value) {
+    alert('יש לבחור מיקום על המפה!')
+    return
+  }
+
+  const product = {
     name: name.value,
     price: price.value,
     expiryDate: expiryDate.value,
-    imageUrl: imageUrl.value
-  })
+    imageUrl: imageUrl.value,
+    location: {
+      type: 'Point',
+      coordinates: [lng.value, lat.value]
+    }
+  }
 
-  successMessage.value = '✅ המוצר נשמר בהצלחה!'
-  setTimeout(() => {
-    router.push('/admin')
-  }, 1500)
+  try {
+    await axios.post('/api/products', product)
+    successMessage.value = '✅ המוצר נשמר בהצלחה!'
+    setTimeout(() => {
+      router.push('/admin')
+    }, 1500)
+  } catch (err) {
+    console.error(err)
+    alert('אירעה שגיאה בשמירת המוצר')
+  }
 }
 </script>
 
@@ -112,5 +155,11 @@ button {
   text-align: center;
   padding: 4rem;
   color: red;
+}
+
+.map {
+  height: 300px;
+  border: 1px solid #ccc;
+  margin: 1rem 0;
 }
 </style>

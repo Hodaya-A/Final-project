@@ -19,6 +19,11 @@ import { useUserStore } from '@/stores/user'
 
 const routes = [
   {
+  path: '/map',
+  name: 'ProductMapView',
+  component: () => import('@/views/ProductMapView.vue')
+},
+  {
   path: '/orders',
   name: 'orders',
   component: MyOrdersView,
