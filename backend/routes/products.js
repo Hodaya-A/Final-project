@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Product = require("../models/Product");
 
+
 // GET /api/products?q=search&category=שםקטגוריה
 router.get("/", async (req, res) => {
   try {
@@ -34,5 +35,20 @@ router.delete("/", async (req, res) => {
     res.status(500).json({ message: "Failed to delete products.", error: err.message });
   }
 });
+
+
+// שליפת מוצר לפי ID
+router.get('/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' })
+    }
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' })
+  }
+})
+
 
 module.exports = router;

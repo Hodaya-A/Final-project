@@ -1,14 +1,19 @@
 <template>
-  <div class="product-card">
-    <img :src="product.imageUrl" alt="תמונה" class="product-image" />
-    <h3 class="product-name">{{ product.name }}</h3>
-    <p class="product-category">🧭 {{ product.category }}</p>
-    <p class="product-price">
-      <span class="original">₪{{ product.priceOriginal }}</span>
-      <span class="discounted">₪{{ product.priceDiscounted }}</span>
-    </p>
-    <p class="product-expiry">📆 פג תוקף: {{ formattedDate }}</p>
-    <button @click="addToCart">הוסף לסל 🛒</button>
+  <div class="product-card-wrapper">
+
+    <router-link :to="`/product/${product._id}`" class="product-card">
+      <img :src="product.imageUrl" alt="תמונה" class="product-image" />
+      <h3 class="product-name">{{ product.name }}</h3>
+      <p class="product-category">🧭 {{ product.category }}</p>
+      <p>🔍 ID: {{ product._id }}</p>
+
+      <p class="product-price">
+        <span class="original">₪{{ product.priceOriginal }}</span>
+        <span class="discounted">₪{{ product.priceDiscounted }}</span>
+      </p>
+      <p class="product-expiry">📆 פג תוקף: {{ formattedDate }}</p>
+    </router-link>
+    <button class="add-btn" @click="addToCart">הוסף לסל 🛒</button>
   </div>
 </template>
 
@@ -41,11 +46,18 @@ function addToCart() {
 </script>
 
 <style scoped>
+.product-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 230px;
+}
+
 .product-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: 230px;
+  width: 100%;
   min-height: 330px;
   background-color: #ffffff;
   border: 1px solid #ddd;
@@ -54,6 +66,8 @@ function addToCart() {
   padding: 1rem;
   text-align: center;
   transition: transform 0.2s;
+  color: inherit;
+  text-decoration: none;
 }
 
 .product-card:hover {
@@ -104,7 +118,8 @@ function addToCart() {
   margin-bottom: 0.5rem;
 }
 
-button {
+.add-btn {
+  margin-top: 0.5rem;
   padding: 0.6rem 1rem;
   background-color: #4CAF50;
   color: white;
@@ -113,9 +128,10 @@ button {
   font-size: 0.95rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  width: 100%;
 }
 
-button:hover {
+.add-btn:hover {
   background-color: #45a049;
 }
 </style>
