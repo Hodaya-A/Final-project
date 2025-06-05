@@ -1,8 +1,13 @@
 <template>
   <div class="product-card">
+    <img :src="product.imageUrl" alt="תמונה" class="product-image" />
     <h3 class="product-name">{{ product.name }}</h3>
-    <p class="product-price">מחיר: ₪{{ product.price }}</p>
-    <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
+    <p class="product-category">🧭 {{ product.category }}</p>
+    <p class="product-price">
+      <span class="original">₪{{ product.priceOriginal }}</span>
+      <span class="discounted">₪{{ product.priceDiscounted }}</span>
+    </p>
+    <p class="product-expiry">📆 פג תוקף: {{ formattedDate }}</p>
     <button @click="addToCart">הוסף לסל 🛒</button>
   </div>
 </template>
@@ -16,8 +21,11 @@ const props = defineProps<{
   product: {
     _id: string
     name: string
-    price: number
+    priceOriginal: number
+    priceDiscounted: number
     expiryDate: string
+    category: string
+    imageUrl: string
   }
 }>()
 
@@ -27,7 +35,7 @@ function addToCart() {
   cartStore.addToCart({
     id: props.product._id,
     name: props.product.name,
-    price: props.product.price
+    price: props.product.priceDiscounted
   })
 }
 </script>
@@ -37,15 +45,15 @@ function addToCart() {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  width: 220px;
-  min-height: 280px;
+  width: 230px;
+  min-height: 330px;
   background-color: #ffffff;
   border: 1px solid #ddd;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   padding: 1rem;
-  transition: transform 0.2s;
   text-align: center;
+  transition: transform 0.2s;
 }
 
 .product-card:hover {
@@ -53,22 +61,50 @@ function addToCart() {
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
+.product-image {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
 .product-name {
   font-size: 1.1rem;
   font-weight: bold;
-  margin-bottom: 0.5rem;
   color: #333;
-}
-
-.product-price,
-.product-expiry {
-  font-size: 0.95rem;
-  color: #555;
   margin: 0.3rem 0;
 }
 
+.product-category {
+  font-size: 0.9rem;
+  color: #27ae60;
+  margin-bottom: 0.2rem;
+}
+
+.product-price {
+  font-size: 1rem;
+  margin: 0.3rem 0;
+}
+
+.product-price .original {
+  text-decoration: line-through;
+  color: #888;
+  margin-left: 0.5rem;
+}
+
+.product-price .discounted {
+  color: #2ecc71;
+  font-weight: bold;
+}
+
+.product-expiry {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
 button {
-  margin-top: auto;
   padding: 0.6rem 1rem;
   background-color: #4CAF50;
   color: white;

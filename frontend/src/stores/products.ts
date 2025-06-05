@@ -5,9 +5,13 @@ import api from '@/services/api' // ודאי שהנתיב נכון
 export interface Product {
   _id: string
   name: string
-  price: number
+  priceOriginal: number
+  priceDiscounted: number
   expiryDate: string
+  category: string
+  imageUrl: string
 }
+
 
 
 export const useProductStore = defineStore('products', {

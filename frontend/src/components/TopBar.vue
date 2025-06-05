@@ -39,7 +39,7 @@
       <template v-else>
         <router-link to="/auth" class="auth-btn">התחברות / הצטרפות</router-link>
       </template>
-      <!-- <router-link to="/map" class="topbar-link"> מוצרים לפי מפה </router-link> -->
+      <router-link to="/map" class="topbar-link"> מוצרים לפי מפה </router-link>
       <!-- 🔗 כפתור לסל הקניות -->
       <router-link to="/cart" class="cart-summary">
         🛒
