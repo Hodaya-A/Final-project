@@ -29,18 +29,18 @@
     <!-- התחברות/התנתקות + סל -->
     <div class="actions">
       <template v-if="userStore.isLoggedIn">
-        <router-link v-if="userStore.isAdmin" to="/admin" class="admin-btn"
-          >ניהול מערכת</router-link
-        >
+        <router-link v-if="userStore.isAdmin" to="/admin" class="action-btn">
+          ניהול מערכת
+        </router-link>
         <span class="user-email">שלום, {{ userStore.name || userStore.email }}</span>
-        <router-link to="/orders" class="orders-btn">הזמנות קודמות</router-link>
-        <button class="auth-btn" @click="logout">התנתקות</button>
+        <router-link to="/orders" class="action-btn">הזמנות קודמות</router-link>
+        <button class="action-btn" @click="logout">התנתקות</button>
       </template>
       <template v-else>
-        <router-link to="/auth" class="auth-btn">התחברות / הצטרפות</router-link>
+        <router-link to="/auth" class="action-btn">התחברות / הצטרפות</router-link>
       </template>
-      <router-link to="/map" class="topbar-link"> מוצרים לפי מפה </router-link>
-      <!-- 🔗 כפתור לסל הקניות -->
+      <router-link to="/map" class="action-btn">מוצרים לפי מפה</router-link>
+
       <router-link to="/cart" class="cart-summary">
         🛒
         <span class="total">₪{{ totalPrice.toFixed(2) }}</span>
@@ -143,16 +143,27 @@ const submitSearch = () => {
 .actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
-.auth-btn {
-  background: none;
-  border: none;
-  color: #0f571f;
+.action-btn {
+  background-color: #0f571f;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: 1px solid #0f571f;
+  border-radius: 12px;
   font-size: 1rem;
+  font-weight: bold;
   text-decoration: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.action-btn:hover {
+  background-color: #0c4619;
 }
 
 .user-email {
@@ -187,32 +198,8 @@ const submitSearch = () => {
   padding: 2px 6px;
 }
 
-.orders-btn {
-  background: none;
-  border: none;
-  color: #28a745;
-  font-size: 1rem;
-  text-decoration: underline;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.orders-btn:hover {
-  color: #218838;
-}
-
 .logo-img {
   height: 80px;
   object-fit: contain;
-}
-.topbar-link {
-  margin-left: 1rem;
-  font-weight: bold;
-  color: #fff;
-  text-decoration: none;
-}
-
-.topbar-link:hover {
-  text-decoration: underline;
 }
 </style>
