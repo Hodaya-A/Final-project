@@ -1,11 +1,6 @@
 <template>
   <div class="search-bar">
-    <input
-      type="text"
-      v-model="searchQuery"
-      placeholder="חפש מוצר..."
-      @keyup.enter="emitSearch"
-    />
+    <input type="text" v-model="searchQuery" placeholder="חפש מוצר..." @keyup.enter="emitSearch" />
     <button @click="emitSearch">🔍</button>
   </div>
 </template>

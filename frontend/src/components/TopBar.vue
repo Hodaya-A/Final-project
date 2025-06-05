@@ -22,14 +22,16 @@
         autocomplete="on"
       />
       <button class="search-btn" @click="submitSearch">
-  חיפוש <span style="color: white;">🔍</span>
-</button>
+        חיפוש <span style="color: white">🔍</span>
+      </button>
     </div>
 
     <!-- התחברות/התנתקות + סל -->
     <div class="actions">
       <template v-if="userStore.isLoggedIn">
-        <router-link v-if="userStore.isAdmin" to="/admin" class="admin-btn">ניהול מערכת</router-link>
+        <router-link v-if="userStore.isAdmin" to="/admin" class="admin-btn"
+          >ניהול מערכת</router-link
+        >
         <span class="user-email">שלום, {{ userStore.name || userStore.email }}</span>
         <router-link to="/orders" class="orders-btn">הזמנות קודמות</router-link>
         <button class="auth-btn" @click="logout">התנתקות</button>
@@ -37,7 +39,7 @@
       <template v-else>
         <router-link to="/auth" class="auth-btn">התחברות / הצטרפות</router-link>
       </template>
-
+      <!-- <router-link to="/map" class="topbar-link"> מוצרים לפי מפה </router-link> -->
       <!-- 🔗 כפתור לסל הקניות -->
       <router-link to="/cart" class="cart-summary">
         🛒
@@ -77,7 +79,6 @@ const submitSearch = () => {
   }
 }
 </script>
-
 
 <style scoped>
 .top-bar {
@@ -204,7 +205,14 @@ const submitSearch = () => {
   height: 80px;
   object-fit: contain;
 }
+.topbar-link {
+  margin-left: 1rem;
+  font-weight: bold;
+  color: #fff;
+  text-decoration: none;
+}
 
-
-
+.topbar-link:hover {
+  text-decoration: underline;
+}
 </style>

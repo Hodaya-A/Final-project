@@ -1,17 +1,23 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Product = require('../models/Product');
+const Product = require("../models/Product");
 
-// GET all products
-// routes/products.js
-router.get('/', async (req, res) => {
+// GET /api/products?q=search
+router.get("/", async (req, res) => {
   try {
-    const products = await Product.find();
-    res.json(products); // ⬅️ אין map – שולח את כל המידע כמו שהוא כולל _id
+    const searchQuery = req.query.q;
+    let query = {};
+
+    if (searchQuery) {
+      // חיפוש לפי שם המוצר, לא רגיש לאותיות גדולות/קטנות
+      query = { name: { $regex: searchQuery, $options: "i" } };
+    }
+
+    const products = await Product.find(query);
+    res.json(products);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
-
 
 module.exports = router;

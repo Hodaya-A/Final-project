@@ -44,7 +44,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-const searchTerm = ref<string>(route.query.search as string || '')
+const searchTerm = ref<string>((route.query.search as string) || '')
 
 const products = ref<Product[]>([])
 const currentPage = ref(1)
@@ -63,12 +63,13 @@ onBeforeUnmount(() => {
 })
 
 // ✅ מאזין לשינוי בפרמטר search ב-URL
+
 watch(
   () => route.query.search,
   (newVal) => {
-    searchTerm.value = newVal as string || ''
+    searchTerm.value = (newVal as string) || ''
     fetchProducts(true)
-  }
+  },
 )
 
 function goTo(path: string) {
