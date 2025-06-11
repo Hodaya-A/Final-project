@@ -25,12 +25,18 @@ function emitSearch() {
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 input {
-  width: 300px;
+  width: 100%;
+  max-width: 300px; /* כדי לא לעבור את הרוחב */
   padding: 0.5rem;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 button {
@@ -38,4 +44,5 @@ button {
   cursor: pointer;
   font-size: 1rem;
 }
+
 </style>

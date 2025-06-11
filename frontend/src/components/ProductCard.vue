@@ -5,8 +5,6 @@
       <img :src="product.imageUrl" alt="תמונה" class="product-image" />
       <h3 class="product-name">{{ product.name }}</h3>
       <p class="product-category">🧭 {{ product.category }}</p>
-      <p>🔍 ID: {{ product._id }}</p>
-
       <p class="product-price">
         <span class="original">₪{{ product.priceOriginal }}</span>
         <span class="discounted">₪{{ product.priceDiscounted }}</span>
