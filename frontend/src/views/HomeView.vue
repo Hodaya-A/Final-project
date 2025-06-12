@@ -141,6 +141,7 @@ html, body {
 /* ✅ מיכל שנדחף ימינה כשהסל פתוח */
 .page-wrapper {
   transition: margin-right 0.3s ease;
+  transition: mar;
 }
 
 .page-wrapper.cart-open {

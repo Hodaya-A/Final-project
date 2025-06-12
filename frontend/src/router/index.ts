@@ -32,6 +32,12 @@ const routes = [
     component: ThankYouView,
   },
   {
+  path: '/checkout',
+  name: 'checkout',
+  component: () => import('@/views/ThankYouView.vue')
+}
+,
+  {
     path: '/',
     name: 'home',
     component: HomeView,

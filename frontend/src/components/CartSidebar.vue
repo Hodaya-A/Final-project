@@ -55,9 +55,11 @@ const confirmClearCart = () => {
 }
 
 const goToCheckout = () => {
-  router.push('/checkout')
-  closeCart()
+  cartStore.clearCart()          // רוקן את הסל
+  closeCart()                    // סגור את הסל הצדדי
+  router.push('/thank-you')      // נווט לעמוד אישור
 }
+
 </script>
 
 <style scoped>
@@ -81,31 +83,53 @@ const goToCheckout = () => {
 
 <style scoped>
 .cart-sidebar {
-  width: 300px;
-  height: 100%;
-  background: #fff;
-  border-right: 1px solid #ccc;
-  padding: 1rem;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 100vh;
+  background: #ffffff;
+  border-inline-end: 1px solid #d4d4d4;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08);
+  padding: 1.2rem;
   overflow-y: auto;
+  z-index: 2000;
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
+/* כותרת עליונה */
 .cart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.cart-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #24452b;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  color: #444;
   cursor: pointer;
+  transition: transform 0.2s;
 }
 
+.close-btn:hover {
+  transform: scale(1.2);
+}
+
+/* מוצרים */
 .cart-items {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -113,15 +137,18 @@ const goToCheckout = () => {
 
 .cart-item {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.8rem;
   border-bottom: 1px solid #eee;
   padding-bottom: 0.5rem;
 }
 
 .item-image {
-  width: 50px;
-  height: 50px;
+  width: 54px;
+  height: 54px;
   object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ddd;
 }
 
 .item-details {
@@ -131,94 +158,107 @@ const goToCheckout = () => {
 .item-name {
   font-weight: bold;
   margin: 0;
+  font-size: 0.95rem;
+  color: #333;
 }
 
 .item-info {
-  color: #555;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 2px;
 }
 
 .quantity-controls {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.3rem;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .quantity-controls button {
-  background-color: #eee;
-  border: none;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+  font-weight: bold;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: background-color 0.2s;
 }
 
+.quantity-controls button:hover {
+  background-color: #e0e0e0;
+}
+
+/* כפתור ריקון */
 .clear-cart-btn {
-  margin-top: 1rem;
-  background-color: #ff4d4d;
+  background-color: #a22c2c;
   color: white;
   border: none;
   padding: 0.5rem;
-  width: 100%;
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
+  margin-top: 0.5rem;
 }
 
 .clear-cart-btn:hover {
-  background-color: #cc0000;
+  background-color: #881f1f;
 }
 
+/* ריק */
 .empty-cart {
   text-align: center;
+  font-size: 1rem;
   color: #888;
   margin-top: 2rem;
 }
 
+/* כפתור חזרה */
 .go-back-btn {
   margin-top: 1rem;
-  background-color: #0f571f;
+  background-color: #24452b;
   color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.1rem;
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
 }
 
+.go-back-btn:hover {
+  background-color: #1b3521;
+}
+
+/* תחתית */
 .cart-footer {
-  margin-top: 1.5rem;
   border-top: 1px solid #ccc;
   padding-top: 1rem;
+  margin-top: 1rem;
 }
 
 .total {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: bold;
   margin-bottom: 1rem;
+  color: #333;
 }
 
+/* כפתור תשלום */
 .checkout-btn {
   width: 100%;
-  background-color: #0f571f;
+  background-color: #24452b;
   color: white;
   border: none;
   padding: 0.75rem;
   font-weight: bold;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
 }
 
 .checkout-btn:hover {
-  background-color: #0c4619;
+  background-color: #1b3521;
 }
 
-.slide-cart-enter-active,
-.slide-cart-leave-active {
-  transition: transform 0.3s ease;
-}
-.slide-cart-enter-from,
-.slide-cart-leave-to {
-  transform: translateX(-100%);
-}
 </style>
