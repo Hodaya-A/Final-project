@@ -10,29 +10,26 @@ import AddProductView from '../views/AddProductView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
 import ThankYouView from '@/views/ThankYouView.vue'
 import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
+import AdminReportsView from '@/views/AdminReportsView.vue'
 
 import { useUserStore } from '@/stores/user'
 
-
-
-
-
 const routes = [
   {
-  path: '/map',
-  name: 'ProductMapView',
-  component: () => import('@/views/ProductMapView.vue')
-},
+    path: '/map',
+    name: 'ProductMapView',
+    component: () => import('@/views/ProductMapView.vue'),
+  },
   {
-  path: '/orders',
-  name: 'orders',
-  component: MyOrdersView,
-  meta: { requiresAuth: true }
+    path: '/orders',
+    name: 'orders',
+    component: MyOrdersView,
+    meta: { requiresAuth: true },
   },
   {
     path: '/thank-you',
     name: 'thank-you',
-    component: ThankYouView
+    component: ThankYouView,
   },
   {
     path: '/',
@@ -45,16 +42,15 @@ const routes = [
     component: CartView,
   },
   {
-  path: '/product/:id',
-  name: 'ProductDetails',
-  component: () => import('@/views/ProductDetailsView.vue')
-}
-,
-{
-  path: '/auth',
-  name: 'Auth',
-  component: () => import('@/views/AuthView.vue')
-},
+    path: '/product/:id',
+    name: 'ProductDetails',
+    component: () => import('@/views/ProductDetailsView.vue'),
+  },
+  {
+    path: '/auth',
+    name: 'Auth',
+    component: () => import('@/views/AuthView.vue'),
+  },
   {
     path: '/product/:id',
     name: 'product-details',
@@ -79,13 +75,26 @@ const routes = [
     component: UserManagementView,
     meta: { requiresAdmin: true },
   },
+  // {
+  // path: '/admin/reports',
+  // name: 'admin-reports',
+  // component: AdminReportsView,
+  // meta: { requiresAdmin: true },
+  // },
+  {
+    path: '/admin/reports',
+    name: 'admin-reports',
+    component: () => import('@/views/AdminReportsView.vue'),
+    meta: { requiresAdmin: true },
+  },
+
   // //404 אופציונלי
   // {
   //   path: '/:pathMatch(.*)*',
   //   name: 'not-found',
   //   component: NotFoundView,
   // }
- ]
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

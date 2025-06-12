@@ -7,7 +7,7 @@
       <button @click="deleteExpiredProducts">🗑 מחק מוצרים שפג תוקפם</button>
       <button @click="deleteAllProducts">🗑️ מחק את כל המוצרים</button>
       <button @click="goToUserManagement">👥 ניהול משתמשים</button>
-      <button @click="generateReports">📄 הנפקת דוחות</button>
+      <button @click="goToReports">📄הנפקת דוחות</button>
     </div>
   </div>
 
@@ -32,6 +32,9 @@ function addProduct() {
 
 function deleteExpiredProducts() {
   alert('🔧 פונקציה למחיקת מוצרים שפג תוקפם תתווסף בהמשך')
+}
+function goToReports() {
+  router.push('/admin/reports')
 }
 
 async function deleteAllProducts() {
