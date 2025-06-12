@@ -6,6 +6,14 @@
   padding: 2rem;
   font-weight: normal;
 }
+body {
+  color: #222; /* צבע טקסט כהה */
+  background: white; /* רקע לבן */
+  /* font-family: sans-serif; */
+  direction: rtl;
+  text-align: right;
+  font-family: 'Alef', 'Arial', sans-serif;
+}
 
 a,
 .green {
