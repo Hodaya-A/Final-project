@@ -190,13 +190,14 @@ const submitSearch = () => {
 .search-box {
   flex: 1;
   display: flex;
-  max-width: 600px;
+  max-width: 400px;
   min-width: 0;
   border: 1px solid #24452b;
-  border-radius: 40px;
+  border-radius: 10px;
   overflow: hidden;
   background-color: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  right: 600px;
 }
 .search-box input {
   flex: 1;
