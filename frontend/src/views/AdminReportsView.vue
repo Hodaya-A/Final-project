@@ -106,7 +106,37 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('he-IL')
 }
 function printReport() {
+  const elementsToHide: HTMLElement[] = []
+
+  // הסתרת רכיבי סל ידועים
+  document.querySelectorAll('.cart-badge, .cart-summary, .cart-icon, .total').forEach((el) => {
+    const htmlEl = el as HTMLElement
+    elementsToHide.push(htmlEl)
+    htmlEl.setAttribute('data-prev-display', htmlEl.style.display)
+    htmlEl.style.display = 'none'
+  })
+
+  // הסתרת כל span שמכיל בדיוק ספרה אחת (0–9)
+  document.querySelectorAll('span').forEach((el) => {
+    const htmlEl = el as HTMLElement
+    const content = htmlEl.textContent?.trim()
+    if (/^\d$/.test(content || '')) {
+      elementsToHide.push(htmlEl)
+      htmlEl.setAttribute('data-prev-display', htmlEl.style.display)
+      htmlEl.style.display = 'none'
+    }
+  })
+
+  // ביצוע ההדפסה
   window.print()
+
+  // החזרת כל האלמנטים למצבם המקורי
+  setTimeout(() => {
+    elementsToHide.forEach((el) => {
+      const prev = el.getAttribute('data-prev-display')
+      el.style.display = prev || ''
+    })
+  }, 1000)
 }
 </script>
 
@@ -162,14 +192,17 @@ th {
   margin-top: 2rem;
 }
 @media print {
-  /* הסתרת כל מה שלא בדוח */
   body * {
-    visibility: hidden;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden;
   }
 
   .print-area,
   .print-area * {
-    visibility: visible;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible;
   }
 
   .print-area {
@@ -178,19 +211,38 @@ th {
     left: 0;
     width: 100%;
     background: white;
-    padding: 1rem;
+    padding: 2rem;
   }
 
-  /* הסתרת כפתור הדפסה */
-  .print-btn {
-    display: none !important;
-  }
-
-  /* הסתרת כפתורים / ניווט */
+  .print-btn,
   .buttons,
+  .admin-reports > h1,
   nav,
   header,
-  footer {
+  footer,
+  .navbar,
+  .topbar,
+  .cart-summary,
+  .cart-badge,
+  .cart-icon,
+  .total {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  span {
+    color: black !important;
+  }
+
+  /* במקרה וקיים שימוש ב-::before או ::after למספרים */
+  span::before,
+  span::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* הגנה נוספת על span עם ספרות שלא חלק מהדוח */
+  span:has(:not(:empty)):not(.print-area):not(.keep-print) {
     display: none !important;
   }
 }
