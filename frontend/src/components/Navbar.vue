@@ -1,9 +1,8 @@
 <template>
   <nav class="navbar">
-    <!-- ✅ חלק עם צל רק לקטגוריות -->
+    <!-- ✅ עטיפת קטגוריות עם צל -->
     <div class="category-wrapper">
       <div class="category-bar">
-        <!-- קטגוריות בלבד -->
         <div
           class="category-item"
           :class="getCategoryClass(cat.name)"
@@ -11,13 +10,13 @@
           :key="cat.name"
           @click="toggleCategory(cat.name)"
         >
-          <span class="cat-icon">{{ cat.icon }}</span>
+          <img :src="`/src/assets/${cat.icon}`" alt="" class="cat-icon-img" />
           <div class="label">{{ cat.name }}</div>
         </div>
       </div>
     </div>
 
-    <!-- ✅ סל נפרד מחוץ לעטיפת הקטגוריות -->
+    <!-- ✅ סל קניות -->
     <div class="cart-summary" @click="toggleCart">
       <img src="@/assets/icon_cart.png" alt="סל קניות" class="cart-icon" />
       <div class="total">₪{{ totalPrice.toFixed(2) }}</div>
@@ -27,7 +26,6 @@
     <CartSidebar :isOpen="isCartOpen" @close="closeCart" />
   </nav>
 </template>
-
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
@@ -40,18 +38,18 @@ const cartStore = useCartStore()
 const { isCartOpen, totalItems, totalPrice } = storeToRefs(cartStore)
 
 const categories = [
-  { name: 'לחם ומאפים טריים', icon: '🍞' },
-  { name: 'פארם ותינוקות', icon: '🍼' },
-  { name: 'חד פעמי ומטבח', icon: '🍽️' },
-  { name: 'אחזקת הבית ובע"ח', icon: '🏠' },
-  { name: 'חטיפים ומתוקים', icon: '🍬' },
-  { name: 'קטניות ודגנים', icon: '🌾' },
-  { name: 'שימורים ובישול', icon: '🥫' },
-  { name: 'קפואים', icon: '❄️' },
-  { name: 'אורגני ובריאות', icon: '🌿' },
-  { name: 'משקאות', icon: '🥤' },
-  { name: 'בשר ודגים', icon: '🥩' },
-  { name: 'חלב, ביצים וסלטים', icon: '🥚' }
+  { name: 'לחם ומאפים טריים', icon: 'icon_bread.png' },
+  { name: 'פארם ותינוקות', icon: 'icon_baby.png' },
+  { name: 'חד פעמי ומטבח', icon: 'icon_kitchen.png' },
+  { name: 'אחזקת הבית ובע"ח', icon: 'icon_home.png' },
+  { name: 'חטיפים ומתוקים', icon: 'icon_metukim.png' },
+  { name: 'קטניות ודגנים', icon: 'icon_dganim.png' },
+  { name: 'שימורים ובישול', icon: 'icon_shimurim.png' },
+  { name: 'קפואים', icon: 'icon_frozen.png' },
+  { name: 'אורגני ובריאות', icon: 'icon_organi.png' },
+  { name: 'משקאות', icon: 'icon_drink.png' },
+  { name: 'בשר ודגים', icon: 'icon_fish.png' },
+  { name: 'חלב, ביצים וסלטים', icon: 'icon_milk.png' }
 ]
 
 function toggleCategory(name: string) {
@@ -59,8 +57,6 @@ function toggleCategory(name: string) {
 }
 
 function getCategoryClass(name: string) {
-  if (name === 'חלב, ביצים וסלטים') return 'rounded-dairy'
-  if (name === 'לחם ומאפים טריים') return 'rounded-bakery'
   return ''
 }
 
@@ -73,7 +69,6 @@ function closeCart() {
 }
 </script>
 
-
 <style scoped>
 .navbar {
   direction: rtl;
@@ -85,6 +80,19 @@ function closeCart() {
   gap: 16px;
 }
 
+/* עטיפת הקטגוריות */
+.category-wrapper {
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 0 10px;
+  margin-left: 10px;
+  margin-inline-end: auto;
+  flex-grow: 1;
+  overflow: hidden;
+  height: 100px;
+  width: 80px;
+}
 
 .category-bar {
   display: flex;
@@ -92,44 +100,39 @@ function closeCart() {
   overflow-x: auto;
   height: 100px;
   width: 100%;
+  /* width: 900px; */
   scrollbar-width: none;
   background-color: #f5f8fc;
-  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06); צל לשורת הקטגוריות עצמה */
-  /* border-radius: 16px; */
 }
-.category-bar::-webkit-scrollbar {
+/* .category-bar::-webkit-scrollbar {
   display: none;
-}
+} */
 
-/* קטגוריה רגילה */
+/* כרטיס קטגוריה */
 .category-item {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 75px;
+  width: 70px;
   height: 100px;
   background-color: white;
   padding: 0.5rem 0.25rem;
   flex-shrink: 0;
-  border-left: 1px solid #eee;
+  border: none;
   transition: all 0.3s ease;
   cursor: pointer;
-  border: none;
-    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06); צל לשורת הקטגוריות עצמה */
-  /* border-radius: 16px; */
 }
-/* .category-item:first-child {
-  border-right: 1px solid #eee;
-} */
 .category-item:hover {
-  background-color: #e6f8e6;
+  background-color: #d8dbd8;
   transform: scale(1.05);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
-.cat-icon {
-  font-size: 1.9rem;
-  margin-bottom: 4px;
+.cat-icon-img {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 6px;
+  object-fit: contain;
 }
 .label {
   font-size: 0.8rem;
@@ -139,14 +142,8 @@ function closeCart() {
   line-height: 1.1;
   white-space: normal;
 }
-/* .rounded-dairy {
-  border-radius: 12px 0 0 12px;
-}
-.rounded-bakery {
-  border-radius: 0 12px 12px 0;
-} */
 
-/* כפתור סל קניות */
+/* עיצוב לסל */
 .cart-summary {
   width: 290px;
   height: 100px;
@@ -179,7 +176,6 @@ function closeCart() {
 .cart-summary .cart-badge {
   position: absolute;
   top: 16px;
-  /* left: 50px; */
   right: 60px;
   background-color: red;
   color: white;
@@ -189,16 +185,4 @@ function closeCart() {
   font-weight: bold;
   z-index: 2;
 }
-.category-wrapper {
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  padding: 0 10px;
-  margin-left: 10px;
-  margin-inline-end: auto;
-  flex-grow: 1;
-  overflow: hidden;
-  height: 100px;
-}
-
 </style>

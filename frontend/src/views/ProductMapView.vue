@@ -1,7 +1,7 @@
 <template>
   <div class="product-map-container">
     <aside class="category-sidebar">
-      <h3>🧭 קטגוריות</h3>
+      <h3>קטגוריות</h3>
       <div v-for="(color, category) in categoryColors" :key="category" class="category-item">
         <input
           type="checkbox"
@@ -17,29 +17,29 @@
     </aside>
 
     <div class="product-map-view">
-      <h1>🗺️ מוצרים בסביבה שלך</h1>
+      <h1>מוצרים בסביבה שלך</h1>
 
       <div class="top-inputs">
         <input
           v-model="searchQuery"
           @input="loadProducts"
           type="text"
-          placeholder="🔍 חפש לפי שם מוצר..."
+          placeholder=" חפש לפי שם מוצר..."
           class="search-box"
         />
         <input
           v-model="locationInput"
-          placeholder="📍 הקלד כתובת למשל: תל אביב"
+          placeholder=" הקלד כתובת למשל: תל אביב"
           class="location-box"
         />
-        <button @click="geocodeLocation" class="location-btn">🔎 מצא כתובת</button>
+        <button @click="geocodeLocation" class="location-btn"> מצא כתובת</button>
       </div>
 
-      <button @click="loadProducts" class="refresh-btn">🔄 רענן מוצרים</button>
+      <button @click="loadProducts" class="refresh-btn"> רענן מוצרים</button>
       <p class="count">מוצרים שנמצאו בטווח: {{ productCount }}</p>
 
       <div class="radius-slider">
-        <label>📏 טווח מרחק (בק"מ):</label>
+        <label> טווח מרחק (בק"מ):</label>
         <div class="value">{{ radiusInKm }} ק"מ</div>
         <Slider
           v-model="radiusInKm"
@@ -53,7 +53,7 @@
       </div>
 
       <div id="map" class="map"></div>
-      <p v-if="!userLat || !userLng" class="warn">📍 נא לאשר מיקום או להקליד כתובת</p>
+      <p v-if="!userLat || !userLng" class="warn"> נא לאשר מיקום או להקליד כתובת</p>
     </div>
   </div>
 </template>
@@ -211,15 +211,18 @@ onMounted(() => {
 <style scoped>
 .product-map-container {
   display: flex;
-  background: #eafaf1;
+  background:#f5f8fc;
   font-family: sans-serif;
 }
 
 .category-sidebar {
   width: 230px;
-  background-color: #d4f4dd;
+  background-color:white;
   padding: 1rem;
-background: linear-gradient(to bottom, #e6f9e4, #ffffff);
+background: white;
+border-radius: 18px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+
 }
 
 .category-item {
@@ -239,6 +242,7 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 .product-map-view {
   flex: 1;
   padding: 2rem;
+  border-radius: 18px;
 }
 
 .top-inputs {
@@ -257,7 +261,9 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 }
 
 .location-btn {
-  background: #27ae60;
+  background: #24452b;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+
   color: white;
   font-weight: bold;
   padding: 0.5rem 1rem;
@@ -267,7 +273,9 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 }
 
 .refresh-btn {
-  background-color: #2ecc71;
+  background-color: #24452b;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+
   color: white;
   font-weight: bold;
   border: none;
@@ -278,7 +286,8 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 }
 
 .refresh-btn:hover {
-  background-color: #27ae60;
+  background-color: #24452b;
+
 }
 
 .count {
@@ -290,8 +299,10 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 .radius-slider {
   margin: 1.5rem 0;
   padding: 1rem;
-  background-color: #dffce2;
+  background-color: white;
   border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+
 }
 
 .value {
@@ -305,6 +316,7 @@ background: linear-gradient(to bottom, #e6f9e4, #ffffff);
   margin-top: 1rem;
   border: 1px solid #ccc;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 18px;
 
 }
 

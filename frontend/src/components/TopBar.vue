@@ -4,7 +4,7 @@
     <div class="logo">
       <router-link to="/" class="brand">
         <img
-          src="@/assets/icon_logo1.png"
+          src="@/assets/icon_logo2.png"
           alt="לוגו האתר" class="logo-img"
         />
 
@@ -173,7 +173,8 @@ const submitSearch = () => {
 }
 .logo{
   border-radius: 12px;
-  color: white;
+  color: #f5f8fc;
+  background-color: #f5f8fc;
 }
 /* לוגו */
 .logo-img {
@@ -181,7 +182,7 @@ const submitSearch = () => {
   width: 250px;
   object-fit: contain;
   border-radius: 12px;
-  background-color: white;
+  background-color: #f5f8fc;
 
 }
 
