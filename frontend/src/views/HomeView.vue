@@ -148,8 +148,8 @@ html, body {
 }
 
 .homepage {
-  background: #f8f9fa;
-  padding-bottom: 2rem;
+ background-color: #f5f8fc;
+   padding-bottom: 2rem;
   display: flex;
   justify-content: flex-start;
   width: 100%;

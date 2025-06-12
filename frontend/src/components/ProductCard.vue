@@ -4,14 +4,14 @@
     <router-link :to="`/product/${product._id}`" class="product-card">
       <img :src="product.imageUrl" alt="תמונה" class="product-image" />
       <h3 class="product-name">{{ product.name }}</h3>
-      <p class="product-category">🧭 {{ product.category }}</p>
+      <p class="product-category"> {{ product.category }}</p>
       <p class="product-price">
         <span class="original">₪{{ product.priceOriginal }}</span>
         <span class="discounted">₪{{ product.priceDiscounted }}</span>
       </p>
-      <p class="product-expiry">📆 פג תוקף: {{ formattedDate }}</p>
+      <p class="product-expiry"> פג תוקף: {{ formattedDate }}</p>
     </router-link>
-    <button class="add-btn" @click="addToCart">הוסף לסל 🛒</button>
+    <button class="add-btn" @click="addToCart">הוסף לסל </button>
   </div>
 </template>
 
@@ -49,6 +49,7 @@ function addToCart() {
   flex-direction: column;
   align-items: center;
   width: 230px;
+
 }
 
 .product-card {
@@ -66,6 +67,8 @@ function addToCart() {
   transition: transform 0.2s;
   color: inherit;
   text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
 }
 
 .product-card:hover {
@@ -90,7 +93,7 @@ function addToCart() {
 
 .product-category {
   font-size: 0.9rem;
-  color: #27ae60;
+  color: #193e28;
   margin-bottom: 0.2rem;
 }
 
@@ -106,7 +109,7 @@ function addToCart() {
 }
 
 .product-price .discounted {
-  color: #2ecc71;
+  color: #174028;
   font-weight: bold;
 }
 
@@ -119,7 +122,7 @@ function addToCart() {
 .add-btn {
   margin-top: 0.5rem;
   padding: 0.6rem 1rem;
-  background-color: #4CAF50;
+  background-color: #1e421f;
   color: white;
   border: none;
   border-radius: 6px;

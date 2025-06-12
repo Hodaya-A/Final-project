@@ -4,10 +4,10 @@
     <div class="logo">
       <router-link to="/" class="brand">
         <img
-          src="https://res.cloudinary.com/dvb1k0trx/image/upload/v1748971282/ChatGPT_Image_Jun_3_2025_07_26_22_PM_qoilfz.png"
-          alt="לוגו האתר"
-          class="logo-img"
+          src="@/assets/icon_logo1.png"
+          alt="לוגו האתר" class="logo-img"
         />
+
       </router-link>
     </div>
 
@@ -39,7 +39,7 @@
       </router-link>
 
       <!-- מוצרים לפי מפה -->
-      <router-link to="/map" class="icon-button" title="מוצרים לפי מפה">
+      <router-link to="/map" class="icon-button" title="מוצרים לפי מיקום">
         <img src="@/assets/icon_location.png" alt="מיקום" class="icon-img" />
       </router-link>
 
@@ -140,63 +140,70 @@ const submitSearch = () => {
 
 
 <style scoped>
-.header{
-  max-height: 60px;
+.header {
+  max-height: 48px;
 }
+
 .top-bar {
   direction: rtl;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ddf8d5b9;
-  padding: 1rem;
-  border: none; 
+  background-color: #f5f8fc;
+  /* padding: 0.3rem 1rem; ↓ מרווח פנימי מוקטן */
+  border: none;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
   max-width: 100%;
   overflow-x: hidden;
   box-sizing: border-box;
-  height:60px;
-  padding: 0.5rem 1rem; /* היה 1rem – עכשיו יותר קטן */
-  height: auto; /* ביטול גובה קשיח */
-  min-height: 60px;
+  height: auto;
+  min-height: 40px;
 }
-
+.logo{
+  border-radius: 12px;
+  color: white;
+}
+/* לוגו */
 .logo-img {
-  height: 80px;
+  height: 40px;
+  width: 250px;
   object-fit: contain;
+  border-radius: 12px;
+  background-color: white;
+
 }
 
+
+/* חיפוש */
 .search-box {
   flex: 1;
   display: flex;
   max-width: 600px;
   min-width: 0;
-  border: 1px solid #108a2a;
+  border: 1px solid #24452b;
   border-radius: 40px;
   overflow: hidden;
   background-color: #fff;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
-
 .search-box input {
   flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 0.4rem 0.8rem;
   border: none;
-  font-size: 1rem;
+  font-size: 0.9rem;
   outline: none;
   text-align: right;
   color: #333;
   background-color: #fff;
 }
-
 .search-btn {
-  padding: 0 1.5rem;
-  background-color: #108a2a;
+  padding: 0 1rem;
+  background-color: #1f4627;
   color: white;
   border: none;
-  border-radius: 40px 0 0 40px;
-  font-size: 1rem;
+  border-radius: 6px 0 0 6px;
+  font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   display: flex;
@@ -204,28 +211,52 @@ const submitSearch = () => {
   gap: 0.4rem;
 }
 
+/* אייקונים */
 .actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
 .user-icon,
 .cart-icon {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   transition: transform 0.2s ease;
+  margin-left: 20px;
 }
 
-.interactive-icon:hover {
+/* .interactive-icon:hover {
   transform: scale(1.1);
+} */
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin-left: 10px;
+}
+/* .icon-button:hover {
+  transform: scale(1.1);
+} */
+
+.icon-img {
+  width: 28px;
+  height: 28px;
+  transition: transform 0.2s ease;
+  margin-left: 10px
 }
 
+/* סל קניות */
 .cart-wrapper {
   position: relative;
 }
-
 .cart-badge {
   position: absolute;
   top: -6px;
@@ -238,11 +269,11 @@ const submitSearch = () => {
   font-weight: bold;
 }
 
+/* תפריט משתמש */
 .user-menu-wrapper {
   position: relative;
   cursor: pointer;
 }
-
 .user-dropdown {
   position: fixed;
   background: white;
@@ -257,25 +288,21 @@ const submitSearch = () => {
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
-
 .user-menu-wrapper.open .user-dropdown {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
-
 .username {
   font-weight: bold;
   margin-bottom: 0.5rem;
   color: #333;
 }
-
 .divider {
   margin: 0.5rem 0;
   border: none;
   border-top: 1px solid #ccc;
 }
-
 .login-link,
 .user-dropdown button {
   display: block;
@@ -290,46 +317,19 @@ const submitSearch = () => {
   text-decoration: none;
   cursor: pointer;
 }
-
 .login-link:hover,
 .user-dropdown button:hover {
   background-color: #0c4619;
 }
 
+/* אנימציה */
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.2s ease;
 }
-
 .fade-slide-enter-from,
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateY(-10px);
-}
-
-.cart-wrapper:hover {
-  background-color: transparent !important;
-}
-
-.icon-button {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.icon-button:hover {
-  transform: scale(1.1);
-}
-
-.icon-img {
-   width: 40px;
-  height: 40px;
-  /* border-radius: 50%; */
-  transition: transform 0.2s ease;
 }
 </style>

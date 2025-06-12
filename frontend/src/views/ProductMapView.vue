@@ -219,7 +219,7 @@ onMounted(() => {
   width: 230px;
   background-color: #d4f4dd;
   padding: 1rem;
-  border-left: 4px solid #2ecc71;
+background: linear-gradient(to bottom, #e6f9e4, #ffffff);
 }
 
 .category-item {
@@ -304,6 +304,8 @@ onMounted(() => {
   height: 500px;
   margin-top: 1rem;
   border: 1px solid #ccc;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
 }
 
 .warn {
