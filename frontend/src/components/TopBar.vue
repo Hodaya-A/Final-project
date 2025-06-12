@@ -22,8 +22,9 @@
         autocomplete="on"
       />
       <button class="search-btn" @click="submitSearch">
-        חיפוש <span style="color: white">🔍</span>
+        <img src="@/assets/icon_search.png" alt="חיפוש" class="search-icon" />
       </button>
+
     </div>
 
     <!-- פעולות -->
@@ -81,6 +82,8 @@ import { signOut } from 'firebase/auth'
 import { auth } from '@/services/firebase'
 import userIcon from '@/assets/icon_user.png'
 import CartSidebar from '@/components/CartSidebar.vue'
+import searchIcon from '@/assets/icon_search.png'
+
 
 const cartStore = useCartStore()
 const { totalItems } = storeToRefs(cartStore)
@@ -143,6 +146,14 @@ const submitSearch = () => {
 .header {
   max-height: 48px;
 }
+
+.search-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
 
 .top-bar {
   direction: rtl;
