@@ -6,7 +6,6 @@ export interface CartItem {
   price: number
   quantity: number
   imageUrl?: string
-  sellerId: string // ✅ הוספה חשובה
 }
 
 export const useCartStore = defineStore('cart', {
@@ -22,27 +21,10 @@ export const useCartStore = defineStore('cart', {
   },
 
   actions: {
-    // addToCart(product: { id: string; name: string; price: number; imageUrl?: string }) {
-    // const existing = this.items.find((item) => item.id === product.id)
-    // if (existing) existing.quantity++
-    // else this.items.push({ ...product, quantity: 1 })
-    // },
-
-    addToCart(product: {
-      id: string
-      name: string
-      price: number
-      imageUrl?: string
-      sellerId: string
-    }) {
+    addToCart(product: { id: string; name: string; price: number; imageUrl?: string }) {
       const existing = this.items.find((item) => item.id === product.id)
-      const qty = product.quantity ?? 1
-
-      if (existing) {
-        existing.quantity += qty
-      } else {
-        this.items.push({ ...product, quantity: qty })
-      }
+      if (existing) existing.quantity++
+      else this.items.push({ ...product, quantity: 1 })
     },
 
     removeFromCart(id: string) {
