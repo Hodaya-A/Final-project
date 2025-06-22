@@ -1,4 +1,8 @@
 import './assets/main.css'
+import Toast from 'vue-toastification'
+import 'vue-toastification/dist/index.css'
+
+
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -12,9 +16,12 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { useUserStore } from '@/stores/user'
 
+
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
+app.use(Toast)
 
 let appHasMounted = false // ✅ מונע הרצה כפולה של mount
 

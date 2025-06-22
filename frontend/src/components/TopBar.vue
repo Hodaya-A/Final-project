@@ -44,6 +44,13 @@
         <img src="@/assets/icon_location.png" alt="מיקום" class="icon-img" />
       </router-link>
 
+      <!-- הזמנות קודמות -->
+  <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="#24452b" viewBox="0 0 24 24" width="28" height="28">
+      <path d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"/>
+    </svg>
+  </router-link>
+
       <!-- תפריט משתמש -->
       <div class="user-menu-wrapper" :class="{ open: showMenu }" @click="toggleMenu">
         <img :src="userIcon" ref="userIconRef" alt="משתמש" class="user-icon interactive-icon" title="פרופיל משתמש" />
