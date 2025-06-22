@@ -21,11 +21,11 @@ const routes = [
     component: () => import('@/views/ProductMapView.vue'),
   },
   {
-    path: '/orders',
-    name: 'orders',
-    component: MyOrdersView,
-    meta: { requiresAuth: true },
-  },
+  path: '/my-orders',
+  name: 'my-orders',
+  component: MyOrdersView,
+  meta: { requiresAuth: true },
+},
   {
     path: '/thank-you',
     name: 'thank-you',

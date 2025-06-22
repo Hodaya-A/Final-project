@@ -1,4 +1,3 @@
-// /stores/cart.ts
 import { defineStore } from 'pinia'
 
 export interface CartItem {
@@ -18,6 +17,7 @@ export const useCartStore = defineStore('cart', {
 
   getters: {
     totalItems: (state) => state.items.reduce((sum, item) => sum + item.quantity, 0),
+
     totalPrice: (state) => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
   },
 
@@ -36,8 +36,13 @@ export const useCartStore = defineStore('cart', {
       sellerId: string
     }) {
       const existing = this.items.find((item) => item.id === product.id)
-      if (existing) existing.quantity++
-      else this.items.push({ ...product, quantity: 1 })
+      const qty = product.quantity ?? 1
+
+      if (existing) {
+        existing.quantity += qty
+      } else {
+        this.items.push({ ...product, quantity: qty })
+      }
     },
 
     removeFromCart(id: string) {
@@ -51,8 +56,11 @@ export const useCartStore = defineStore('cart', {
 
     decreaseQuantity(id: string) {
       const item = this.items.find((item) => item.id === id)
-      if (item && item.quantity > 1) item.quantity--
-      else this.removeFromCart(id)
+      if (item && item.quantity > 1) {
+        item.quantity--
+      } else {
+        this.removeFromCart(id)
+      }
     },
 
     clearCart() {

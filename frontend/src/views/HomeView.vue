@@ -8,6 +8,7 @@
           <img :src="bannerImg" alt="Fresh Banner" class="banner" />
         </section>
 
+
         <!-- 🛒 מוצרים -->
         <section class="products-section">
           <h2>
@@ -28,12 +29,17 @@
           <p v-else class="empty-msg">לא נמצאו מוצרים זמינים</p>
           <div v-if="loading && products.length > 0 && !activeCategory" class="spinner">טוען עוד...</div>
         </section>
+        
       </div>
     </div>
+    
   </div>
+  <NotificationBubble />
+
 </template>
 
 <script setup lang="ts">
+import NotificationBubble from '@/components/NotificationBubble.vue'
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
