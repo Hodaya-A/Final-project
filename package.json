@@ -4,6 +4,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "firebase": "^11.8.0",
+    "framer-motion": "^12.23.24",
     "mongoose": "^8.14.2"
   },
   "name": "fresh-end",

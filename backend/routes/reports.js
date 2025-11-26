@@ -1,7 +1,9 @@
-const express = require("express");
+// backend/routes/reports.js
+import express from "express";
+import { db } from "../config/firebaseAdmin.js";
+import Product from "../models/Product.js";
+
 const router = express.Router();
-const { db } = require("../config/firebaseAdmin");
-const Product = require("../models/Product");
 
 // 📈 דוח מכירות כולל
 router.get("/sales", async (req, res) => {
@@ -28,35 +30,28 @@ router.get("/sales", async (req, res) => {
 
     res.json({ totalRevenue, orderCount, productStats });
   } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "שגיאה בשליפת דוח מכירות" });
+    console.error("❌ שגיאה בדוח מכירות:", err);
+    res.status(500).json({ message: "שגיאה בשליפת דוח מכירות" });
   }
 });
 
-// ⏰ דוח מוצרים קרובים לתפוגה (תוך 3 ימים)
+// ⏰ דוח מוצרים קרובים לתפוגה (תוך 10 ימים)
 router.get("/expiring", async (req, res) => {
   try {
-    const now = new Date();
-
-    // התחלת טווח: תחילת היום הנוכחי
     const start = new Date();
     start.setHours(0, 0, 0, 0);
 
-    // סיום טווח: סוף היום בעוד 10 ימים
     const end = new Date();
     end.setDate(end.getDate() + 10);
     end.setHours(23, 59, 59, 999);
 
-    // לוודא שהפורמט של expiryDate במונגו הוא Date רגיל
     const expiringProducts = await Product.find({
-      expiryDate: {
-        $gte: start,
-        $lte: end,
-      },
+      expiryDate: { $gte: start, $lte: end },
     });
+
     res.json(expiringProducts);
   } catch (err) {
-    console.error(err);
+    console.error("❌ שגיאה בדוח תפוגה:", err);
     res.status(500).json({ message: "שגיאה בדוח תפוגה" });
   }
 });
@@ -65,8 +60,8 @@ router.get("/expiring", async (req, res) => {
 router.get("/unsold", async (req, res) => {
   try {
     const snapshot = await db.collection("orders").get();
-
     const soldProductIds = new Set();
+
     snapshot.forEach((doc) => {
       const order = doc.data();
       order.items.forEach((item) => soldProductIds.add(item.id));
@@ -78,9 +73,10 @@ router.get("/unsold", async (req, res) => {
 
     res.json(unsoldProducts);
   } catch (err) {
-    console.error(err);
+    console.error("❌ שגיאה בדוח מוצרים לא נמכרו:", err);
     res.status(500).json({ message: "שגיאה בדוח מוצרים לא נמכרו" });
   }
 });
 
-module.exports = router;
+// 🟢 ייצוא ברירת מחדל (חובה לגרסת ESM)
+export default router;

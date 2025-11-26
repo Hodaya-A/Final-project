@@ -1,26 +1,22 @@
-const mongoose = require('mongoose')
+// backend/models/Product.js
+import mongoose from "mongoose";
 
-const productSchema = new mongoose.Schema({
+const ProductSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  priceOriginal: { type: Number, required: true },
-  priceDiscounted: { type: Number, required: true },
-  expiryDate: { type: Date, required: true },
-  category: { type: String, required: true },
-  imageUrl: { type: String, required: true },
+  price: { type: Number, required: true },
+  salePrice: { type: Number },
+  category: { type: String },
+  expiryDate: { type: Date },
+  barcode: { type: String },
+  quantity: { type: Number, default: 1 },
+  imageUrl: { type: String }, // 🖼️ תמונה של המוצר
   location: {
-    type: {
-      type: String,
-      enum: ['Point'],
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number], // [lng, lat]
-      required: true
-    }
-  }
-})
+    type: { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], default: [0, 0] }, // [lng, lat]
+  },
+});
 
-// הפעלת אינדקס גיאוגרפי
-productSchema.index({ location: '2dsphere' })
+ProductSchema.index({ location: "2dsphere" });
 
-module.exports = mongoose.model('Product', productSchema, 'products')
+const Product = mongoose.model("Product", ProductSchema);
+export default Product;

@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "backend",
   "version": "1.0.0",
   "main": "server.js",
@@ -12,13 +13,21 @@
   "dependencies": {
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.18",
     "dotenv": "^16.5.0",
     "emailjs-com": "^3.2.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
+    "framer-motion": "^12.23.24",
+    "iconv-lite": "^0.7.0",
     "mongodb": "^5.9.2",
-    "mongoose": "^8.15.0",
-    "vue-slider-component": "^3.2.24"
+    "mongoose": "^8.19.1",
+    "multer": "^2.0.2",
+    "openai": "^6.6.0",
+    "papaparse": "^5.5.3",
+    "sharp": "^0.34.5",
+    "vue-slider-component": "^3.2.24",
+    "xlsx": "^0.18.5"
   },
   "description": ""
 }

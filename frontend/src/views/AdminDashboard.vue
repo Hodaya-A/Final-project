@@ -7,7 +7,10 @@
       <button @click="deleteExpiredProducts">🗑 מחק מוצרים שפג תוקפם</button>
       <button @click="deleteAllProducts">🗑️ מחק את כל המוצרים</button>
       <button @click="goToUserManagement">👥 ניהול משתמשים</button>
-      <button @click="goToReports">📄הנפקת דוחות</button>
+      <button @click="goToReports">📄 הנפקת דוחות</button>
+
+      <!-- ✅ כפתור חדש לניהול מלאי -->
+      <button @click="goToInventory">🧾 ניהול מלאי</button>
     </div>
   </div>
 
@@ -33,6 +36,7 @@ function addProduct() {
 function deleteExpiredProducts() {
   alert('🔧 פונקציה למחיקת מוצרים שפג תוקפם תתווסף בהמשך')
 }
+
 function goToReports() {
   router.push('/admin/reports')
 }
@@ -54,8 +58,9 @@ function goToUserManagement() {
   router.push('/admin/users')
 }
 
-function generateReports() {
-  alert('📄 דוחות עוד לא מוכנים')
+function goToInventory() {
+  // ✅ עדכון לפי האפשרות המומלצת — נתיב קיים ב-router שלך
+  router.push('/shop/inventory')
 }
 </script>
 

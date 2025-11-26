@@ -1,23 +1,25 @@
 <template>
   <div class="bubble" @click="toggleChat">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" viewBox="0 0 24 24" width="28" height="28" class="rtl-icon">
-      <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7l-4 4V6a2 2 0 0 1 2-2z"/>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="#ffffff"
+      viewBox="0 0 24 24"
+      width="28"
+      height="28"
+      class="rtl-icon"
+    >
+      <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7l-4 4V6a2 2 0 0 1 2-2z" />
     </svg>
   </div>
   <transition name="fade">
     <div v-if="chatOpen" class="chat-box">
       <div class="chat-header">
-<img src="@/assets/avatar_woman.png" alt="אביבה" class="bot-avatar" />
+        <img src="@/assets/avatar_woman.png" alt="אביבה" class="bot-avatar" />
         <span>אביבה - העוזרת הדיגיטלית</span>
       </div>
 
       <div class="chat-content">
-        <div
-          v-for="(msg, i) in messages"
-          :key="i"
-          :class="['msg', msg.from]"
-          v-html="msg.text"
-        />
+        <div v-for="(msg, i) in messages" :key="i" :class="['msg', msg.from]" v-html="msg.text" />
       </div>
 
       <div v-if="currentStep === 'menu'" class="chat-buttons">
@@ -35,47 +37,76 @@
       </div>
 
       <div v-if="currentStep === 'askOrder' || currentStep === 'askMore'" class="chat-input">
-        <input v-model="currentInput" type="text" placeholder="הקלד כאן..." @keydown.enter="handleSend" />
+        <input
+          v-model="currentInput"
+          type="text"
+          placeholder="הקלד כאן..."
+          @keydown.enter="handleSend"
+        />
         <button @click="handleSend">שלח</button>
       </div>
 
       <div v-if="currentStep === 'closed'" class="chat-buttons">
-        <button @click="restartChat"> התחל שיחה חדשה</button>
+        <button @click="restartChat">התחל שיחה חדשה</button>
       </div>
     </div>
   </transition>
 </template>
+
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useToast, POSITION } from 'vue-toastification'
 import { useCartStore } from '@/stores/cart'
+
 const cartStore = useCartStore()
-
-
 const toast = useToast()
 
+// ---- Types ----
+type Step = 'menu' | 'chooseRadius' | 'askOrder' | 'askMore' | 'flow' | 'closed'
+type Option = 'order' | 'offers' | 'agent' | 'nearby' | 'restart'
+type Sender = 'user' | 'bot'
+
+interface ChatMessage {
+  text: string
+  from: Sender
+}
+
+interface ProductFromApi {
+  _id: string
+  name: string
+  priceDiscounted: number
+  imageUrl?: string | null
+}
+
+interface ProductForCart {
+  id: string
+  name: string
+  price: number
+  imageUrl: string
+}
+
+// expose safe global
 declare global {
   interface Window {
-    addToCart: (product: any) => void
+    addToCart: (product: ProductForCart) => void
   }
 }
 
 const chatOpen = ref(false)
-const messages = ref<{ text: string; from: 'user' | 'bot' }[]>([])
-const currentStep = ref('menu')
+const messages = ref<ChatMessage[]>([])
+const currentStep = ref<Step>('menu')
 const currentInput = ref('')
 const userOrder = ref('')
-const selectedRadius = ref(10000)
+const selectedRadius = ref<number>(10000)
 
 const toggleChat = () => {
   chatOpen.value = !chatOpen.value
-
   if (chatOpen.value && messages.value.length === 0) {
     messages.value.push({ text: 'שלום, אני אביבה הנציגה הוירטואלית. במה אפשר לעזור?', from: 'bot' })
   }
 }
 
-const optionLabel = (option: string) => {
+const optionLabel = (option: Option): string => {
   if (option === 'order') return 'מעקב אחרי הזמנה'
   if (option === 'offers') return 'לראות מבצעים'
   if (option === 'agent') return 'לדבר עם נציג'
@@ -84,49 +115,51 @@ const optionLabel = (option: string) => {
   return option
 }
 
-const handleOption = (option: string) => {
+const handleOption = (option: Option) => {
   messages.value.push({ text: optionLabel(option), from: 'user' })
 
   if (option === 'order') {
     messages.value.push({ text: 'מה מספר ההזמנה שלך?', from: 'bot' })
     currentStep.value = 'askOrder'
-  } 
-  else if (option === 'offers') {
-    messages.value.push({ text: ' מבצעי היום: <br>- 1+1 על מוצרי חלב <br>- 15% הנחה על ירקות', from: 'bot' })
+  } else if (option === 'offers') {
+    messages.value.push({
+      text: ' מבצעי היום: <br>- 1+1 על מוצרי חלב <br>- 15% הנחה על ירקות',
+      from: 'bot',
+    })
     currentStep.value = 'flow'
     askMore()
-  } 
-  else if (option === 'agent') {
+  } else if (option === 'agent') {
     messages.value.push({ text: ' מעבירה אותך לנציג... אנא המתן', from: 'bot' })
     currentStep.value = 'flow'
     askMore()
-  } 
-  else if (option === 'nearby') {
+  } else if (option === 'nearby') {
     messages.value.push({ text: ' באיזה טווח לחפש מוצרים?', from: 'bot' })
     currentStep.value = 'chooseRadius'
-  } 
-  else if (option === 'restart') {
+  } else if (option === 'restart') {
     restartChat()
   }
 }
 
 const handleSend = () => {
-  if (!currentInput.value.trim()) return
+  const trimmed = currentInput.value.trim()
+  if (!trimmed) return
 
-  const userMsg = currentInput.value.trim()
-  messages.value.push({ text: userMsg, from: 'user' })
+  messages.value.push({ text: trimmed, from: 'user' })
 
   if (currentStep.value === 'askOrder') {
-    userOrder.value = userMsg
-    messages.value.push({ text: ` מעקב אחרי הזמנה מספר ${userOrder.value}: <br>ההזמנה נשלחה והיא בדרכה אליך 🚚`, from: 'bot' })
+    userOrder.value = trimmed
+    messages.value.push({
+      text: ` מעקב אחרי הזמנה מספר ${userOrder.value}: <br>ההזמנה נשלחה והיא בדרכה אליך 🚚`,
+      from: 'bot',
+    })
     currentStep.value = 'flow'
     askMore()
-  } 
-  else if (currentStep.value === 'askMore') {
-    if (userMsg.trim().toLowerCase() === 'לא') {
+  } else if (currentStep.value === 'askMore') {
+    const norm = trimmed.toLowerCase()
+    if (norm === 'לא') {
       messages.value.push({ text: ' השיחה נסגרה. תודה שפנית אלי!', from: 'bot' })
       currentStep.value = 'closed'
-    } else if (userMsg.trim().toLowerCase() === 'כן') {
+    } else if (norm === 'כן') {
       currentStep.value = 'menu'
       messages.value.push({ text: ' מצויין, במה אפשר לעזור?', from: 'bot' })
     } else {
@@ -154,41 +187,53 @@ const handleRadius = (radius: number) => {
   selectedRadius.value = radius
   messages.value.push({ text: `טווח ${radius / 1000} ק״מ נבחר`, from: 'user' })
   currentStep.value = 'flow'
-
   getNearbyProducts()
 }
 
 const getNearbyProducts = () => {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(async (position) => {
+  if (!navigator.geolocation) {
+    messages.value.push({ text: '❌ הדפדפן לא תומך במיקום.', from: 'bot' })
+    return askMore()
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords
 
-      // כתובת:
-      const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`)
-      const geoData = await resGeo.json()
-      const address = geoData.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-
+      // Reverse geocoding (address)
+      const resGeo = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+      )
+      const geoData: { display_name?: string } = await resGeo.json()
+      const address = geoData.display_name ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
       messages.value.push({ text: ` מיקום נוכחי: ${address}`, from: 'bot' })
 
       try {
-        const res = await fetch(`http://localhost:3000/api/products/nearby?lat=${latitude}&lng=${longitude}&radius=${selectedRadius.value}`)
-        const data = await res.json()
+        const res = await fetch(
+          `http://localhost:3000/api/products/nearby?lat=${latitude}&lng=${longitude}&radius=${selectedRadius.value}`,
+        )
+        const data: unknown = await res.json()
 
-        if (Array.isArray(data) && data.length > 0) {
-          const list = data.map((p: any) => `
-            <div class="product-item">
-              <div class="product-info">
-                <strong>${p.name}</strong><br>
-                ₪${p.priceDiscounted}
+        if (Array.isArray(data)) {
+          const list = data
+            .map((x) => x as ProductFromApi)
+            .map(
+              (p) => `
+              <div class="product-item">
+                <div class="product-info">
+                  <strong>${p.name}</strong><br>
+                  ₪${p.priceDiscounted}
+                </div>
+                <button class="add-btn" onclick='window.addToCart(${JSON.stringify({
+                  id: p._id,
+                  name: p.name,
+                  price: p.priceDiscounted,
+                  imageUrl: p.imageUrl ?? '',
+                } as ProductForCart)})'>➕ הוסף לסל</button>
               </div>
-              <button class="add-btn" onclick='window.addToCart(${JSON.stringify({
-                id: p._id,
-                name: p.name,
-                price: p.priceDiscounted,
-                imageUrl: p.imageUrl || ''
-              })})'>➕ הוסף לסל</button>
-            </div>
-          `).join('')
+            `,
+            )
+            .join('')
 
           messages.value.push({ text: ` מוצרים קרובים:<br>${list}`, from: 'bot' })
         } else {
@@ -201,33 +246,31 @@ const getNearbyProducts = () => {
         messages.value.push({ text: '❌ שגיאה בעת טעינת מוצרים.', from: 'bot' })
         askMore()
       }
-    }, () => {
+    },
+    () => {
       messages.value.push({ text: '❌ לא ניתן לגשת למיקום שלך.', from: 'bot' })
       askMore()
-    })
-  } else {
-    messages.value.push({ text: '❌ הדפדפן לא תומך במיקום.', from: 'bot' })
-    askMore()
-  }
+    },
+  )
 }
 
-// פונקציה גלובלית — כדי שהכפתור ➕ יעבוד:
-window.addToCart = (product: any) => {
-  console.log('🛒 הוספת מוצר לסל:', product)
+// safe global (no any)
+window.addToCart = (product: ProductForCart) => {
   cartStore.addToCart({
-  id: product.id,
-  name: product.name,
-  price: product.price,
-  imageUrl: product.imageUrl || '',
-  quantity: 1
-})
+    id: product.id,
+    name: product.name,
+    price: product.price,
+    imageUrl: product.imageUrl,
+    quantity: 1,
+  })
 
   toast.success(`✅ "${product.name}" נוסף לסל!`, {
     timeout: 3000,
-    position: POSITION.BOTTOM_LEFT
+    position: POSITION.BOTTOM_LEFT,
   })
 }
 </script>
+
 <style scoped>
 /* כפתור bubble */
 .bubble {
@@ -279,7 +322,6 @@ window.addToCart = (product: any) => {
   align-items: center;
   gap: 0.5rem;
 }
-
 .bot-avatar {
   width: 36px;
   height: 36px;
@@ -312,14 +354,13 @@ window.addToCart = (product: any) => {
   max-width: 85%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
-
 .msg.bot::before {
-  content: "";
+  content: '';
   display: inline-block;
   width: 28px;
   height: 31px;
   border-radius: 50%;
- background-image: url('@/assets/avatar_woman.png');
+  background-image: url('@/assets/avatar_woman.png');
   background-size: cover;
   background-position: center;
   flex-shrink: 0;
@@ -344,7 +385,6 @@ window.addToCart = (product: any) => {
   gap: 0.6rem;
   padding: 0.6rem 0.8rem;
 }
-
 .chat-buttons button {
   background-color: #24452b;
   color: white;
@@ -355,7 +395,6 @@ window.addToCart = (product: any) => {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 .chat-buttons button:hover {
   background-color: #1b3623;
 }
@@ -368,7 +407,6 @@ window.addToCart = (product: any) => {
   border-top: 1px solid #ddd;
   background: #fafafa;
 }
-
 .chat-input input {
   flex: 1;
   padding: 0.5rem 0.7rem;
@@ -376,7 +414,6 @@ window.addToCart = (product: any) => {
   border: 1px solid #ccc;
   font-size: 0.95rem;
 }
-
 .chat-input button {
   background-color: #24452b;
   color: white;
@@ -386,7 +423,6 @@ window.addToCart = (product: any) => {
   cursor: pointer;
   font-size: 0.95rem;
 }
-
 .chat-input button:hover {
   background-color: #1b3623;
 }
@@ -404,11 +440,9 @@ window.addToCart = (product: any) => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease;
 }
-
 .product-item:hover {
   transform: scale(1.02);
 }
-
 .product-info {
   display: flex;
   flex-direction: column;
@@ -416,12 +450,10 @@ window.addToCart = (product: any) => {
   font-size: 1rem;
   color: #222;
 }
-
 .product-info strong {
   font-size: 1.05rem;
   color: #24452b;
 }
-
 .add-btn {
   background: #24452b;
   color: white;
@@ -432,7 +464,6 @@ window.addToCart = (product: any) => {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 .add-btn:hover {
   background: #1b3623;
 }
@@ -442,10 +473,8 @@ window.addToCart = (product: any) => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
 }
-
 </style>

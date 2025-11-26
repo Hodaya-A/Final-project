@@ -8,7 +8,6 @@
           <img :src="bannerImg" alt="Fresh Banner" class="banner" />
         </section>
 
-
         <!-- 🛒 מוצרים -->
         <section class="products-section">
           <h2>
@@ -19,23 +18,20 @@
           <div v-if="loading && products.length === 0" class="spinner">טוען מוצרים...</div>
 
           <div v-else-if="products.length > 0" class="products-grid">
-            <ProductCard
-              v-for="product in products"
-              :key="product._id"
-              :product="product"
-            />
+            <ProductCard v-for="product in products" :key="product._id" :product="product" />
           </div>
 
           <p v-else class="empty-msg">לא נמצאו מוצרים זמינים</p>
-          <div v-if="loading && products.length > 0 && !activeCategory" class="spinner">טוען עוד...</div>
+
+          <div v-if="loading && products.length > 0 && !activeCategory" class="spinner">
+            טוען עוד...
+          </div>
         </section>
-        
       </div>
     </div>
-    
   </div>
-  <NotificationBubble />
 
+  <NotificationBubble />
 </template>
 
 <script setup lang="ts">
@@ -53,12 +49,14 @@ import type { Product } from '@/stores/products'
 const cartStore = useCartStore()
 const { isCartOpen } = storeToRefs(cartStore)
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const router = useRouter()
-const route = useRoute()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const userStore = useUserStore()
 
+const route = useRoute()
 const searchTerm = ref<string>((route.query.search as string) || '')
-const activeCategory = computed(() => route.query.category as string || '')
+const activeCategory = computed(() => (route.query.category as string) || '')
 
 const products = ref<Product[]>([])
 const currentPage = ref(1)
@@ -76,14 +74,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
 })
 
-watch(() => route.query.search, () => {
-  searchTerm.value = (route.query.search as string) || ''
-  fetchProducts(true)
-})
+watch(
+  () => route.query.search,
+  () => {
+    searchTerm.value = (route.query.search as string) || ''
+    fetchProducts(true)
+  },
+)
 
-watch(() => route.query.category, () => {
-  fetchProducts(true)
-})
+watch(
+  () => route.query.category,
+  () => {
+    fetchProducts(true)
+  },
+)
 
 async function fetchProducts(reset = false) {
   if (loading.value || (!hasMore.value && !reset)) return
@@ -91,7 +95,7 @@ async function fetchProducts(reset = false) {
 
   try {
     const page = reset ? 1 : currentPage.value
-    const params: any = {
+    const params: Record<string, string | number> = {
       _page: page,
       _limit: pageSize,
     }
@@ -102,8 +106,11 @@ async function fetchProducts(reset = false) {
       hasMore.value = false
     }
 
-    const res = await api.get('/products', { params })
+    // ✅ שינוי עיקרי: במקום /products -> /inventory
+    const res = await api.get('/inventory', { params })
+
     const data = res.data
+    console.log('📦 Products loaded:', data) // 👈 הוסיפי את זה כאן
 
     if (reset) {
       products.value = data
@@ -137,7 +144,8 @@ function onScroll() {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -147,7 +155,6 @@ html, body {
 /* ✅ מיכל שנדחף ימינה כשהסל פתוח */
 .page-wrapper {
   transition: margin-right 0.3s ease;
-  transition: mar;
 }
 
 .page-wrapper.cart-open {
@@ -155,8 +162,8 @@ html, body {
 }
 
 .homepage {
- background-color: #f5f8fc;
-   padding-bottom: 2rem;
+  background-color: #f5f8fc;
+  padding-bottom: 2rem;
   display: flex;
   justify-content: flex-start;
   width: 100%;
@@ -204,16 +211,19 @@ html, body {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
 @media (max-width: 1000px) {
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
 @media (max-width: 768px) {
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 @media (max-width: 480px) {
   .products-grid {
     grid-template-columns: 1fr;
@@ -232,5 +242,18 @@ html, body {
   color: #1c75bc;
   font-weight: bold;
   padding: 2rem;
+}
+
+/* ✅ עיצוב לכפתור "ניהול מלאי" */
+.inventory-link {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.inventory-btn {
+  color: #1c75bc;
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 1.1rem;
 }
 </style>

@@ -1,18 +1,24 @@
 import { defineStore } from 'pinia'
-import api from '@/services/api' // ודאי שהנתיב נכון
+import api from '@/services/api'
 
-// הגדרת טיפוס בסיסי למוצר
+// ✅ טיפוס מוצר (מתואם עם השרת)
 export interface Product {
   _id: string
   name: string
-  priceOriginal: number
-  priceDiscounted: number
-  expiryDate: string
-  category: string
-  imageUrl: string
+  price: number
+  salePrice?: number
+  quantity?: number
+  category?: string
+  expiryDate?: string
+  imageUrl?: string
+  shopId?: string
+  updatedAt?: string
 }
 
-
+// ✅ טיפוס לתשובה מהשרת
+interface ApiResponse {
+  data: Product[]
+}
 
 export const useProductStore = defineStore('products', {
   state: () => ({
@@ -22,16 +28,21 @@ export const useProductStore = defineStore('products', {
   }),
 
   actions: {
-    async fetchProducts() {
+    async fetchProducts(params: Record<string, string | number> = {}): Promise<void> {
       this.loading = true
       this.error = null
 
       try {
-        const res = await api.get('/products')
+        const res: ApiResponse = await api.get('/api/inventory', { params })
         this.items = res.data
-      } catch (err: any) {
-        console.error('Error fetching products:', err)
-        this.error = 'Failed to load products'
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error('❌ Error fetching products:', err.message)
+          this.error = err.message
+        } else {
+          console.error('❌ Unknown error fetching products:', err)
+          this.error = 'שגיאה לא צפויה בטעינת מוצרים'
+        }
       } finally {
         this.loading = false
       }
