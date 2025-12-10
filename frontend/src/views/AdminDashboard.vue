@@ -54,9 +54,9 @@ function goToUserManagement() {
   router.push('/admin/users')
 }
 
-function generateReports() {
-  alert('📄 דוחות עוד לא מוכנים')
-}
+// function generateReports() {
+// alert('📄 דוחות עוד לא מוכנים')
+// }
 </script>
 
 <style scoped>

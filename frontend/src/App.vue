@@ -8,8 +8,6 @@
 
     <!-- 🧱 פריסת עמוד: צד שמאל סל | צד ימין תוכן -->
     <div class="layout">
-      
-
       <main class="main-content">
         <router-view />
       </main>
@@ -23,8 +21,8 @@
 
 <script setup lang="ts">
 import TopBar from '@/components/TopBar.vue'
-import Navbar from '@/components/Navbar.vue'
-import Cart from '@/components/Cart.vue'
+import Navbar from '@/components/NavbarA.vue'
+// import Cart from '@/components/CartA.vue'
 </script>
 
 <style scoped>
@@ -41,7 +39,7 @@ import Cart from '@/components/Cart.vue'
 /* 🔽 Layout ראשי */
 .layout {
   display: grid;
-  grid-template-columns:  1fr; /* סל צר + תוכן */
+  grid-template-columns: 1fr; /* סל צר + תוכן */
   flex: 1;
   min-height: calc(100vh - 160px); /* סך הכל פחות topbar + navbar + footer */
   overflow: hidden;
@@ -63,7 +61,6 @@ import Cart from '@/components/Cart.vue'
   overflow-y: auto;
   padding: 2rem;
   width: 100%;
-  
 }
 
 /* 🔻 תחתית הדף */
@@ -87,7 +84,7 @@ import Cart from '@/components/Cart.vue'
 
   .main-content {
     padding: 1rem;
-    width: 100%;  
+    width: 100%;
   }
 }
 </style>

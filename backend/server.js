@@ -7,6 +7,8 @@ require("dotenv").config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+const geocodeRoutes = require("./routes/geocode");
+app.use("/api/geocode", geocodeRoutes);
 
 // חיבור ל-MongoDB
 mongoose

@@ -1,42 +1,39 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
-import HomeView from '../views/HomeView.vue'
-import CartView from '../views/CartView.vue'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import ProductCard from '../components/ProductCard.vue'
-import AdminDashboardView from '../views/AdminDashboard.vue'
-import AddProductView from '../views/AddProductView.vue'
-import UserManagementView from '../views/UserManagementView.vue'
+import HomeView from '@/views/HomeView.vue'
+import CartView from '@/views/CartView.vue'
+import AdminDashboardView from '@/views/AdminDashboard.vue'
+import AddProductView from '@/views/AddProductView.vue'
+import UserManagementView from '@/views/UserManagementView.vue'
 import ThankYouView from '@/views/ThankYouView.vue'
-import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
-import AdminReportsView from '@/views/AdminReportsView.vue'
+import MyOrdersView from '@/views/MyOrdersView.vue'
 
 import { useUserStore } from '@/stores/user'
+import { auth } from '@/services/firebase'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/map',
     name: 'ProductMapView',
     component: () => import('@/views/ProductMapView.vue'),
   },
   {
-  path: '/my-orders',
-  name: 'my-orders',
-  component: MyOrdersView,
-  meta: { requiresAuth: true },
-},
+    path: '/my-orders',
+    name: 'my-orders',
+    component: MyOrdersView,
+    meta: { requiresAuth: true },
+  },
   {
     path: '/thank-you',
     name: 'thank-you',
     component: ThankYouView,
   },
   {
-  path: '/checkout',
-  name: 'checkout',
-  component: () => import('@/views/ThankYouView.vue')
-}
-,
+    path: '/checkout',
+    name: 'checkout',
+    component: () => import('@/views/ThankYouView.vue'),
+  },
   {
     path: '/',
     name: 'home',
@@ -49,57 +46,64 @@ const routes = [
   },
   {
     path: '/product/:id',
-    name: 'ProductDetails',
+    name: 'product-details',
     component: () => import('@/views/ProductDetailsView.vue'),
+    props: true,
   },
   {
     path: '/auth',
-    name: 'Auth',
+    name: 'auth',
     component: () => import('@/views/AuthView.vue'),
   },
-  {
-    path: '/product/:id',
-    name: 'product-details',
-    component: ProductCard,
-    props: true,
-  },
+
+  // ---- Admin ----
   {
     path: '/admin',
     name: 'admin-dashboard',
     component: AdminDashboardView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
   {
     path: '/admin/add-product',
     name: 'add-product',
     component: AddProductView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
   {
     path: '/admin/users',
     name: 'user-management',
     component: UserManagementView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
-  // {
-  // path: '/admin/reports',
-  // name: 'admin-reports',
-  // component: AdminReportsView,
-  // meta: { requiresAdmin: true },
-  // },
   {
     path: '/admin/reports',
     name: 'admin-reports',
     component: () => import('@/views/AdminReportsView.vue'),
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
 
-  // //404 אופציונלי
+  // ---- Store Manager ----
+  {
+    path: '/store',
+    name: 'store-dashboard',
+    component: () => import('@/views/StoreManagerDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
   // {
-  //   path: '/:pathMatch(.*)*',
-  //   name: 'not-found',
-  //   component: NotFoundView,
-  // }
+  // path: '/store-products',
+  // name: 'store-products',
+  // component: () => import('@/views/StoreProducts.vue'),
+  // meta: { requiresAuth: true, roles: ['storeManager'] },
+  // },
+  // {
+  // path: '/store-reports',
+  // name: 'store-reports',
+  // component: () => import('@/views/StoreReports.vue'),
+  // meta: { requiresAuth: true, roles: ['storeManager'] },
+  // },
+
+  // אופציונלי 404:
+  // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue') },
 ]
 
 const router = createRouter({
@@ -107,15 +111,49 @@ const router = createRouter({
   routes,
 })
 
-// ✅ הגנה על דפים שדורשים הרשאת admin
-router.beforeEach((to, from, next) => {
+// גארד גלובלי
+router.beforeEach(async (to, _from, next) => {
   const userStore = useUserStore()
 
-  if (to.meta.requiresAdmin && !userStore.isAdmin) {
-    next('/')
-  } else {
-    next()
+  const requiresAuth = Boolean(to.meta?.requiresAuth)
+  const requiresAdmin = Boolean(to.meta?.requiresAdmin)
+  const allowedRoles = (to.meta?.roles as string[] | undefined) || []
+
+  const isLoggedIn = !!auth.currentUser
+
+  // דרוש חיבור
+  if (requiresAuth && !isLoggedIn) {
+    return next({ path: '/auth', query: { redirect: to.fullPath } })
   }
+
+  // וודאי שה־store טעון (תפקיד, storeId וכו')
+  if (!userStore.role && isLoggedIn) {
+    // פעולה שאת הוספת ב־pinia כדי למשוך את users/{uid}
+    if (typeof userStore.hydrateFromAuth === 'function') {
+      await userStore.hydrateFromAuth()
+    }
+  }
+
+  // אדמין
+  if (requiresAdmin) {
+    const isAdmin =
+      userStore.role === 'admin' ||
+      // אם שמרת דגל isAdmin ב-store
+      // ts-ignore
+      userStore.isAdmin === true
+    if (!isAdmin) {
+      return next('/')
+    }
+  }
+
+  // תפקידי גישה ספציפיים
+  if (allowedRoles.length > 0) {
+    if (!userStore.role || !allowedRoles.includes(userStore.role)) {
+      return next('/')
+    }
+  }
+
+  next()
 })
 
 export default router

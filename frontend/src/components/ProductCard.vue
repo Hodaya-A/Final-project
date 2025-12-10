@@ -1,17 +1,16 @@
 <template>
   <div class="product-card-wrapper">
-
     <router-link :to="`/product/${product._id}`" class="product-card">
       <img :src="product.imageUrl" alt="תמונה" class="product-image" />
       <h3 class="product-name">{{ product.name }}</h3>
-      <p class="product-category"> {{ product.category }}</p>
+      <p class="product-category">{{ product.category }}</p>
       <p class="product-price">
         <span class="original">₪{{ product.priceOriginal }}</span>
         <span class="discounted">₪{{ product.priceDiscounted }}</span>
       </p>
-      <p class="product-expiry"> פג תוקף: {{ formattedDate }}</p>
+      <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
     </router-link>
-    <button class="add-btn" @click="addToCart">הוסף לסל </button>
+    <button class="add-btn" @click="addToCart">הוסף לסל</button>
   </div>
 </template>
 
@@ -38,7 +37,7 @@ function addToCart() {
   cartStore.addToCart({
     id: props.product._id,
     name: props.product.name,
-    price: props.product.priceDiscounted
+    price: props.product.priceDiscounted,
   })
 }
 </script>
@@ -49,7 +48,6 @@ function addToCart() {
   flex-direction: column;
   align-items: center;
   width: 230px;
-
 }
 
 .product-card {
@@ -61,19 +59,18 @@ function addToCart() {
   background-color: #ffffff;
   border: 1px solid #ddd;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 1rem;
   text-align: center;
   transition: transform 0.2s;
   color: inherit;
   text-decoration: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .product-image {

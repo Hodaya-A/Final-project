@@ -30,7 +30,6 @@
     </p>
   </form>
 </template>
-
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -47,10 +46,19 @@ const loading = ref(false)
 const router = useRouter()
 const userStore = useUserStore()
 
+type Role = 'user' | 'admin' | 'storeManager'
+
+interface FirestoreUserDoc {
+  email?: string
+  role?: Role
+  name?: string
+}
+
 // ✅ התחברות עם אימייל וסיסמה
 const handleEmailLogin = async () => {
   loading.value = true
   error.value = ''
+
   try {
     const result = await signInWithEmailAndPassword(auth, email.value, password.value)
     const user = result.user
@@ -58,17 +66,25 @@ const handleEmailLogin = async () => {
     const userRef = doc(db, 'users', user.uid)
     const snapshot = await getDoc(userRef)
 
-    let role: 'user' | 'admin' = 'user'
+    let role: Role = 'user'
+    let name = ''
 
     if (snapshot.exists()) {
-      const docData = snapshot.data()
-      role = docData.role === 'admin' ? 'admin' : 'user'
+      const docData = snapshot.data() as FirestoreUserDoc
+      if (docData.role === 'admin' || docData.role === 'storeManager' || docData.role === 'user') {
+        role = docData.role
+      }
+      name = docData.name ?? ''
     }
 
-    userStore.setUser(user.email || '', role)
+    userStore.setUser(user.email ?? '', role, name)
     router.push('/')
-  } catch (err: any) {
-    error.value = err.message || 'Login failed.'
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = 'Login failed.'
+    }
   } finally {
     loading.value = false
   }
@@ -77,6 +93,7 @@ const handleEmailLogin = async () => {
 // ✅ התחברות עם Google + בדיקת role
 const handleGoogleLogin = async () => {
   error.value = ''
+
   try {
     const provider = new GoogleAuthProvider()
     const result = await signInWithPopup(auth, provider)
@@ -85,22 +102,33 @@ const handleGoogleLogin = async () => {
     const userRef = doc(db, 'users', user.uid)
     const snapshot = await getDoc(userRef)
 
-    let role: 'user' | 'admin' = 'user'
+    let role: Role = 'user'
+    let name = user.displayName ?? ''
 
     if (!snapshot.exists()) {
+      // יוזר חדש – נשמור עם role ברירת מחדל 'user'
       await setDoc(userRef, {
         email: user.email,
-        role: role
+        role,
+        name,
+        uid: user.uid,
       })
     } else {
-      const docData = snapshot.data()
-      role = docData.role === 'admin' ? 'admin' : 'user'
+      const docData = snapshot.data() as FirestoreUserDoc
+      if (docData.role === 'admin' || docData.role === 'storeManager' || docData.role === 'user') {
+        role = docData.role
+      }
+      name = docData.name ?? name
     }
 
-    userStore.setUser(user.email || '', role)
+    userStore.setUser(user.email ?? '', role, name)
     router.push('/')
-  } catch (err: any) {
-    error.value = err.message || 'Google login failed.'
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = 'Google login failed.'
+    }
   }
 }
 </script>

@@ -10,10 +10,11 @@
 
     <div v-if="loading">⏳ טוען דוח...</div>
 
-    <div v-if="reportType === 'sales' && reportData" class="report-section print-area">
+    <!-- 📈 דוח מכירות -->
+    <div v-if="reportType === 'sales' && salesReport" class="report-section print-area">
       <h2>📈 דוח מכירות</h2>
-      <p><strong>סה"כ הכנסות:</strong> ₪{{ reportData.totalRevenue.toFixed(2) }}</p>
-      <p><strong>סה"כ הזמנות:</strong> {{ reportData.orderCount }}</p>
+      <p><strong>סה"כ הכנסות:</strong> ₪{{ salesReport.totalRevenue.toFixed(2) }}</p>
+      <p><strong>סה"כ הזמנות:</strong> {{ salesReport.orderCount }}</p>
 
       <table>
         <thead>
@@ -24,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(item, name) in reportData.productStats" :key="name">
+          <tr v-for="(item, name) in salesReport.productStats" :key="name">
             <td>{{ name }}</td>
             <td>{{ item.sold }}</td>
             <td>₪{{ item.total.toFixed(2) }}</td>
@@ -33,7 +34,11 @@
       </table>
     </div>
 
-    <div v-if="reportType === 'expiring' && reportData" class="report-section print-area">
+    <!-- ⏰ מוצרים קרובים לתפוגה -->
+    <div
+      v-if="reportType === 'expiring' && expiringProducts.length"
+      class="report-section print-area"
+    >
       <h2>⏰ מוצרים שקרובים לתפוגה</h2>
       <table>
         <thead>
@@ -44,7 +49,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in reportData" :key="item._id">
+          <tr v-for="item in expiringProducts" :key="item._id">
             <td>{{ item.name }}</td>
             <td>₪{{ item.priceDiscounted }}</td>
             <td>{{ formatDate(item.expiryDate) }}</td>
@@ -53,7 +58,8 @@
       </table>
     </div>
 
-    <div v-if="reportType === 'unsold' && reportData" class="report-section print-area">
+    <!-- 🚫 מוצרים שלא נמכרו -->
+    <div v-if="reportType === 'unsold' && unsoldProducts.length" class="report-section print-area">
       <h2>🚫 מוצרים שלא נמכרו כלל</h2>
       <table>
         <thead>
@@ -64,7 +70,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in reportData" :key="item._id">
+          <tr v-for="item in unsoldProducts" :key="item._id">
             <td>{{ item.name }}</td>
             <td>₪{{ item.priceDiscounted }}</td>
             <td>{{ item.category }}</td>
@@ -73,7 +79,11 @@
       </table>
     </div>
 
-    <div v-if="reportType && reportData" class="print-btn">
+    <!-- כפתור הדפסה -->
+    <div
+      v-if="reportType && (salesReport || expiringProducts.length || unsoldProducts.length)"
+      class="print-btn"
+    >
       <button @click="printReport">🖨️ הדפס דוח</button>
     </div>
   </div>
@@ -83,32 +93,63 @@
 import { ref } from 'vue'
 import { fetchSalesReport, fetchExpiringProducts, fetchUnsoldProducts } from '@/services/reports'
 
-const reportData = ref<any>(null)
-const reportType = ref<string>('')
+interface SalesReport {
+  totalRevenue: number
+  orderCount: number
+  productStats: Record<string, { sold: number; total: number }>
+}
+
+interface ExpiringProduct {
+  _id: string
+  name: string
+  priceDiscounted: number
+  expiryDate: string
+}
+
+interface UnsoldProduct {
+  _id: string
+  name: string
+  priceDiscounted: number
+  category: string
+}
+
+const reportType = ref<'' | 'sales' | 'expiring' | 'unsold'>('')
 const loading = ref(false)
 
-async function loadReport(type: string) {
+const salesReport = ref<SalesReport | null>(null)
+const expiringProducts = ref<ExpiringProduct[]>([])
+const unsoldProducts = ref<UnsoldProduct[]>([])
+
+async function loadReport(type: 'sales' | 'expiring' | 'unsold') {
   reportType.value = type
   loading.value = true
 
-  if (type === 'sales') {
-    reportData.value = await fetchSalesReport()
-  } else if (type === 'expiring') {
-    reportData.value = await fetchExpiringProducts()
-  } else if (type === 'unsold') {
-    reportData.value = await fetchUnsoldProducts()
+  try {
+    if (type === 'sales') {
+      salesReport.value = await fetchSalesReport()
+      expiringProducts.value = []
+      unsoldProducts.value = []
+    } else if (type === 'expiring') {
+      expiringProducts.value = await fetchExpiringProducts()
+      salesReport.value = null
+      unsoldProducts.value = []
+    } else if (type === 'unsold') {
+      unsoldProducts.value = await fetchUnsoldProducts()
+      salesReport.value = null
+      expiringProducts.value = []
+    }
+  } finally {
+    loading.value = false
   }
-
-  loading.value = false
 }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('he-IL')
 }
+
 function printReport() {
   const elementsToHide: HTMLElement[] = []
 
-  // הסתרת רכיבי סל ידועים
   document.querySelectorAll('.cart-badge, .cart-summary, .cart-icon, .total').forEach((el) => {
     const htmlEl = el as HTMLElement
     elementsToHide.push(htmlEl)
@@ -116,7 +157,6 @@ function printReport() {
     htmlEl.style.display = 'none'
   })
 
-  // הסתרת כל span שמכיל בדיוק ספרה אחת (0–9)
   document.querySelectorAll('span').forEach((el) => {
     const htmlEl = el as HTMLElement
     const content = htmlEl.textContent?.trim()
@@ -127,10 +167,8 @@ function printReport() {
     }
   })
 
-  // ביצוע ההדפסה
   window.print()
 
-  // החזרת כל האלמנטים למצבם המקורי
   setTimeout(() => {
     elementsToHide.forEach((el) => {
       const prev = el.getAttribute('data-prev-display')
@@ -141,6 +179,7 @@ function printReport() {
 </script>
 
 <style scoped>
+/* אותו CSS שכבר היה לך – הוא תקין */
 .admin-reports {
   max-width: 1000px;
   margin: auto;
@@ -191,6 +230,7 @@ th {
 .print-btn {
   margin-top: 2rem;
 }
+
 @media print {
   body * {
     visibility: hidden !important;
@@ -234,14 +274,12 @@ th {
     color: black !important;
   }
 
-  /* במקרה וקיים שימוש ב-::before או ::after למספרים */
   span::before,
   span::after {
     display: none !important;
     content: none !important;
   }
 
-  /* הגנה נוספת על span עם ספרות שלא חלק מהדוח */
   span:has(:not(:empty)):not(.print-area):not(.keep-print) {
     display: none !important;
   }

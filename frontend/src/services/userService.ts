@@ -3,7 +3,7 @@
  */
 export async function deleteUserByUid(uid: string): Promise<void> {
   const res = await fetch(`http://localhost:3000/api/users/${uid}`, {
-    method: 'DELETE'
+    method: 'DELETE',
   })
 
   if (!res.ok) {
@@ -15,11 +15,14 @@ export async function deleteUserByUid(uid: string): Promise<void> {
 /**
  * עדכון תפקיד משתמש (admin/user) דרך השרת
  */
-export async function updateUserRole(uid: string, role: 'admin' | 'user'): Promise<void> {
+export async function updateUserRole(
+  uid: string,
+  role: 'admin' | 'user' | 'storeManager',
+): Promise<void> {
   const res = await fetch(`http://localhost:3000/api/users/${uid}/role`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ role })
+    body: JSON.stringify({ role }),
   })
 
   if (!res.ok) {

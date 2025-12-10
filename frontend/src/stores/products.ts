@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import api from '@/services/api' // ודאי שהנתיב נכון
+import api from '@/services/api'
 
 // הגדרת טיפוס בסיסי למוצר
 export interface Product {
@@ -11,8 +11,6 @@ export interface Product {
   category: string
   imageUrl: string
 }
-
-
 
 export const useProductStore = defineStore('products', {
   state: () => ({
@@ -28,8 +26,8 @@ export const useProductStore = defineStore('products', {
 
       try {
         const res = await api.get('/products')
-        this.items = res.data
-      } catch (err: any) {
+        this.items = res.data as Product[]
+      } catch (err: unknown) {
         console.error('Error fetching products:', err)
         this.error = 'Failed to load products'
       } finally {
