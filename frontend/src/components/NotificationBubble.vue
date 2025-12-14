@@ -48,6 +48,7 @@
 
       <div v-if="currentStep === 'closed'" class="chat-buttons">
         <button @click="restartChat">התחל שיחה חדשה</button>
+        <button @click="restartChat">התחל שיחה חדשה</button>
       </div>
     </div>
   </transition>
@@ -61,38 +62,47 @@ import { useCartStore } from '@/stores/cart'
 const cartStore = useCartStore()
 const toast = useToast()
 
-// טיפוס למוצר שה-backend מחזיר ב-/nearby
-interface NearbyProduct {
+// ---- Types ----
+type Step = 'menu' | 'chooseRadius' | 'askOrder' | 'askMore' | 'flow' | 'closed'
+type Option = 'order' | 'offers' | 'agent' | 'nearby' | 'restart'
+type Sender = 'user' | 'bot'
+
+interface ChatMessage {
+  text: string
+  from: Sender
+}
+
+interface ProductFromApi {
   _id: string
   name: string
   priceDiscounted: number
-  imageUrl?: string
+  imageUrl?: string | null
 }
 
-// טיפוס למה שהכפתור "➕ הוסף לסל" מעביר לפונקציה הגלובלית
-interface AddToCartPayload {
+interface ProductForCart {
   id: string
   name: string
   price: number
-  imageUrl?: string
+  imageUrl: string
 }
 
+// expose safe global
 declare global {
   interface Window {
+    addToCart: (product: ProductForCart) => void
     addToCart: (product: AddToCartPayload) => void
   }
 }
 
 const chatOpen = ref(false)
-const messages = ref<{ text: string; from: 'user' | 'bot' }[]>([])
-const currentStep = ref('menu')
+const messages = ref<ChatMessage[]>([])
+const currentStep = ref<Step>('menu')
 const currentInput = ref('')
 const userOrder = ref('')
-const selectedRadius = ref(10000)
+const selectedRadius = ref<number>(10000)
 
 const toggleChat = () => {
   chatOpen.value = !chatOpen.value
-
   if (chatOpen.value && messages.value.length === 0) {
     messages.value.push({
       text: 'שלום, אני אביבה הנציגה הוירטואלית. במה אפשר לעזור?',
@@ -101,7 +111,7 @@ const toggleChat = () => {
   }
 }
 
-const optionLabel = (option: string) => {
+const optionLabel = (option: Option): string => {
   if (option === 'order') return 'מעקב אחרי הזמנה'
   if (option === 'offers') return 'לראות מבצעים'
   if (option === 'agent') return 'לדבר עם נציג'
@@ -110,7 +120,7 @@ const optionLabel = (option: string) => {
   return option
 }
 
-const handleOption = (option: string) => {
+const handleOption = (option: Option) => {
   messages.value.push({ text: optionLabel(option), from: 'user' })
 
   if (option === 'order') {
@@ -136,13 +146,13 @@ const handleOption = (option: string) => {
 }
 
 const handleSend = () => {
-  if (!currentInput.value.trim()) return
+  const trimmed = currentInput.value.trim()
+  if (!trimmed) return
 
-  const userMsg = currentInput.value.trim()
-  messages.value.push({ text: userMsg, from: 'user' })
+  messages.value.push({ text: trimmed, from: 'user' })
 
   if (currentStep.value === 'askOrder') {
-    userOrder.value = userMsg
+    userOrder.value = trimmed
     messages.value.push({
       text: ` מעקב אחרי הזמנה מספר ${userOrder.value}: <br>ההזמנה נשלחה והיא בדרכה אליך 🚚`,
       from: 'bot',
@@ -150,7 +160,7 @@ const handleSend = () => {
     currentStep.value = 'flow'
     askMore()
   } else if (currentStep.value === 'askMore') {
-    const norm = userMsg.trim().toLowerCase()
+    const norm = trimmed.toLowerCase()
     if (norm === 'לא') {
       messages.value.push({ text: ' השיחה נסגרה. תודה שפנית אלי!', from: 'bot' })
       currentStep.value = 'closed'
@@ -182,40 +192,36 @@ const handleRadius = (radius: number) => {
   selectedRadius.value = radius
   messages.value.push({ text: `טווח ${radius / 1000} ק״מ נבחר`, from: 'user' })
   currentStep.value = 'flow'
-
   getNearbyProducts()
 }
 
 const getNearbyProducts = () => {
   if (!navigator.geolocation) {
     messages.value.push({ text: '❌ הדפדפן לא תומך במיקום.', from: 'bot' })
-    askMore()
-    return
+    return askMore()
   }
 
   navigator.geolocation.getCurrentPosition(
-    async (position) => {
+    async (position: GeolocationPosition) => {
       const { latitude, longitude } = position.coords
 
-      // כתובת:
+      // Reverse geocoding (address)
       const resGeo = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
       )
-      const geoData = await resGeo.json()
-      const address = geoData.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
-
+      const geoData: { display_name?: string } = await resGeo.json()
+      const address = geoData.display_name ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`
       messages.value.push({ text: ` מיקום נוכחי: ${address}`, from: 'bot' })
 
       try {
         const res = await fetch(
           `http://localhost:3000/api/products/nearby?lat=${latitude}&lng=${longitude}&radius=${selectedRadius.value}`,
         )
-        const raw = await res.json()
+        const data: unknown = await res.json()
 
-        if (Array.isArray(raw) && raw.length > 0) {
-          const nearby = raw as NearbyProduct[]
-
-          const list = nearby
+        if (Array.isArray(data)) {
+          const list = data
+            .map((x) => x as ProductFromApi)
             .map(
               (p) => `
               <div class="product-item">
@@ -227,8 +233,8 @@ const getNearbyProducts = () => {
                   id: p._id,
                   name: p.name,
                   price: p.priceDiscounted,
-                  imageUrl: p.imageUrl || '',
-                })})'>➕ הוסף לסל</button>
+                  imageUrl: p.imageUrl ?? '',
+                } as ProductForCart)})'>➕ הוסף לסל</button>
               </div>
             `,
             )
@@ -253,14 +259,14 @@ const getNearbyProducts = () => {
   )
 }
 
-// פונקציה גלובלית — כדי שהכפתור ➕ יעבוד:
-window.addToCart = (product: AddToCartPayload) => {
-  console.log('🛒 הוספת מוצר לסל:', product)
+// safe global (no any)
+window.addToCart = (product: ProductForCart) => {
   cartStore.addToCart({
     id: product.id,
     name: product.name,
     price: product.price,
-    imageUrl: product.imageUrl ?? '',
+    imageUrl: product.imageUrl,
+    quantity: 1,
   })
 
   toast.success(`✅ "${product.name}" נוסף לסל!`, {
@@ -321,7 +327,6 @@ window.addToCart = (product: AddToCartPayload) => {
   align-items: center;
   gap: 0.5rem;
 }
-
 .bot-avatar {
   width: 36px;
   height: 36px;
@@ -354,7 +359,6 @@ window.addToCart = (product: AddToCartPayload) => {
   max-width: 85%;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
-
 .msg.bot::before {
   content: '';
   display: inline-block;
@@ -386,7 +390,6 @@ window.addToCart = (product: AddToCartPayload) => {
   gap: 0.6rem;
   padding: 0.6rem 0.8rem;
 }
-
 .chat-buttons button {
   background-color: #24452b;
   color: white;
@@ -397,7 +400,6 @@ window.addToCart = (product: AddToCartPayload) => {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 .chat-buttons button:hover {
   background-color: #1b3623;
 }
@@ -410,7 +412,6 @@ window.addToCart = (product: AddToCartPayload) => {
   border-top: 1px solid #ddd;
   background: #fafafa;
 }
-
 .chat-input input {
   flex: 1;
   padding: 0.5rem 0.7rem;
@@ -418,7 +419,6 @@ window.addToCart = (product: AddToCartPayload) => {
   border: 1px solid #ccc;
   font-size: 0.95rem;
 }
-
 .chat-input button {
   background-color: #24452b;
   color: white;
@@ -428,7 +428,6 @@ window.addToCart = (product: AddToCartPayload) => {
   cursor: pointer;
   font-size: 0.95rem;
 }
-
 .chat-input button:hover {
   background-color: #1b3623;
 }
@@ -446,11 +445,9 @@ window.addToCart = (product: AddToCartPayload) => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s ease;
 }
-
 .product-item:hover {
   transform: scale(1.02);
 }
-
 .product-info {
   display: flex;
   flex-direction: column;
@@ -458,12 +455,10 @@ window.addToCart = (product: AddToCartPayload) => {
   font-size: 1rem;
   color: #222;
 }
-
 .product-info strong {
   font-size: 1.05rem;
   color: #24452b;
 }
-
 .add-btn {
   background: #24452b;
   color: white;
@@ -474,7 +469,6 @@ window.addToCart = (product: AddToCartPayload) => {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-
 .add-btn:hover {
   background: #1b3623;
 }
@@ -484,7 +478,6 @@ window.addToCart = (product: AddToCartPayload) => {
 .fade-leave-active {
   transition: opacity 0.2s ease;
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;

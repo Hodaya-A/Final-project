@@ -44,14 +44,14 @@ const handleRegister = async () => {
     // שמירה במסד Firestore
     await setDoc(doc(db, 'users', uid), {
       email: email.value,
-      role: 'user', // ניתן לשנות ל־'admin' במידת הצורך
-      uid
+      role: 'user',
+      uid,
     })
 
-    console.log('✅ Registered and saved user:', uid)
     router.push('/')
-  } catch (err: any) {
-    error.value = err.message || 'Registration failed.'
+  } catch (err: unknown) {
+    const e = err as { message?: string }
+    error.value = e.message ?? 'Registration failed.'
     console.error(err)
   } finally {
     loading.value = false

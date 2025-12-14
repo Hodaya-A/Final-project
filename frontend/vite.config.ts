@@ -1,21 +1,19 @@
-import { fileURLToPath, URL } from 'node:url'
-
+// frontend/vite.config.ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
+import { fileURLToPath, URL } from 'node:url'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), vueDevTools()],
+  plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      '@': fileURLToPath(new URL('./src', import.meta.url)), // ← עכשיו "@/..." מצביע ל-src
     },
   },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3000', // כאן רץ ה-backend שלך
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },

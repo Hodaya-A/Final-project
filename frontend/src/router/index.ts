@@ -1,13 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import type { RouteRecordRaw } from 'vue-router'
 
-import HomeView from '@/views/HomeView.vue'
-import CartView from '@/views/CartView.vue'
-import AdminDashboardView from '@/views/AdminDashboard.vue'
-import AddProductView from '@/views/AddProductView.vue'
-import UserManagementView from '@/views/UserManagementView.vue'
+import HomeView from '../views/HomeView.vue'
+import CartView from '../views/CartView.vue'
+// import LoginView from '../views/LoginView.vue'
+// import RegisterView from '../views/RegisterView.vue'
+import ProductCard from '../components/ProductCard.vue'
+import AdminDashboardView from '../views/AdminDashboard.vue'
+import AddProductView from '../views/AddProductView.vue'
+import UserManagementView from '../views/UserManagementView.vue'
 import ThankYouView from '@/views/ThankYouView.vue'
-import MyOrdersView from '@/views/MyOrdersView.vue'
+import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
+// import AdminReportsView from '@/views/AdminReportsView.vue'
 
 import { useUserStore } from '@/stores/user'
 import { auth } from '@/services/firebase'
@@ -24,6 +27,13 @@ const routes: RouteRecordRaw[] = [
     component: MyOrdersView,
     meta: { requiresAuth: true },
   },
+  {
+    path: '/shop/inventory',
+    name: 'ShopInventory',
+    component: () => import('@/views/ShopInventoryView.vue'),
+    meta: { requiresAuth: false },
+  },
+
   {
     path: '/thank-you',
     name: 'thank-you',
