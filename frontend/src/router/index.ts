@@ -113,12 +113,22 @@ const router = createRouter({
   routes,
 })
 
-// ✅ הגנה על דפים שדורשים הרשאת admin
-router.beforeEach((to, from, next) => {
+// ✅ הגנה על דפים שדורשים הרשאת admin או authentication
+router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
+
+  // make sure store has initialized auth state (on page refresh)
+  try {
+    await userStore.initializeUser()
+  } catch (e) {
+    // ignore initialization errors and proceed to checks
+    console.warn('User initialization error in router guard', e)
+  }
 
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
     next('/')
+  } else if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    next('/auth')
   } else {
     next()
   }

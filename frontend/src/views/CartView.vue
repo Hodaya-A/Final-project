@@ -2,25 +2,20 @@
   <div class="cart-view">
     <h1>סל הקניות שלי</h1>
 
-    <!-- ריקון סל -->
     <div class="cart-title-row" v-if="cartStore.items.length > 0 && !confirmingClear">
       <button class="clear-btn" @click="confirmingClear = true">
         <span class="icon">🗑️</span> רוקן סל
       </button>
     </div>
 
-    <!-- אישור ריקון -->
     <div v-if="confirmingClear" class="confirm-area">
       <p>האם למחוק את כל הפריטים בסל?</p>
       <button class="confirm-clear" @click="clearCart">כן, מחיקת הסל</button>
       <button class="cancel-clear" @click="confirmingClear = false">לא, חזרה לסל שלי</button>
     </div>
 
-    <!-- תוכן הסל -->
     <div v-else>
-      <div v-if="cartStore.items.length === 0" class="empty">
-        הסל שלך ריק 🛒
-      </div>
+      <div v-if="cartStore.items.length === 0" class="empty">הסל שלך ריק 🛒</div>
 
       <div v-else>
         <table>
@@ -49,10 +44,18 @@
         </table>
 
         <div class="summary">
-          <p>סה"כ פריטים: <strong>{{ totalCount }}</strong></p>
-          <p>מחיר מוצרים: <strong>₪{{ totalPrice.toFixed(2) }}</strong></p>
-          <p>מחיר משלוח: <strong>₪{{ shippingPrice.toFixed(2) }}</strong></p>
-          <p class="total-sum">לתשלום כולל: <strong>₪{{ finalTotal.toFixed(2) }}</strong></p>
+          <p>
+            סה"כ פריטים: <strong>{{ totalCount }}</strong>
+          </p>
+          <p>
+            מחיר מוצרים: <strong>₪{{ totalPrice.toFixed(2) }}</strong>
+          </p>
+          <p>
+            מחיר משלוח: <strong>₪{{ shippingPrice.toFixed(2) }}</strong>
+          </p>
+          <p class="total-sum">
+            לתשלום כולל: <strong>₪{{ finalTotal.toFixed(2) }}</strong>
+          </p>
           <button class="checkout-btn" @click="goToThankYou">לתשלום</button>
         </div>
       </div>
@@ -68,48 +71,56 @@ import { saveOrder } from '@/services/orders'
 import { useUserStore } from '@/stores/user'
 import { sendOrderConfirmation } from '@/services/email'
 
-
-
-
-
+const router = useRouter()
+const cartStore = useCartStore()
 const userStore = useUserStore()
 
+const confirmingClear = ref(false)
+const shippingPrice = 29.9
+
 async function goToThankYou() {
+  console.log('🔵 [goToThankYou] Function called!')
+  const userId = userStore.uid
   const email = userStore.email
   const items = cartStore.items
   const total = finalTotal.value
 
+  console.log('🔵 [goToThankYou] State check:', { userId, email, itemsCount: items.length, total })
+
   try {
-    // שמירת ההזמנה במסד הנתונים
-    await saveOrder(email, items, total)
+    if (!userId) {
+      console.error('❌ [goToThankYou] No userId!')
+      throw new Error('No userId available for order')
+    }
+    if (!email) console.warn('⚠️ [goToThankYou] No email provided')
 
-    // שליחת מייל אישור
-    console.log('🔔 שולחת מייל ל:', userStore.email)
+    // ⭐ שמירה בתור משתמש לפי UID
+    console.log('📤 [goToThankYou] Calling saveOrder...')
+    const resp = await saveOrder(userId, items, total)
+    console.log('📥 [goToThankYou] saveOrder returned:', resp?.status, resp?.data)
+    const orderId = resp?.data?.order?._id || resp?.data?._id
+    console.log('💾 [goToThankYou] Order ID:', orderId)
 
-    await sendOrderConfirmation(email, total, items)
+    try {
+      if (email) {
+        console.log('📧 [goToThankYou] Sending confirmation email to:', email)
+        await sendOrderConfirmation(email, total, items, orderId)
+        console.log('✅ [goToThankYou] Email sent successfully')
+      }
+    } catch (emailErr) {
+      console.error('❌ [goToThankYou] Email error (non-fatal):', emailErr)
+      // continue even if email fails
+    }
 
-    // איפוס סל והפניה לדף תודה
-    cartStore.items = []
+    console.log('🧹 [goToThankYou] Clearing cart and redirecting...')
+    cartStore.clearCart()
     router.push('/thank-you')
-
+    console.log('✅ [goToThankYou] Redirected to thank-you')
   } catch (err) {
-    console.error('שגיאה בהזמנה:', err)
-
-    alert(
-      'אירעה שגיאה בעת ביצוע ההזמנה או שליחת המייל. \n\n' +
-      'אם את/ה משתמש/ת בחוסם פרסומות, יש להשבית אותו זמנית ולנסות שוב.'
-    )
+    console.error('❌ [goToThankYou] Error:', err)
+    alert('אירעה שגיאה בעת ביצוע ההזמנה או שליחת המייל.')
   }
 }
-
-
-
-const router = useRouter()
-const cartStore = useCartStore()
-const confirmingClear = ref(false)
-const shippingPrice = 29.9
-
-
 
 function clearCart() {
   cartStore.items = []
@@ -117,12 +128,10 @@ function clearCart() {
 }
 
 const totalPrice = computed(() =>
-  cartStore.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  cartStore.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
 )
 
-const totalCount = computed(() =>
-  cartStore.items.reduce((sum, item) => sum + item.quantity, 0)
-)
+const totalCount = computed(() => cartStore.items.reduce((sum, item) => sum + item.quantity, 0))
 
 const finalTotal = computed(() => {
   return cartStore.items.length === 0 ? 0 : totalPrice.value + shippingPrice
@@ -158,7 +167,8 @@ table {
   margin-bottom: 1rem;
 }
 
-th, td {
+th,
+td {
   padding: 0.75rem;
   text-align: center;
   border-bottom: 1px solid #ddd;

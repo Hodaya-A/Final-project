@@ -55,11 +55,9 @@ const confirmClearCart = () => {
 }
 
 const goToCheckout = () => {
-  cartStore.clearCart()          // רוקן את הסל
-  closeCart()                    // סגור את הסל הצדדי
-  router.push('/thank-you')      // נווט לעמוד אישור
+  closeCart() // סגור את הסל הצדדי
+  router.push('/cart') // נווט לדף סל המלא
 }
-
 </script>
 
 <style scoped>
@@ -79,7 +77,6 @@ const goToCheckout = () => {
 }
 /* ... שאר הסטייל נשאר זהה */
 </style>
-
 
 <style scoped>
 .cart-sidebar {
@@ -260,5 +257,4 @@ const goToCheckout = () => {
 .checkout-btn:hover {
   background-color: #1b3521;
 }
-
 </style>

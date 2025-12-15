@@ -3,11 +3,7 @@
     <!-- לוגו -->
     <div class="logo">
       <router-link to="/" class="brand">
-        <img
-          src="@/assets/icon_logo2.png"
-          alt="לוגו האתר" class="logo-img"
-        />
-
+        <img src="@/assets/icon_logo2.png" alt="לוגו האתר" class="logo-img" />
       </router-link>
     </div>
 
@@ -24,7 +20,6 @@
       <button class="search-btn" @click="submitSearch">
         <img src="@/assets/icon_search.png" alt="חיפוש" class="search-icon" />
       </button>
-
     </div>
 
     <!-- פעולות -->
@@ -45,21 +40,31 @@
       </router-link>
 
       <!-- הזמנות קודמות -->
-  <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="#24452b" viewBox="0 0 24 24" width="28" height="28">
-      <path d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"/>
-    </svg>
-  </router-link>
+      <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="#24452b"
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+        >
+          <path
+            d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"
+          />
+        </svg>
+      </router-link>
 
       <!-- תפריט משתמש -->
       <div class="user-menu-wrapper" :class="{ open: showMenu }" @click="toggleMenu">
-        <img :src="userIcon" ref="userIconRef" alt="משתמש" class="user-icon interactive-icon" title="פרופיל משתמש" />
+        <img
+          :src="userIcon"
+          ref="userIconRef"
+          alt="משתמש"
+          class="user-icon interactive-icon"
+          title="פרופיל משתמש"
+        />
         <transition name="fade-slide">
-          <div
-            v-if="showMenu"
-            class="user-dropdown"
-            :style="dropdownStyle"
-          >
+          <div v-if="showMenu" class="user-dropdown" :style="dropdownStyle">
             <template v-if="userStore.isLoggedIn">
               <p class="username">שלום, {{ userStore.email }}</p>
               <hr class="divider" />
@@ -71,7 +76,6 @@
           </div>
         </transition>
       </div>
-      
     </div>
 
     <!-- קומפוננטת CartSidebar -->
@@ -82,20 +86,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/services/firebase'
 import userIcon from '@/assets/icon_user.png'
 import CartSidebar from '@/components/CartSidebar.vue'
-import searchIcon from '@/assets/icon_search.png'
 
-
-const cartStore = useCartStore()
-const { totalItems } = storeToRefs(cartStore)
-const userStore = useUserStore()
 const router = useRouter()
+const userStore = useUserStore()
 
 const searchTerm = ref('')
 const showMenu = ref(false)
@@ -112,7 +110,7 @@ const toggleMenu = async () => {
       const rect = icon.getBoundingClientRect()
       dropdownStyle.value = {
         top: `${rect.bottom + 8}px`,
-        left: `${rect.left}px`
+        left: `${rect.left}px`,
       }
     }
   }
@@ -148,7 +146,6 @@ const submitSearch = () => {
 }
 </script>
 
-
 <style scoped>
 .header {
   max-height: 48px;
@@ -160,7 +157,6 @@ const submitSearch = () => {
   object-fit: contain;
   border-radius: 50%;
 }
-
 
 .top-bar {
   direction: rtl;
@@ -178,7 +174,7 @@ const submitSearch = () => {
   height: auto;
   min-height: 40px;
 }
-.logo{
+.logo {
   border-radius: 12px;
   color: #f5f8fc;
   background-color: #f5f8fc;
@@ -190,9 +186,7 @@ const submitSearch = () => {
   object-fit: contain;
   border-radius: 12px;
   background-color: #f5f8fc;
-
 }
-
 
 /* חיפוש */
 .search-box {
@@ -270,7 +264,7 @@ const submitSearch = () => {
   width: 28px;
   height: 28px;
   transition: transform 0.2s ease;
-  margin-left: 10px
+  margin-left: 10px;
 }
 
 /* סל קניות */
@@ -306,7 +300,9 @@ const submitSearch = () => {
   opacity: 0;
   transform: translateY(-10px);
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 .user-menu-wrapper.open .user-dropdown {
   opacity: 1;

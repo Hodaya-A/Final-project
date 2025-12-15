@@ -1,0 +1,10 @@
+🚀 שרת פועל על http://localhost:3000
+✅ מחובר ל-MongoDB
+POST /api/orders - body: {"totalPrice":11,"userId":"mHafHcprSIQoiX5asjk2GaK3WPL2","items":[{"price":5.5,"quantity":2,"productId":"p-debug","name":"???? ?????","imageUrl":""}]}
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2
+GET /api/orders/:userId - userId: mHafHcprSIQoiX5asjk2GaK3WPL2

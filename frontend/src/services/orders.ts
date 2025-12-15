@@ -1,16 +1,25 @@
-import { db } from './firebase'
-import { collection, addDoc, Timestamp } from 'firebase/firestore'
+// src/services/orders.ts
+import axios from 'axios'
 import type { CartItem } from '@/stores/cart'
 
-export async function saveOrder(email: string, items: CartItem[], total: number) {
-  const ref = collection(db, 'orders') // ✅ לא תת־collection
+export async function saveOrder(userId: string, items: CartItem[], totalPrice: number) {
+  console.log('📤 [saveOrder] Sending POST to backend with:', {
+    userId,
+    itemsCount: items.length,
+    totalPrice,
+  })
 
-  const orderData = {
-    items,
-    total,
-    userEmail: email,           // ✅ זה השדה שהשאילתה שלך דורשת
-    date: Timestamp.now()
+  try {
+    const response = await axios.post('http://localhost:3000/api/orders', {
+      userId,
+      items,
+      totalPrice,
+    })
+
+    console.log('📥 [saveOrder] Success! Response:', response.status, response.data)
+    return response
+  } catch (error: unknown) {
+    console.error('❌ [saveOrder] Error:', error)
+    throw error
   }
-
-  await addDoc(ref, orderData)
 }

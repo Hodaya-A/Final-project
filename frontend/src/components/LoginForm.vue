@@ -12,14 +12,14 @@
       <input id="password" v-model="password" type="password" required />
     </div>
 
-    <button type="submit" :disabled="loading">
+    <button type="submit" :disabled="loading || !email || !password">
       {{ loading ? 'Logging in...' : 'Log In' }}
     </button>
 
     <div class="separator">OR</div>
 
-    <button type="button" class="google-btn" @click="handleGoogleLogin">
-      Continue with Google
+    <button type="button" class="google-btn" @click="handleGoogleLogin" :disabled="loading">
+      {{ loading ? 'Logging in...' : 'Continue with Google' }}
     </button>
 
     <p v-if="error" class="error">{{ error }}</p>
@@ -65,10 +65,14 @@ const handleEmailLogin = async () => {
       role = docData.role === 'admin' ? 'admin' : 'user'
     }
 
-    userStore.setUser(user.email || '', role)
+    userStore.setUser(user.uid, user.email || '', role, user.displayName || '')
     router.push('/')
-  } catch (err: any) {
-    error.value = err.message || 'Login failed.'
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = 'Login failed.'
+    }
   } finally {
     loading.value = false
   }
@@ -76,6 +80,7 @@ const handleEmailLogin = async () => {
 
 // ✅ התחברות עם Google + בדיקת role
 const handleGoogleLogin = async () => {
+  loading.value = true
   error.value = ''
   try {
     const provider = new GoogleAuthProvider()
@@ -90,17 +95,23 @@ const handleGoogleLogin = async () => {
     if (!snapshot.exists()) {
       await setDoc(userRef, {
         email: user.email,
-        role: role
+        role: role,
       })
     } else {
       const docData = snapshot.data()
       role = docData.role === 'admin' ? 'admin' : 'user'
     }
 
-    userStore.setUser(user.email || '', role)
+    userStore.setUser(user.uid, user.email || '', role, user.displayName || '')
     router.push('/')
-  } catch (err: any) {
-    error.value = err.message || 'Google login failed.'
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      error.value = err.message
+    } else {
+      error.value = 'Google login failed.'
+    }
+  } finally {
+    loading.value = false
   }
 }
 </script>

@@ -1,5 +1,5 @@
 // backend/server.js
-import "dotenv/config"; // ← טוען את .env מיד עם עליית התהליך
+import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
@@ -9,9 +9,11 @@ import inventoryRoutes from "./routes/inventory.js";
 import importProfilesRoutes from "./routes/importProfiles.js";
 import productRoutes from "./routes/products.js";
 import reportRoutes from "./routes/reports.js";
-import imagesRoutes from "./routes/images.js"; // /api/debug/image, /api/images/backfill
+import imagesRoutes from "./routes/images.js";
+import ordersRouter from "./routes/orders.js"; // ⭐ חדש
+import emailRouter from "./routes/email.js";
 
-// (אופציונלי) אם קיים אצלך firebaseAdmin.js
+// Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
 
 const app = express();
@@ -28,7 +30,7 @@ app.use(
 
 app.use(express.json());
 
-// סטטי (לא חובה לתמונות החיצוניות, אך נשאר לשימושים אחרים)
+// סטטי
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/images", express.static("uploads/images"));
 
@@ -43,9 +45,13 @@ app.use("/api/inventory", inventoryRoutes);
 app.use("/api/importProfiles", importProfilesRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/reports", reportRoutes);
-app.use("/api", imagesRoutes); // ✅ פעם אחת בלבד
+app.use("/api", imagesRoutes);
 
-// מחיקת משתמש (אם Firebase Admin מוגדר)
+// ⭐ זה מה שהיה חסר — חיבור מודול ההזמנות
+app.use("/api/orders", ordersRouter);
+app.use("/api", emailRouter);
+
+/* ======================= Firebase Admin ======================= */
 app.delete("/api/users/:uid", async (req, res) => {
   try {
     const uid = req.params.uid;
@@ -58,7 +64,6 @@ app.delete("/api/users/:uid", async (req, res) => {
   }
 });
 
-// עדכון תפקיד משתמש
 app.put("/api/users/:uid/role", async (req, res) => {
   const uid = req.params.uid;
   const newRole = req.body.role;
@@ -74,6 +79,6 @@ app.put("/api/users/:uid/role", async (req, res) => {
   }
 });
 
-/* ======================= Start ======================= */
+/* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 שרת פועל על http://localhost:${PORT}`));

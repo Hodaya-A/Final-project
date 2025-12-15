@@ -2,21 +2,16 @@ import './assets/main.css'
 import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 
-
-
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import 'leaflet/dist/leaflet.css'
 
-
 import { auth, db } from '@/services/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { useUserStore } from '@/stores/user'
-
-
 
 const app = createApp(App)
 app.use(createPinia())
@@ -43,7 +38,7 @@ onAuthStateChanged(auth, async (user) => {
       console.error('שגיאה בטעינת תפקיד המשתמש:', err)
     }
 
-    userStore.setUser(user.email || '', role)
+    userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '')
   } else {
     userStore.logout()
   }

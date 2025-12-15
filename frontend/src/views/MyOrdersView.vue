@@ -1,12 +1,18 @@
 <template>
   <div class="orders-page">
-    <h1> ההזמנות שלי</h1>
+    <h1>ההזמנות שלי</h1>
 
-    <div v-if="loading"> טוען הזמנות...</div>
+    <div v-if="loading">טוען הזמנות...</div>
 
     <div v-else-if="orders.length === 0">לא נמצאו הזמנות קודמות.</div>
 
     <div v-else class="orders-list">
+      <div class="orders-header">
+        <div><strong>מספר הזמנות:</strong> {{ orders.length }}</div>
+        <div>
+          <button class="refresh-btn" @click="fetchOrders(userStore.uid)">רענן</button>
+        </div>
+      </div>
       <div v-for="(order, i) in orders" :key="i" class="order-card">
         <div class="order-header" @click="toggle(i)">
           <p><strong> תאריך:</strong> {{ formatDate(order.date) }}</p>
@@ -27,12 +33,11 @@
                   class="item-image"
                 />
                 <div class="item-info">
-                  <strong>{{ item.name }}</strong><br />
+                  <strong>{{ item.name }}</strong
+                  ><br />
                   {{ item.quantity }} × ₪{{ item.price }}
                   <br />
-                  <button class="mini-btn" @click.stop="addItemToCart(item)">
-                     הוסף שוב לסל
-                  </button>
+                  <button class="mini-btn" @click.stop="addItemToCart(item)">הוסף שוב לסל</button>
                 </div>
               </li>
             </ul>
@@ -44,14 +49,19 @@
                 v-for="star in 5"
                 :key="star"
                 class="star"
-                :class="{ filled: order.rating >= star }"
+                :class="{ filled: (order.rating ?? 0) >= star }"
                 @click.stop="setRating(i, star)"
-              >★</span>
+                >★</span
+              >
             </div>
-
+            <div class="order-meta">
+              <small>מס' הזמנה: {{ orderId(order) }}</small>
+              <small> | </small>
+              <small>נוצר ב־{{ formatDate(order.date) }}</small>
+            </div>
             <!-- כפתור הזמנה חוזרת -->
             <button class="repeat-btn" @click.stop="repeatOrder(order.items)">
-               בצע הזמנה חוזרת
+              בצע הזמנה חוזרת
             </button>
           </div>
         </transition>
@@ -66,49 +76,129 @@
 import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
-import { db } from '@/services/firebase'
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore'
+import axios from 'axios'
+
+interface OrderItem {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}
+
+interface Order {
+  date: Date
+  total: number
+  items: OrderItem[]
+  rating?: number
+}
+
+interface BackendOrderItem {
+  productId?: string
+  id?: string
+  name: string
+  price: number
+  quantity: number
+  imageUrl?: string
+}
+
+interface BackendOrder {
+  createdAt?: string | number | Date
+  totalPrice?: number
+  items?: BackendOrderItem[]
+}
 
 const userStore = useUserStore()
 const cartStore = useCartStore()
 
-const orders = ref<any[]>([])
+const orders = ref<Order[]>([])
 const loading = ref(true)
 const error = ref('')
 const expandedOrder = ref<number | null>(null)
 
+async function fetchOrders(uid?: string) {
+  if (!uid) {
+    orders.value = []
+    error.value = 'לא ניתן לטעון הזמנות – אין משתמש מחובר.'
+    loading.value = false
+    return
+  }
+
+  try {
+    loading.value = true
+    error.value = ''
+
+    console.log('MyOrdersView: fetching orders for uid=', uid)
+    // first try by UID
+    let resp = await axios.get(`http://localhost:3000/api/orders/${encodeURIComponent(uid)}`)
+    console.log('MyOrdersView: received response', resp.status, resp.data)
+
+    orders.value = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
+      date: o.createdAt ? new Date(o.createdAt) : new Date(),
+      total: o.totalPrice ?? 0,
+      items: (o.items || []).map((it: BackendOrderItem) => ({
+        id: it.productId || it.id || '',
+        name: it.name,
+        price: it.price,
+        quantity: it.quantity,
+        imageUrl: it.imageUrl,
+      })) as OrderItem[],
+      rating: 0,
+    }))
+
+    // fallback: if no orders found for uid, try fetching by email (some orders may have been saved using email)
+    if (orders.value.length === 0 && userStore.email) {
+      try {
+        console.log('MyOrdersView: no orders for uid, retrying with email=', userStore.email)
+        resp = await axios.get(
+          `http://localhost:3000/api/orders/${encodeURIComponent(userStore.email)}`,
+        )
+        console.log('MyOrdersView: received response for email', resp.status, resp.data)
+        const byEmail = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
+          date: o.createdAt ? new Date(o.createdAt) : new Date(),
+          total: o.totalPrice ?? 0,
+          items: (o.items || []).map((it: BackendOrderItem) => ({
+            id: it.productId || it.id || '',
+            name: it.name,
+            price: it.price,
+            quantity: it.quantity,
+            imageUrl: it.imageUrl,
+          })) as OrderItem[],
+          rating: 0,
+        }))
+
+        if (byEmail.length > 0) {
+          orders.value = byEmail
+          // clear any stale error
+          error.value = ''
+        }
+      } catch (e: unknown) {
+        console.warn('MyOrdersView: fallback by-email fetch failed', e)
+      }
+    }
+  } catch (err: unknown) {
+    console.error('Error fetching orders:', err)
+    error.value = 'אירעה שגיאה בעת טעינת ההזמנות.'
+  } finally {
+    loading.value = false
+  }
+}
+
 watch(
-  () => userStore.email,
-  async (email) => {
-    if (!email) {
-      error.value = 'לא ניתן לטעון הזמנות – אין משתמש מחובר.'
-      loading.value = false
-      return
-    }
-
-    try {
-      loading.value = true
-      error.value = ''
-
-      const q = query(
-        collection(db, 'orders'),
-        where('userEmail', '==', email),
-        orderBy('date', 'desc')
-      )
-
-      const snapshot = await getDocs(q)
-      orders.value = snapshot.docs.map(doc => ({ ...doc.data(), rating: 0 }))
-    } catch (err: any) {
-      error.value = 'אירעה שגיאה בעת טעינת ההזמנות.'
-    } finally {
-      loading.value = false
-    }
+  () => userStore.uid,
+  (uid) => {
+    // load orders when uid changes
+    fetchOrders(uid as string)
   },
-  { immediate: true }
+  { immediate: true },
 )
 
-function formatDate(ts: any) {
-  return ts?.toDate?.().toLocaleString('he-IL') || ''
+function formatDate(dt: Date): string {
+  try {
+    return dt?.toLocaleString('he-IL') || ''
+  } catch {
+    return ''
+  }
 }
 
 function toggle(index: number) {
@@ -120,26 +210,38 @@ function setRating(orderIndex: number, rating: number) {
   // ניתן להוסיף כאן שליחה ל־Firestore אם רוצים לשמור
 }
 
-function repeatOrder(items: any[]) {
+function repeatOrder(items: OrderItem[]) {
   for (const item of items) {
     cartStore.addToCart({
       id: item.id,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
-      imageUrl: item.imageUrl
+      imageUrl: item.imageUrl,
     })
   }
 }
 
-function addItemToCart(item: any) {
+function addItemToCart(item: OrderItem) {
   cartStore.addToCart({
     id: item.id,
     name: item.name,
     price: item.price,
     quantity: 1,
-    imageUrl: item.imageUrl
+    imageUrl: item.imageUrl,
   })
+}
+
+function orderId(order: Order) {
+  // backend returns _id in raw data but we mapped only specific fields;
+  // try to read id from any available place if present
+  // This function is defensive: if no id available, return empty string
+  // when using BackendOrder we could expose raw _id; for now return first 8 chars of date/time
+  try {
+    return order.date ? order.date.getTime().toString().slice(-8) : ''
+  } catch {
+    return ''
+  }
 }
 </script>
 
@@ -260,10 +362,12 @@ function addItemToCart(item: any) {
   margin-top: 1rem;
   text-align: center;
 }
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: all 0.3s ease;
 }
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }

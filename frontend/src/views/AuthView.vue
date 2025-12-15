@@ -20,7 +20,7 @@
         </div>
 
         <button type="submit" :disabled="loading">
-          {{ loading ? '⏳ טוען...' : (isRegistering ? 'הירשם' : 'התחבר') }}
+          {{ loading ? '⏳ טוען...' : isRegistering ? 'הירשם' : 'התחבר' }}
         </button>
       </form>
 
@@ -45,7 +45,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
 } from 'firebase/auth'
 import { auth, db } from '@/services/firebase'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
@@ -80,7 +80,7 @@ async function handleSubmit() {
         email: email.value,
         name: name.value,
         uid,
-        role: 'user'
+        role: 'user',
       })
     } else {
       const login = await signInWithEmailAndPassword(auth, email.value, password.value)
@@ -92,7 +92,7 @@ async function handleSubmit() {
 
     if (userSnap.exists()) {
       const data = userSnap.data()
-      userStore.setUser(data.email, data.role, data.name)
+      userStore.setUser(uid, data.email, data.role, data.name)
     }
 
     router.push('/')
@@ -121,14 +121,14 @@ async function handleGoogle() {
         email: user.email,
         name: user.displayName,
         uid: user.uid,
-        role: 'user'
+        role: 'user',
       })
     }
 
     const finalSnap = await getDoc(userRef)
     if (finalSnap.exists()) {
       const data = finalSnap.data()
-      userStore.setUser(data.email, data.role)
+      userStore.setUser(user.uid, data.email, data.role, data.name || user.displayName || '')
     }
 
     router.push('/')
@@ -157,7 +157,7 @@ async function handleGoogle() {
   border: 1px solid #ccc;
   border-radius: 12px;
   background-color: white;
-  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 h2 {
@@ -196,7 +196,7 @@ button {
 
 .google-button {
   margin-top: 1rem;
-  background-color: #4285F4;
+  background-color: #4285f4;
 }
 
 button:disabled {
