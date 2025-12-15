@@ -48,6 +48,7 @@
 
       <div v-if="currentStep === 'closed'" class="chat-buttons">
         <button @click="restartChat">התחל שיחה חדשה</button>
+        <button @click="restartChat">התחל שיחה חדשה</button>
       </div>
     </div>
   </transition>
@@ -89,6 +90,7 @@ interface ProductForCart {
 declare global {
   interface Window {
     addToCart: (product: ProductForCart) => void
+    addToCart: (product: AddToCartPayload) => void
   }
 }
 
@@ -102,7 +104,10 @@ const selectedRadius = ref<number>(10000)
 const toggleChat = () => {
   chatOpen.value = !chatOpen.value
   if (chatOpen.value && messages.value.length === 0) {
-    messages.value.push({ text: 'שלום, אני אביבה הנציגה הוירטואלית. במה אפשר לעזור?', from: 'bot' })
+    messages.value.push({
+      text: 'שלום, אני אביבה הנציגה הוירטואלית. במה אפשר לעזור?',
+      from: 'bot',
+    })
   }
 }
 
@@ -241,7 +246,7 @@ const getNearbyProducts = () => {
         }
 
         askMore()
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('❌ שגיאה:', err)
         messages.value.push({ text: '❌ שגיאה בעת טעינת מוצרים.', from: 'bot' })
         askMore()

@@ -8,45 +8,41 @@
         <span class="badge">{{ totalItems }}</span>
       </div>
     </div>
-<div class="cart-title-row">
-  <button class="clear-btn" @click="confirmingClear = true">
-    <span class="icon">🗑️</span> רוקן סל
-  </button>
-</div>
-
-
+    <div class="cart-title-row">
+      <button class="clear-btn" @click="confirmingClear = true">
+        <span class="icon">🗑️</span> רוקן סל
+      </button>
+    </div>
 
     <div class="cart-items">
-  <!-- אם במצב אישור -->
-  <div v-if="confirmingClear" class="confirm-area">
-    <p>האם למחוק את כל הפריטים בסל?</p>
-    <button class="confirm-clear" @click="clearCart">כן, מחיקת הסל</button>
-    <button class="cancel-clear" @click="confirmingClear = false">לא, חזרה לסל שלי</button>
-  </div>
+      <!-- אם במצב אישור -->
+      <div v-if="confirmingClear" class="confirm-area">
+        <p>האם למחוק את כל הפריטים בסל?</p>
+        <button class="confirm-clear" @click="clearCart">כן, מחיקת הסל</button>
+        <button class="cancel-clear" @click="confirmingClear = false">לא, חזרה לסל שלי</button>
+      </div>
 
-  <!-- אחרת, מציגים מוצרים -->
-  <template v-else>
-    <div v-for="item in items" :key="item.id" class="item">
-      <img :src="item.imageUrl" alt="product" class="item-img" />
-      <div class="item-info">
-        <div class="top">
-          <div class="name">{{ item.name }}</div>
-          <div class="badge-discount">בהנחה</div>
-        </div>
-        <div class="bottom">
-          <div class="price">₪ {{ item.price.toFixed(2) }}</div>
-          <div class="quantity">{{ item.quantity }} יח'</div>
+      <!-- אחרת, מציגים מוצרים -->
+      <div v-else>
+        <div v-for="item in items" :key="item.id" class="item">
+          <img :src="item.imageUrl" alt="product" class="item-img" />
+          <div class="item-info">
+            <div class="top">
+              <div class="name">{{ item.name }}</div>
+              <div class="badge-discount">בהנחה</div>
+            </div>
+            <div class="bottom">
+              <div class="price">₪ {{ item.price.toFixed(2) }}</div>
+              <div class="quantity">{{ item.quantity }} יח'</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </template>
-</div>
 
     <!-- סיכום תחתון -->
     <div class="cart-footer">
-      <div class="shipping">
-        מחיר משלוח <span>₪ 29.90</span>
-      </div>
+      <div class="shipping">מחיר משלוח <span>₪ 29.90</span></div>
       <div class="total-footer">
         ₪ {{ (totalPrice + 29.9).toFixed(2) }}
         <button class="checkout-btn">לתשלום</button>
@@ -282,10 +278,7 @@ const { items, totalItems, totalPrice } = storeToRefs(cartStore)
   text-decoration: none; /* לוודא שגם ב-hover אין קו */
 }
 
-
 .clear-btn .icon {
   font-size: 1rem;
 }
-
-
 </style>

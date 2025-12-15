@@ -9,13 +9,13 @@ export const useUserStore = defineStore('user', () => {
   const uid = ref('')
   const email = ref('')
   const name = ref('')
-  const role = ref<'user' | 'admin' | ''>('')
+  const role = ref<'user' | 'admin' | 'storeManager' | ''>('')
   const initialized = ref(false)
 
   function setUser(
     userUid: string,
     userEmail: string,
-    userRole: 'user' | 'admin',
+    userRole: 'user' | 'admin' | 'storeManager',
     userName: string = '',
   ) {
     uid.value = userUid
@@ -40,10 +40,14 @@ export const useUserStore = defineStore('user', () => {
           const userRef = doc(db, 'users', user.uid)
           const snapshot = await getDoc(userRef)
 
-          let role: 'user' | 'admin' = 'user'
+          let role: 'user' | 'admin' | 'storeManager' = 'user'
           if (snapshot.exists()) {
             const docData = snapshot.data()
-            role = docData.role === 'admin' ? 'admin' : 'user'
+            if (docData.role === 'admin' || docData.role === 'storeManager') {
+              role = docData.role
+            } else {
+              role = 'user'
+            }
           }
 
           setUser(user.uid, user.email || '', role, user.displayName || '')
@@ -59,6 +63,8 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!uid.value)
   const isAdmin = computed(() => role.value === 'admin')
+  const isStoreManager = computed(() => role.value === 'storeManager')
+  const isUser = computed(() => role.value === 'user')
 
   return {
     uid,
@@ -68,6 +74,8 @@ export const useUserStore = defineStore('user', () => {
     initialized,
     isLoggedIn,
     isAdmin,
+    isStoreManager,
+    isUser,
     setUser,
     logout,
     initializeUser,

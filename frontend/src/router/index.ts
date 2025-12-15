@@ -13,8 +13,9 @@ import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
 // import AdminReportsView from '@/views/AdminReportsView.vue'
 
 import { useUserStore } from '@/stores/user'
+import { auth } from '@/services/firebase'
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: '/map',
     name: 'ProductMapView',
@@ -55,57 +56,64 @@ const routes = [
   },
   {
     path: '/product/:id',
-    name: 'ProductDetails',
+    name: 'product-details',
     component: () => import('@/views/ProductDetailsView.vue'),
+    props: true,
   },
   {
     path: '/auth',
-    name: 'Auth',
+    name: 'auth',
     component: () => import('@/views/AuthView.vue'),
   },
-  {
-    path: '/product/:id',
-    name: 'product-details',
-    component: ProductCard,
-    props: true,
-  },
+
+  // ---- Admin ----
   {
     path: '/admin',
     name: 'admin-dashboard',
     component: AdminDashboardView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
   {
     path: '/admin/add-product',
     name: 'add-product',
     component: AddProductView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
   {
     path: '/admin/users',
     name: 'user-management',
     component: UserManagementView,
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
-  // {
-  // path: '/admin/reports',
-  // name: 'admin-reports',
-  // component: AdminReportsView,
-  // meta: { requiresAdmin: true },
-  // },
   {
     path: '/admin/reports',
     name: 'admin-reports',
     component: () => import('@/views/AdminReportsView.vue'),
-    meta: { requiresAdmin: true },
+    meta: { requiresAdmin: true, requiresAuth: true },
   },
 
-  // //404 אופציונלי
+  // ---- Store Manager ----
+  {
+    path: '/store',
+    name: 'store-dashboard',
+    component: () => import('@/views/StoreManagerDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
   // {
-  //   path: '/:pathMatch(.*)*',
-  //   name: 'not-found',
-  //   component: NotFoundView,
-  // }
+  // path: '/store-products',
+  // name: 'store-products',
+  // component: () => import('@/views/StoreProducts.vue'),
+  // meta: { requiresAuth: true, roles: ['storeManager'] },
+  // },
+  // {
+  // path: '/store-reports',
+  // name: 'store-reports',
+  // component: () => import('@/views/StoreReports.vue'),
+  // meta: { requiresAuth: true, roles: ['storeManager'] },
+  // },
+
+  // אופציונלי 404:
+  // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue') },
 ]
 
 const router = createRouter({

@@ -4,16 +4,25 @@
     <div class="category-wrapper">
       <div class="category-bar">
         <div
-          class="category-item"
-          :class="getCategoryClass(cat.name)"
           v-for="cat in categories"
           :key="cat.name"
+          :class="['category-item', getCategoryClass(cat.name)]"
           @click="toggleCategory(cat.name)"
         >
           <img :src="`/src/assets/${cat.icon}`" alt="" class="cat-icon-img" />
           <div class="label">{{ cat.name }}</div>
         </div>
       </div>
+    </div>
+    <!-- ✅ קיצור דרך למנהל חנות -->
+    <div
+      class="store-shortcut"
+      v-if="userStore.role === 'storeManager'"
+      @click="goToStore"
+      title="לוח מנהל החנות"
+    >
+      <img src="@/assets/icon_store.png" alt="החנות שלי" class="store-icon" />
+      <div class="store-text">החנות שלי</div>
     </div>
 
     <!-- ✅ סל קניות -->
@@ -28,14 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
+import { useRouter, useRoute } from 'vue-router'
+import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import CartSidebar from '@/components/CartSidebar.vue'
 
 const router = useRouter()
+const route = useRoute()
+
 const cartStore = useCartStore()
 const { isCartOpen, totalItems, totalPrice } = storeToRefs(cartStore)
+
+const userStore = useUserStore()
 
 const categories = [
   { name: 'לחם ומאפים טריים', icon: 'icon_bread.png' },
@@ -49,15 +64,21 @@ const categories = [
   { name: 'אורגני ובריאות', icon: 'icon_organi.png' },
   { name: 'משקאות', icon: 'icon_drink.png' },
   { name: 'בשר ודגים', icon: 'icon_fish.png' },
-  { name: 'חלב, ביצים וסלטים', icon: 'icon_milk.png' }
+  { name: 'חלב, ביצים וסלטים', icon: 'icon_milk.png' },
 ]
+
+const activeCategory = computed(() => (route.query.category as string) || '')
+
+function getCategoryClass(name: string) {
+  return activeCategory.value === name ? 'active-category' : ''
+}
 
 function toggleCategory(name: string) {
   router.push({ name: 'home', query: { category: name } })
 }
 
-function getCategoryClass(name: string) {
-  return ''
+function goToStore() {
+  router.push('/store')
 }
 
 function toggleCart() {
@@ -100,13 +121,9 @@ function closeCart() {
   overflow-x: auto;
   height: 100px;
   width: 100%;
-  /* width: 900px; */
   scrollbar-width: none;
   background-color: #f5f8fc;
 }
-/* .category-bar::-webkit-scrollbar {
-  display: none;
-} */
 
 /* כרטיס קטגוריה */
 .category-item {
@@ -128,6 +145,12 @@ function closeCart() {
   transform: scale(1.05);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 }
+.active-category {
+  background-color: #e8f5e9;
+  box-shadow: 0 3px 10px rgba(39, 174, 96, 0.25);
+  transform: scale(1.04);
+}
+
 .cat-icon-img {
   width: 32px;
   height: 32px;
@@ -141,6 +164,39 @@ function closeCart() {
   text-align: center;
   line-height: 1.1;
   white-space: normal;
+}
+
+/* קיצור דרך למנהל חנות */
+.store-shortcut {
+  width: 140px;
+  height: 100px;
+  background-color: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  margin-left: 5px;
+}
+.store-shortcut:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+.store-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+.store-text {
+  font-weight: 700;
+  color: #1d4320;
+  white-space: nowrap;
 }
 
 /* עיצוב לסל */

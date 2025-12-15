@@ -1,10 +1,6 @@
 <template>
   <div class="products-grid">
-    <div
-      v-for="product in products"
-      :key="product._id"
-      class="product-card"
-    >
+    <div v-for="product in products" :key="product._id" class="product-card">
       <img :src="product.imageUrl" alt="תמונה של המוצר" class="product-img" />
       <h3>{{ product.name }}</h3>
       <p>₪{{ product.price }}</p>
@@ -18,24 +14,33 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useCartStore } from '@/stores/cart'
 
+// 🟢 הגדרת טיפוס למוצר
+interface Product {
+  _id: string
+  name: string
+  price: number
+  imageUrl: string
+}
+
 const cartStore = useCartStore()
-const products = ref<any[]>([])
+const products = ref<Product[]>([]) // מערך מוצרים עם טיפוס ברור
 
 onMounted(async () => {
   try {
-    const response = await axios.get('http://localhost:3000/api/products')
+    const response = await axios.get<Product[]>('http://localhost:3000/api/products')
     products.value = response.data
   } catch (error) {
     console.error('❌ שגיאה בטעינת מוצרים:', error)
   }
 })
 
-function add(product: { _id: string; name: string; price: number; imageUrl: string }) {
+// 🟢 פונקציה עם טיפוס מוצר
+function add(product: Product) {
   cartStore.addToCart({
     id: product._id,
     name: product.name,
     price: product.price,
-    imageUrl: product.imageUrl
+    imageUrl: product.imageUrl,
   })
 }
 </script>
@@ -52,7 +57,7 @@ function add(product: { _id: string; name: string; price: number; imageUrl: stri
   padding: 1rem;
   border-radius: 8px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
 }
 

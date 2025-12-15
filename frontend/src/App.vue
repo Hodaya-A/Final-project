@@ -23,7 +23,6 @@
 import { onMounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import Navbar from '@/components/Navbar.vue'
-import Cart from '@/components/Cart.vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()

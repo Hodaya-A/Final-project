@@ -29,6 +29,8 @@ app.use(
 );
 
 app.use(express.json());
+const geocodeRoutes = require("./routes/geocode");
+app.use("/api/geocode", geocodeRoutes);
 
 // סטטי
 app.use("/uploads", express.static("uploads"));

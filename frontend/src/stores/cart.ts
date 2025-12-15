@@ -8,35 +8,48 @@ export interface CartItem {
   imageUrl?: string
 }
 
+interface CartState {
+  items: CartItem[]
+  isCartOpen: boolean
+}
+
 export const useCartStore = defineStore('cart', {
-  state: () => ({
-    items: [] as CartItem[],
-    isCartOpen: false
+  state: (): CartState => ({
+    items: [],
+    isCartOpen: false,
   }),
 
   getters: {
-    totalItems: (state) =>
-      state.items.reduce((sum, item) => sum + item.quantity, 0),
+    totalItems: (state): number => state.items.reduce((sum, item) => sum + item.quantity, 0),
 
-    totalPrice: (state) =>
-      state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    totalPrice: (state): number =>
+      state.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
   },
 
   actions: {
-    addToCart(product: {
+    // בקשה להוספה לסל — בלי quantity חובה
+    addToCart(payload: {
       id: string
       name: string
       price: number
       imageUrl?: string
       quantity?: number
     }) {
-      const existing = this.items.find((item) => item.id === product.id)
-      const qty = product.quantity ?? 1
+      const qty = payload.quantity ?? 1
+      const image = payload.imageUrl ?? ''
+
+      const existing = this.items.find((item) => item.id === payload.id)
 
       if (existing) {
         existing.quantity += qty
       } else {
-        this.items.push({ ...product, quantity: qty })
+        this.items.push({
+          id: payload.id,
+          name: payload.name,
+          price: payload.price,
+          imageUrl: image,
+          quantity: qty,
+        })
       }
     },
 
@@ -51,11 +64,8 @@ export const useCartStore = defineStore('cart', {
 
     decreaseQuantity(id: string) {
       const item = this.items.find((item) => item.id === id)
-      if (item && item.quantity > 1) {
-        item.quantity--
-      } else {
-        this.removeFromCart(id)
-      }
+      if (item && item.quantity > 1) item.quantity--
+      else this.removeFromCart(id)
     },
 
     clearCart() {
@@ -72,6 +82,6 @@ export const useCartStore = defineStore('cart', {
 
     closeCart() {
       this.isCartOpen = false
-    }
-  }
+    },
+  },
 })
