@@ -323,6 +323,14 @@ const handleLogin = async () => {
     if (userSnap.exists()) {
       const data = userSnap.data()
       userStore.setUser(uid, data.email, data.role, data.name)
+      // load user's saved cart after login
+      try {
+        const m = await import('@/stores/cart')
+        const cart = m.useCartStore()
+        await cart.loadFromServer(uid)
+      } catch {
+        /* ignore */
+      }
     }
 
     router.push('/')
@@ -361,6 +369,14 @@ const handleGoogle = async () => {
     if (finalSnap.exists()) {
       const data = finalSnap.data()
       userStore.setUser(user.uid, data.email, data.role, data.name || user.displayName || '')
+      // load user's saved cart after login
+      try {
+        const m = await import('@/stores/cart')
+        const cart = m.useCartStore()
+        await cart.loadFromServer(user.uid)
+      } catch {
+        /* ignore */
+      }
     }
 
     router.push('/')
