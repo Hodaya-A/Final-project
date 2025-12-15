@@ -12,6 +12,7 @@ import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
 import emailRouter from "./routes/email.js";
+import geocodeRoutes from "./routes/geocode.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
@@ -29,8 +30,6 @@ app.use(
 );
 
 app.use(express.json());
-const geocodeRoutes = require("./routes/geocode");
-app.use("/api/geocode", geocodeRoutes);
 
 // סטטי
 app.use("/uploads", express.static("uploads"));
@@ -52,6 +51,7 @@ app.use("/api", imagesRoutes);
 // ⭐ זה מה שהיה חסר — חיבור מודול ההזמנות
 app.use("/api/orders", ordersRouter);
 app.use("/api", emailRouter);
+app.use("/api/geocode", geocodeRoutes);
 
 /* ======================= Firebase Admin ======================= */
 app.delete("/api/users/:uid", async (req, res) => {

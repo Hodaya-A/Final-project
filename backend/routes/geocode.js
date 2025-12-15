@@ -1,7 +1,11 @@
-const express = require("express");
-const fetch = require("node-fetch"); // אם את על Node 18+ אפשר להסיר
-const fs = require("fs");
-const path = require("path");
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
 // בראש הקובץ (אחרי require):
 const cache = new Map(); // key -> { data, expires }
@@ -281,4 +285,4 @@ router.get("/cities", (req, res) => {
   res.json(citiesList);
 });
 
-module.exports = router;
+export default router;

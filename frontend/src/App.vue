@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import TopBar from '@/components/TopBar.vue'
-import Navbar from '@/components/Navbar.vue'
+import Navbar from '@/components/NavbarA.vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
