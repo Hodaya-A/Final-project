@@ -37,9 +37,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   background-color: #fff;
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   overflow-x: hidden;
 }
 
@@ -64,19 +65,23 @@ onMounted(() => {
 
 /* 🧺 תוכן ראשי */
 .main-content {
-  background-color: #f8f9fa;
+  background: var(--bg-secondary);
   overflow-y: auto;
-  padding: 2rem;
+  padding: 1.5rem;
   width: 100%;
+  min-height: calc(100vh - 250px);
 }
 
 /* 🔻 תחתית הדף */
 .footer {
-  background-color: #f5f5f5;
-  padding: 1rem;
+  background: var(--gradient-primary);
+  padding: 2rem;
   text-align: center;
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 0.95rem;
+  color: white;
+  font-weight: 600;
+  font-weight: 500;
+  box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.05);
 }
 
 /* 📱 רספונסיביות */

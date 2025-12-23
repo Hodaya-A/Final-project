@@ -1,21 +1,19 @@
 <template>
   <div class="admin-dashboard" v-if="isAdmin">
-    <h1>📊 עמוד ניהול</h1>
+    <h1>עמוד ניהול</h1>
 
     <div class="actions">
-      <button @click="addProduct">➕ הוסף מוצר</button>
-      <button @click="deleteExpiredProducts">🗑 מחק מוצרים שפג תוקפם</button>
-      <button @click="deleteAllProducts">🗑️ מחק את כל המוצרים</button>
-      <button @click="goToUserManagement">👥 ניהול משתמשים</button>
-      <button @click="goToReports">📄 הנפקת דוחות</button>
-
-      <!-- ✅ כפתור חדש לניהול מלאי -->
-      <button @click="goToInventory">🧾 ניהול מלאי</button>
+      <button @click="addProduct">הוסף מוצר</button>
+      <button @click="deleteExpiredProducts">מחק מוצרים שפג תוקפם</button>
+      <button @click="deleteAllProducts">מחק את כל המוצרים</button>
+      <button @click="goToUserManagement">ניהול משתמשים</button>
+      <button @click="goToReports">הנפקת דוחות</button>
+      <button @click="goToInventory">ניהול מלאי</button>
     </div>
   </div>
 
   <div v-else class="unauthorized">
-    <h2>⛔ אין לך הרשאה לגשת לעמוד זה</h2>
+    <h2>אין לך הרשאה לגשת לעמוד זה</h2>
     <router-link to="/">חזרה לדף הבית</router-link>
   </div>
 </template>
@@ -69,10 +67,18 @@ function goToInventory() {
   max-width: 800px;
   margin: auto;
   padding: 2rem;
-  background: #f9f9f9;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   text-align: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.admin-dashboard h1 {
+  color: var(--primary);
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-weight: bold;
 }
 
 .actions {
@@ -83,24 +89,43 @@ function goToInventory() {
 }
 
 button {
-  padding: 1rem;
+  padding: 1.2rem;
   font-size: 1.1rem;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
-  background-color: #2c3e50;
+  background: var(--gradient-primary);
   color: white;
-  transition: background-color 0.2s;
+  transition: all 0.3s;
+  font-family: 'Courier New', Courier, monospace;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
 }
 
 button:hover {
-  background-color: #34495e;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
 }
 
 .unauthorized {
   text-align: center;
   padding: 4rem;
-  color: red;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.unauthorized h2 {
+  color: #e53e3e;
+  margin-bottom: 1.5rem;
+}
+
+.unauthorized a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.unauthorized a:hover {
+  text-decoration: underline;
 }
 </style>

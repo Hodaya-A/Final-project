@@ -27,7 +27,18 @@
 
     <!-- ✅ סל קניות -->
     <div class="cart-summary" @click="toggleCart">
-      <img src="@/assets/icon_cart.png" alt="סל קניות" class="cart-icon" />
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="currentColor"
+        viewBox="0 0 24 24"
+        width="40"
+        height="40"
+        class="cart-icon"
+      >
+        <path
+          d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"
+        />
+      </svg>
       <div class="total">₪{{ totalPrice.toFixed(2) }}</div>
       <span class="cart-badge">{{ totalItems }}</span>
     </div>
@@ -93,36 +104,44 @@ function closeCart() {
 <style scoped>
 .navbar {
   direction: rtl;
-  background-color: #f5f8fc;
-  height: 120px;
-  padding: 0 16px;
+  background: var(--bg-secondary);
+  height: 110px;
+  padding: 0 2rem;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 1.5rem;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 70px;
+  z-index: 49;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* עטיפת הקטגוריות */
 .category-wrapper {
-  background-color: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: white;
+  box-shadow: var(--shadow-sm);
   border-radius: 12px;
-  padding: 0 10px;
+  padding: 0 12px;
   margin-left: 10px;
   margin-inline-end: auto;
   flex-grow: 1;
   overflow: hidden;
-  height: 100px;
-  width: 80px;
+  height: 90px;
+  border: 1px solid var(--border);
 }
 
 .category-bar {
   display: flex;
   align-items: center;
-  overflow-x: auto;
-  height: 100px;
+  overflow-x: hidden;
+  height: 90px;
   width: 100%;
-  scrollbar-width: none;
-  background-color: #f5f8fc;
+  gap: 0.25rem;
+  justify-content: space-between;
 }
 
 /* כרטיס קטגוריה */
@@ -132,23 +151,35 @@ function closeCart() {
   justify-content: center;
   align-items: center;
   width: 70px;
-  height: 100px;
-  background-color: white;
-  padding: 0.5rem 0.25rem;
-  flex-shrink: 0;
-  border: none;
-  transition: all 0.3s ease;
+  height: 80px;
+  background: transparent;
+  padding: 0.4rem;
+  flex-shrink: 1;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
+
 .category-item:hover {
-  background-color: #d8dbd8;
-  transform: scale(1.05);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  box-shadow: var(--shadow);
 }
+
 .active-category {
-  background-color: #e8f5e9;
-  box-shadow: 0 3px 10px rgba(39, 174, 96, 0.25);
-  transform: scale(1.04);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.active-category .label {
+  color: white;
+  font-weight: 600;
+}
+
+.active-category .cat-icon-img {
+  filter: brightness(0) invert(1);
 }
 
 .cat-icon-img {
@@ -156,11 +187,19 @@ function closeCart() {
   height: 32px;
   margin-bottom: 6px;
   object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(223deg)
+    brightness(97%) contrast(91%);
+  transition: filter 0.2s ease;
+}
+
+.category-item:hover .cat-icon-img:not(.active-category .cat-icon-img) {
+  filter: brightness(0) saturate(100%) invert(32%) sepia(93%) saturate(2352%) hue-rotate(223deg)
+    brightness(107%) contrast(101%);
 }
 .label {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #000;
+  color: #6b7280;
   text-align: center;
   line-height: 1.1;
   white-space: normal;
@@ -192,6 +231,14 @@ function closeCart() {
   width: 34px;
   height: 34px;
   object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(223deg)
+    brightness(97%) contrast(91%);
+  transition: filter 0.2s ease;
+}
+
+.store-shortcut:hover .store-icon {
+  filter: brightness(0) saturate(100%) invert(32%) sepia(93%) saturate(2352%) hue-rotate(223deg)
+    brightness(107%) contrast(101%);
 }
 .store-text {
   font-weight: 700;
@@ -201,38 +248,55 @@ function closeCart() {
 
 /* עיצוב לסל */
 .cart-summary {
-  width: 290px;
-  height: 100px;
-  background-color: white;
-  border-radius: 16px;
+  width: 240px;
+  height: 90px;
+  background: white;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   position: relative;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   margin-left: 5px;
   margin-right: 20px;
+  border: 2px solid var(--border);
 }
+
 .cart-summary:hover {
-  transform: scale(1.03);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
+
 .cart-summary .cart-icon {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
+  color: var(--primary);
+  fill: currentColor;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
+
+.cart-summary:hover .cart-icon {
+  color: var(--primary-dark);
+  transform: scale(1.05);
+}
+
 .cart-summary .total {
-  font-size: 1.6rem;
-  font-weight: bold;
-  color: #1d4320;
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 .cart-summary .cart-badge {
   position: absolute;
-  top: 16px;
-  right: 60px;
+  top: 8px;
+  right: 75px;
   background-color: red;
   color: white;
   border-radius: 50%;
@@ -240,5 +304,6 @@ function closeCart() {
   font-size: 0.85rem;
   font-weight: bold;
   z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 </style>

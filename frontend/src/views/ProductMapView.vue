@@ -1,21 +1,5 @@
 <template>
   <div class="product-map-container">
-    <aside class="category-sidebar">
-      <h3>קטגוריות</h3>
-      <div v-for="(color, category) in categoryColors" :key="category" class="category-item">
-        <input
-          type="checkbox"
-          :id="category"
-          :value="category"
-          v-model="selectedCategories"
-        />
-        <label :for="category">
-          <span class="circle" :style="{ backgroundColor: color }"></span>
-          {{ category }}
-        </label>
-      </div>
-    </aside>
-
     <div class="product-map-view">
       <h1>מוצרים בסביבה שלך</h1>
 
@@ -32,10 +16,10 @@
           placeholder=" הקלד כתובת למשל: תל אביב"
           class="location-box"
         />
-        <button @click="geocodeLocation" class="location-btn"> מצא כתובת</button>
+        <button @click="geocodeLocation" class="location-btn">מצא כתובת</button>
       </div>
 
-      <button @click="loadProducts" class="refresh-btn"> רענן מוצרים</button>
+      <button @click="loadProducts" class="refresh-btn">רענן מוצרים</button>
       <p class="count">מוצרים שנמצאו בטווח: {{ productCount }}</p>
 
       <div class="radius-slider">
@@ -53,8 +37,19 @@
       </div>
 
       <div id="map" class="map"></div>
-      <p v-if="!userLat || !userLng" class="warn"> נא לאשר מיקום או להקליד כתובת</p>
+      <p v-if="!userLat || !userLng" class="warn">נא לאשר מיקום או להקליד כתובת</p>
     </div>
+
+    <aside class="category-sidebar">
+      <h3>קטגוריות</h3>
+      <div v-for="(color, category) in categoryColors" :key="category" class="category-item">
+        <input type="checkbox" :id="category" :value="category" v-model="selectedCategories" />
+        <label :for="category">
+          <span class="circle" :style="{ backgroundColor: color }"></span>
+          {{ category }}
+        </label>
+      </div>
+    </aside>
   </div>
 </template>
 
@@ -90,18 +85,18 @@ const selectedCategories = ref<string[]>([])
 const productCount = ref(0)
 
 const categoryColors: Record<string, string> = {
-  "לחם ומאפים טריים": "#d35400",
-  "פארם ותינוקות": "#9b59b6",
-  "חד פעמי ומטבח": "#2980b9",
-  "אחזקת הבית ובע\"ח": "#7f8c8d",
-  "חטיפים ומתוקים": "#c0392b",
-  "קטניות ודגנים": "#f39c12",
-  "שימורים ובישול": "#2ecc71",
-  "קפואים": "#3498db",
-  "אורגני ובריאות": "#27ae60",
-  "משקאות": "#8e44ad",
-  "בשר ודגים": "#e74c3c",
-  "מוצרי חלב": "#1abc9c"
+  'לחם ומאפים טריים': '#d35400',
+  'פארם ותינוקות': '#9b59b6',
+  'חד פעמי ומטבח': '#2980b9',
+  'אחזקת הבית ובע"ח': '#7f8c8d',
+  'חטיפים ומתוקים': '#c0392b',
+  'קטניות ודגנים': '#f39c12',
+  'שימורים ובישול': '#2ecc71',
+  קפואים: '#3498db',
+  'אורגני ובריאות': '#27ae60',
+  משקאות: '#8e44ad',
+  'בשר ודגים': '#e74c3c',
+  'מוצרי חלב': '#1abc9c',
 }
 let map: L.Map
 let productLayer: L.LayerGroup
@@ -109,11 +104,11 @@ let userCircle: L.Circle
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLon = (lon2 - lon1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon / 2) ** 2
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
 }
 
@@ -146,12 +141,16 @@ async function loadProducts() {
   const userLocation: [number, number] = [userLat.value, userLng.value]
   userCircle = L.circle(userLocation, {
     radius: radiusInKm.value * 1000,
-    color: 'green'
+    color: '#6366f1',
+    fillColor: '#6366f1',
+    fillOpacity: 0.15,
+    weight: 3,
   }).addTo(map)
 
-  const filtered = products.filter(p => {
+  const filtered = products.filter((p) => {
     const matchName = p.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchCategory = selectedCategories.value.length === 0 || selectedCategories.value.includes(p.category)
+    const matchCategory =
+      selectedCategories.value.length === 0 || selectedCategories.value.includes(p.category)
     const notExpired = new Date(p.expiryDate) >= new Date()
     return matchName && matchCategory && notExpired
   })
@@ -169,16 +168,18 @@ async function loadProducts() {
         radius: 8,
         color,
         fillColor: color,
-        fillOpacity: 0.8
+        fillOpacity: 0.8,
       })
-        .bindPopup(`
+        .bindPopup(
+          `
           <div style="direction: rtl; text-align: right;">
             <strong>${p.name}</strong><br/>
             <span style="color: gray; text-decoration: line-through;">₪${p.priceOriginal}</span>
             <span style="color: green; font-weight: bold;"> ₪${p.priceDiscounted}</span><br/>
             <small>פג תוקף: ${new Date(p.expiryDate).toLocaleDateString('he-IL')}</small>
           </div>
-        `)
+        `,
+        )
         .on('click', () => router.push(`/product/${p._id}`))
         .addTo(productLayer)
     }
@@ -192,16 +193,19 @@ onMounted(() => {
   productLayer = L.layerGroup().addTo(map)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: '© OpenStreetMap',
   }).addTo(map)
 
   if ('geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition((pos) => {
-      userLat.value = pos.coords.latitude
-      userLng.value = pos.coords.longitude
-      map.setView([userLat.value, userLng.value], 13)
-      loadProducts()
-    }, () => loadProducts())
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLat.value = pos.coords.latitude
+        userLng.value = pos.coords.longitude
+        map.setView([userLat.value, userLng.value], 13)
+        loadProducts()
+      },
+      () => loadProducts(),
+    )
   } else {
     loadProducts()
   }
@@ -211,118 +215,221 @@ onMounted(() => {
 <style scoped>
 .product-map-container {
   display: flex;
-  background:#f5f8fc;
-  font-family: sans-serif;
-}
-
-.category-sidebar {
-  width: 230px;
-  background-color:white;
-  padding: 1rem;
-background: white;
-border-radius: 18px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-
-}
-
-.category-item {
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-}
-
-.category-item .circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  margin-left: 0.5rem;
-  display: inline-block;
+  gap: 1.5rem;
+  background: var(--bg-secondary);
+  font-family: 'Courier New', Courier, monospace;
+  padding: 1.5rem;
 }
 
 .product-map-view {
   flex: 1;
-  padding: 2rem;
-  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.product-map-view h1 {
+  color: var(--primary);
+  font-size: 2rem;
+  margin: 0 0 1rem 0;
+  font-weight: bold;
+  text-align: center;
+}
+
+.category-sidebar {
+  width: 280px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  height: fit-content;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.category-sidebar h3 {
+  color: var(--primary);
+  font-size: 1.3rem;
+  margin: 0 0 1.5rem 0;
+  font-weight: bold;
+  text-align: center;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--primary);
+}
+
+.category-item {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.category-item:hover {
+  background: #f8f9fa;
+}
+
+.category-item input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  margin-left: 0.75rem;
+}
+
+.category-item label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.category-item .circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .top-inputs {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.search-box, .location-box {
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+.search-box,
+.location-box {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 2px solid #e0e0e0;
   flex: 1;
   min-width: 200px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.search-box:focus,
+.location-box:focus {
+  outline: none;
+  border-color: var(--primary);
 }
 
 .location-btn {
-  background: #24452b;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-
+  background: var(--gradient-primary);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
   color: white;
   font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  transition: all 0.3s;
+}
+
+.location-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
 }
 
 .refresh-btn {
-  background-color: #24452b;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-
+  background: var(--gradient-primary);
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
   color: white;
   font-weight: bold;
   border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
   cursor: pointer;
-  margin: 1rem 0;
+  font-family: 'Courier New', Courier, monospace;
+  transition: all 0.3s;
+  align-self: center;
 }
 
 .refresh-btn:hover {
-  background-color: #24452b;
-
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
 }
 
 .count {
   font-weight: bold;
-  margin-bottom: 1rem;
   text-align: center;
+  color: var(--primary);
+  font-size: 1.1rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .radius-slider {
-  margin: 1.5rem 0;
-  padding: 1rem;
-  background-color: white;
-  border-radius: 12px;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
 
+.radius-slider label {
+  font-weight: bold;
+  color: #2d3748;
+  font-size: 1.05rem;
+  display: block;
+  margin-bottom: 0.5rem;
 }
 
 .value {
   font-weight: bold;
   text-align: center;
-  margin-bottom: 0.5rem;
+  color: var(--primary);
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
 }
 
 .map {
-  height: 500px;
-  margin-top: 1rem;
-  border: 1px solid #ccc;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 18px;
-
+  height: 550px;
+  border: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .warn {
   text-align: center;
-  color: darkred;
-  margin-top: 1rem;
+  color: #e53e3e;
+  font-weight: bold;
+  font-size: 1.1rem;
+  background: #fee;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 2px solid #fcc;
+}
+
+/* סגנון לסליידר */
+:deep(.vue-slider-rail) {
+  background-color: #e0e0e0;
+  border-radius: 15px;
+}
+
+:deep(.vue-slider-process) {
+  background: var(--gradient-primary);
+  border-radius: 15px;
+}
+
+:deep(.vue-slider-dot-handle) {
+  background: var(--primary);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  border: 3px solid white;
+}
+
+:deep(.vue-slider-dot-handle:hover) {
+  box-shadow: 0 3px 12px rgba(99, 102, 241, 0.5);
 }
 </style>

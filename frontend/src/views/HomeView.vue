@@ -42,7 +42,7 @@ import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import ProductCard from '@/components/ProductCard.vue'
-import bannerImg from '@/assets/banner.png'
+import bannerImg from '@/assets/banner-pink.png'
 import api from '@/services/api'
 import type { Product } from '@/stores/products'
 
@@ -162,7 +162,7 @@ body {
 }
 
 .homepage {
-  background-color: #f5f8fc;
+  background-color: var(--bg-secondary);
   padding-bottom: 2rem;
   display: flex;
   justify-content: flex-start;
@@ -179,7 +179,7 @@ body {
 
 .main-banner {
   text-align: center;
-  margin: 2rem auto;
+  margin: 0.5rem auto 2rem;
 }
 
 .main-banner img {
