@@ -13,9 +13,7 @@ import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
-
-// Firebase Admin (אופציונלי)
-import { auth, db } from "./config/firebaseAdmin.js";
+import userRoutes from "./routes/users.js";
 
 const app = express();
 
@@ -52,34 +50,7 @@ app.use("/api", imagesRoutes);
 app.use("/api/orders", ordersRouter);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
-
-/* ======================= Firebase Admin ======================= */
-app.delete("/api/users/:uid", async (req, res) => {
-  try {
-    const uid = req.params.uid;
-    await db.collection("users").doc(uid).delete();
-    await auth.deleteUser(uid);
-    res.status(200).send({ success: true, message: "User deleted" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ success: false, message: "Error deleting user" });
-  }
-});
-
-app.put("/api/users/:uid/role", async (req, res) => {
-  const uid = req.params.uid;
-  const newRole = req.body.role;
-  if (!["admin", "user"].includes(newRole)) {
-    return res.status(400).send({ success: false, message: "Invalid role" });
-  }
-  try {
-    await db.collection("users").doc(uid).update({ role: newRole });
-    res.status(200).send({ success: true, message: "Role updated" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ success: false, message: "Error updating role" });
-  }
-});
+app.use("/api/users", userRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
