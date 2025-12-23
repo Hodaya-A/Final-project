@@ -159,8 +159,9 @@ onBeforeUnmount(() => {
 })
 
 const logout = async () => {
+  // First let the user store save the cart to server, then sign out
+  await userStore.logout()
   await signOut(auth)
-  userStore.logout()
   showMenu.value = false
   router.push('/')
 }

@@ -24,11 +24,32 @@ export const useUserStore = defineStore('user', () => {
     name.value = userName
   }
 
-  function logout() {
+  async function logout() {
+    const prevUid = uid.value
+
+    // Save cart to server for this user so it will be restored on next login
+    try {
+      const m = await import('@/stores/cart')
+      const cart = m.useCartStore()
+      await cart.saveToServer(prevUid)
+    } catch {
+      /* ignore save errors */
+    }
+
+    // Clear local user state
     uid.value = ''
     email.value = ''
     role.value = ''
     name.value = ''
+
+    // Clear local cart to avoid showing previous user's items to another user
+    try {
+      const m2 = await import('@/stores/cart')
+      const cart2 = m2.useCartStore()
+      cart2.clearCart()
+    } catch {
+      /* ignore */
+    }
   }
 
   // טעינה אוטומטית של המשתמש בעת רענון הדף
@@ -51,6 +72,14 @@ export const useUserStore = defineStore('user', () => {
           }
 
           setUser(user.uid, user.email || '', role, user.displayName || '')
+          // Load stored cart for this user (if any)
+          try {
+            const m = await import('@/stores/cart')
+            const cart = m.useCartStore()
+            await cart.loadFromServer(user.uid)
+          } catch {
+            /* ignore load errors */
+          }
         } else {
           logout()
         }
