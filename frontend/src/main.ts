@@ -38,7 +38,14 @@ onAuthStateChanged(auth, async (user) => {
       console.error('שגיאה בטעינת תפקיד המשתמש:', err)
     }
 
-    userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '')
+    try {
+      const userRef = doc(db, 'users', user.uid)
+      const snapshot = await getDoc(userRef)
+      const sId = snapshot.exists() ? (snapshot.data() as any).storeId || '' : ''
+      userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '', sId)
+    } catch (e) {
+      userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '', '')
+    }
   } else {
     userStore.logout()
   }

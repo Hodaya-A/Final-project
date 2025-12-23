@@ -322,7 +322,7 @@ const handleLogin = async () => {
 
     if (userSnap.exists()) {
       const data = userSnap.data()
-      userStore.setUser(uid, data.email, data.role, data.name)
+      userStore.setUser(uid, data.email, data.role, data.name, data.storeId || '')
       // load user's saved cart after login
       try {
         const m = await import('@/stores/cart')
@@ -368,7 +368,13 @@ const handleGoogle = async () => {
     const finalSnap = await getDoc(userRef)
     if (finalSnap.exists()) {
       const data = finalSnap.data()
-      userStore.setUser(user.uid, data.email, data.role, data.name || user.displayName || '')
+      userStore.setUser(
+        user.uid,
+        data.email,
+        data.role,
+        data.name || user.displayName || '',
+        data.storeId || '',
+      )
       // load user's saved cart after login
       try {
         const m = await import('@/stores/cart')

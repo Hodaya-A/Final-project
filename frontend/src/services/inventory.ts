@@ -61,9 +61,8 @@ export async function uploadInventory(
   formData.append('file', file)
   formData.append('mode', mode)
 
-  const { data }: AxiosResponse<UploadResult> = await api.post('/inventory/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
+  // אל תקבע Content-Type ידנית – ה־boundary צריך להיקבע אוטומטית
+  const { data }: AxiosResponse<UploadResult> = await api.post('/inventory/upload', formData)
   return data
 }
 

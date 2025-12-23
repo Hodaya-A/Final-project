@@ -9,6 +9,7 @@ export const useUserStore = defineStore('user', () => {
   const uid = ref('')
   const email = ref('')
   const name = ref('')
+  const storeId = ref('')
   const role = ref<'user' | 'admin' | 'storeManager' | ''>('')
   const initialized = ref(false)
 
@@ -17,11 +18,13 @@ export const useUserStore = defineStore('user', () => {
     userEmail: string,
     userRole: 'user' | 'admin' | 'storeManager',
     userName: string = '',
+    userStoreId: string = '',
   ) {
     uid.value = userUid
     email.value = userEmail
     role.value = userRole
     name.value = userName
+    storeId.value = userStoreId
   }
 
   async function logout() {
@@ -71,7 +74,9 @@ export const useUserStore = defineStore('user', () => {
             }
           }
 
-          setUser(user.uid, user.email || '', role, user.displayName || '')
+          const docData = snapshot.exists() ? snapshot.data() : {}
+          const sId = (docData && (docData as any).storeId) || ''
+          setUser(user.uid, user.email || '', role, user.displayName || '', sId)
           // Load stored cart for this user (if any)
           try {
             const m = await import('@/stores/cart')
@@ -99,6 +104,7 @@ export const useUserStore = defineStore('user', () => {
     uid,
     email,
     name,
+    storeId,
     role,
     initialized,
     isLoggedIn,

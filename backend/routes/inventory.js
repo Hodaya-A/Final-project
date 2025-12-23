@@ -20,10 +20,26 @@ const SYNONYMS = {
   barcode: ["barcode", "ברקוד", 'מק"ט', "item_code", "sku", "code"],
   name: ["name", "שם מוצר", "תיאור", "description", "product_name"],
   price: ["price", "מחיר", "מחיר ליח'", "מחיר ליחידה"],
+  priceOriginal: [
+    "priceoriginal",
+    "מחיר מקורי",
+    "מחיר רגיל",
+    "original_price",
+    "regular_price",
+  ],
+  priceDiscounted: [
+    "pricediscounted",
+    "מחיר מבצע",
+    "מחיר מוזל",
+    "discounted_price",
+    "sale_price",
+    "מחיר לאחר הנחה",
+  ],
   salePrice: ["saleprice", "מבצע", "מחיר מבצע", "discount_price"],
   quantity: ["quantity", "כמות", "מלאי", "stock", "onhand"],
   category: ["category", "קטגוריה", "מחלקה", "קבוצה"],
   expiryDate: ["expirydate", "תוקף", "תאריך תפוגה", "exp", "exp_date"],
+  imageUrl: ["imageurl", "תמונה", "קישור תמונה", "image", "image_url"],
 };
 
 // פונקציה למציאת כותרת מתאימה
@@ -78,8 +94,8 @@ router.post("/", async (req, res) => {
       expiryDate,
       quantity,
       imageUrl,
+      sellerId,
     } = req.body;
-
     if (!name) return res.status(400).json({ error: "Missing product name" });
 
     let finalImageUrl = imageUrl || null;
@@ -96,14 +112,15 @@ router.post("/", async (req, res) => {
 
     const item = await Inventory.create({
       shopId,
-      name,
       barcode: barcode || "",
-      price,
+      name,
+      category: category || "",
+      price: salePrice ?? price ?? 0,
       salePrice,
-      category,
-      quantity: quantity || 0,
+      quantity: Number.isNaN(quantity) ? 0 : quantity,
       expiryDate,
       imageUrl: finalImageUrl, // יכול להיות null
+      ...(sellerId ? { sellerId } : {}),
       updatedAt: new Date(),
     });
 
@@ -116,11 +133,23 @@ router.post("/", async (req, res) => {
 
 /** POST /api/inventory/upload — העלאת קובץ מלאי (CSV/XLSX) */
 router.post("/upload", upload.single("file"), async (req, res) => {
+  console.log("📤 התקבל בקשת העלאה");
+  console.log("📁 req.file:", req.file);
+  console.log("📋 req.body:", req.body);
+
   const tmpPath = req.file?.path;
-  if (!tmpPath) return res.status(400).json({ error: "No file uploaded" });
+  if (!tmpPath) {
+    console.error("❌ לא התקבל קובץ!");
+    return res.status(400).json({ error: "No file uploaded" });
+  }
 
   const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
   const mode = req.body.mode || "update";
+  const sellerId = req.body.sellerId || req.query.sellerId || null;
+
+  console.log("🏪 shopId:", shopId);
+  console.log("📧 sellerId:", sellerId);
+  console.log("🔄 mode:", mode);
 
   try {
     if (mode === "renew") {
@@ -186,10 +215,13 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       "barcode",
       "name",
       "price",
+      "priceOriginal",
+      "priceDiscounted",
       "quantity",
       "category",
       "salePrice",
       "expiryDate",
+      "imageUrl",
     ];
 
     if (profile?.mapping) {
@@ -219,17 +251,32 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       const rawPrice = pick("price");
       const rawQty = pick("quantity");
 
-      if (!rawBarcode || !rawName) {
-        errors.push({ row: idx + 1, reason: "Missing barcode or name" });
+      if (!rawName) {
+        errors.push({ row: idx + 1, reason: "Missing name" });
         continue;
       }
 
       let price = Number(String(rawPrice).replace(/[^\d.-]/g, ""));
-      if (Number.isNaN(price)) continue;
+      if (Number.isNaN(price)) price = 0;
       if (priceInAgorot) price = price / 100;
 
+      let priceOriginal;
+      if (mapping.priceOriginal) {
+        const po = Number(
+          String(pick("priceOriginal")).replace(/[^\d.-]/g, "")
+        );
+        if (!Number.isNaN(po)) priceOriginal = priceInAgorot ? po / 100 : po;
+      }
+
+      let priceDiscounted;
+      if (mapping.priceDiscounted) {
+        const pd = Number(
+          String(pick("priceDiscounted")).replace(/[^\d.-]/g, "")
+        );
+        if (!Number.isNaN(pd)) priceDiscounted = priceInAgorot ? pd / 100 : pd;
+      }
+
       const quantity = Number(String(rawQty).replace(/[^\d.-]/g, ""));
-      if (Number.isNaN(quantity)) continue;
 
       let salePrice;
       if (mapping.salePrice) {
@@ -244,33 +291,54 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         if (d.isValid()) expiryDate = d.toDate();
       }
 
-      // נשמור תמונה קיימת אם כבר קיימת למוצר הזה (באמצעות upsert) — ורק אם חסרה נחפש
+      // בדיקה אם יש URL תמונה בקובץ
       let finalImageUrl = null;
-      try {
-        finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
-      } catch (e) {
-        console.warn("⚠️ שגיאה בשליפת תמונה למוצר:", rawName, e.message);
+      if (mapping.imageUrl) {
+        const urlFromFile = String(pick("imageUrl") ?? "").trim();
+        if (urlFromFile) {
+          finalImageUrl = urlFromFile;
+          console.log(`✅ תמונה מהקובץ: ${finalImageUrl}`);
+        }
+      }
+
+      // אם אין תמונה בקובץ, ננסה לחפש בגוגל
+      if (!finalImageUrl) {
+        try {
+          console.log(`🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`);
+          finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
+          if (finalImageUrl) {
+            console.log(`✅ נמצאה תמונה: ${finalImageUrl}`);
+          }
+        } catch (e) {
+          console.warn("⚠️ שגיאה בשליפת תמונה למוצר:", rawName, e.message);
+        }
       }
       console.log(
-        `🖼️ קישור תמונה עבור "${rawName}": ${finalImageUrl || "אין"}`
+        `🖼️ קישור תמונה סופי עבור "${rawName}": ${finalImageUrl || "אין"}`
       );
 
       const doc = {
         shopId,
-        barcode: rawBarcode,
+        barcode: rawBarcode || "",
         name: rawName,
         category: mapping.category ? String(pick("category") || "") : "",
-        price,
+        price: priceDiscounted || price || 0,
+        priceOriginal,
+        priceDiscounted,
         salePrice,
-        quantity,
+        quantity: Number.isNaN(quantity) ? 0 : quantity,
         expiryDate,
-        ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}), // נעדכן רק אם נמצא
+        ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
+        ...(sellerId ? { sellerId } : {}),
         updatedAt: new Date(),
       };
 
       bulk.push({
         updateOne: {
-          filter: { shopId, barcode: rawBarcode },
+          filter: {
+            shopId,
+            barcode: rawBarcode || `auto_${Date.now()}_${idx}`,
+          },
           update: { $set: doc },
           upsert: true,
         },

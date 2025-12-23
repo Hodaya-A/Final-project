@@ -96,7 +96,19 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/store',
     name: 'store-dashboard',
-    component: () => import('@/views/StoreManagerDashboard.vue'),
+    component: () => import('@/views/store-manager/StoreManagerDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
+  {
+    path: '/store/products',
+    name: 'store-products',
+    component: () => import('@/views/store-manager/StoreProductManager.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
+  {
+    path: '/store/reports',
+    name: 'store-reports',
+    component: () => import('@/views/store-manager/StoreReportsView.vue'),
     meta: { requiresAuth: true, roles: ['storeManager'] },
   },
   // {

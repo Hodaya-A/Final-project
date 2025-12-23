@@ -77,7 +77,15 @@ const handleEmailLogin = async () => {
       name = docData.name ?? ''
     }
 
-    userStore.setUser(user.uid, user.email || '', role, name || user.displayName || '')
+    // include storeId when available
+    const loginData = snapshot.exists() ? (snapshot.data() as any) : {}
+    userStore.setUser(
+      user.uid,
+      user.email || '',
+      role,
+      name || user.displayName || '',
+      loginData.storeId || '',
+    )
     router.push('/')
   } catch (err: unknown) {
     if (err instanceof Error) {
@@ -122,7 +130,9 @@ const handleGoogleLogin = async () => {
       name = docData.name ?? name
     }
 
-    userStore.setUser(user.uid, user.email || '', role, name)
+    // include storeId when available
+    const finalData = snapshot.exists() ? (snapshot.data() as any) : {}
+    userStore.setUser(user.uid, user.email || '', role, name, finalData.storeId || '')
     router.push('/')
   } catch (err: unknown) {
     if (err instanceof Error) {

@@ -64,7 +64,7 @@ async function handleRegister() {
       createdAt: new Date(),
     })
 
-    router.push('/store-manager')
+    router.push('/store')
   } catch (err: any) {
     console.error(err)
     error.value = err.message || 'אירעה שגיאה בהרשמה'
