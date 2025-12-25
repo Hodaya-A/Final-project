@@ -71,6 +71,11 @@
           </a>
         </p>
 
+        <p v-if="!isRegistering" class="manager-shortcut">
+          רוצה להירשם כמנהל חנות?
+          <a href="#" @click.prevent="startStoreManagerSignup">לחץ כאן</a>
+        </p>
+
         <p v-if="error" class="error">{{ error }}</p>
       </form>
 
@@ -170,6 +175,12 @@ function toggleMode() {
   street.value = ''
   houseNumber.value = ''
   streets.value = []
+}
+
+function startStoreManagerSignup() {
+  isRegistering.value = true
+  isStoreManager.value = true
+  error.value = ''
 }
 
 // const handleRegister = async () => {
@@ -493,6 +504,18 @@ button {
   color: #3498db;
   font-weight: bold;
   cursor: pointer;
+}
+.manager-shortcut {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #2c3e50;
+}
+
+.manager-shortcut a {
+  color: #3498db;
+  font-weight: bold;
+  text-decoration: none;
 }
 select {
   width: 100%;
