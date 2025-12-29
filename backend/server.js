@@ -13,6 +13,7 @@ import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
+import uploadRoutes from "./routes/upload.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
@@ -52,6 +53,7 @@ app.use("/api", imagesRoutes);
 app.use("/api/orders", ordersRouter);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
+app.use("/api/upload", uploadRoutes);
 
 /* ======================= Firebase Admin ======================= */
 app.delete("/api/users/:uid", async (req, res) => {

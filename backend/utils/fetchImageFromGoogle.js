@@ -15,6 +15,30 @@ const ALLOWED_HOSTS = [
   "images.openfoodfacts.org",
   "static.openfoodfacts.org",
   "world.openfoodfacts.org",
+  // רשתות סופרמרקטים:
+  "ynet.co.il",
+  "mako.co.il",
+  "yochananof.co.il",
+  "osher-ad.co.il",
+  "victory.co.il",
+  "tivtaam.co.il",
+  "supersapir.co.il",
+  "mahsane-hashook.co.il",
+  "mega.co.il",
+  "yeinot-bitan.co.il",
+  "quik.co.il",
+  // אתרי חדשות וכלליים:
+  "wikimedia.org",
+  "wikipedia.org",
+  "walla.co.il",
+  "themarker.com",
+  // שירותי אחסון תמונות:
+  "imgur.com",
+  "i.imgur.com",
+  "shopify.com",
+  "myshopify.com",
+  "amazonaws.com",
+  "s3.amazonaws.com",
 ];
 
 /** ריסון וקאש */
@@ -90,6 +114,10 @@ function normalizeUrl(raw) {
 }
 
 function isAllowedHost(urlStr) {
+  // מצב חיפוש מורחב - מקבל תמונות מכל דומיין
+  return true;
+  
+  /* מצב מוגבל - רק דומיינים ספציפיים
   try {
     const u = new URL(urlStr);
     return ALLOWED_HOSTS.some(
@@ -98,6 +126,7 @@ function isAllowedHost(urlStr) {
   } catch {
     return false;
   }
+  */
 }
 
 async function isReachableImage(urlStr) {
@@ -184,12 +213,36 @@ export async function fetchImageFromGoogle(name, barcode = "") {
   // אם הברקוד נראה פלייסהולדר – לא נבזבז עליו חיפושים
   const useBarcode = barcode && !isPlaceholderBarcode(barcode);
 
-  const domains = ["img.rami-levy.co.il", "res.cloudinary.com"];
+  const domains = [
+    "img.rami-levy.co.il",
+    "res.cloudinary.com",
+    "shufersal.co.il",
+    "yochananof.co.il",
+    "osher-ad.co.il",
+    "ynet.co.il",
+    "mako.co.il",
+  ];
+
+  // אסטרטגיות חיפוש משופרות
+  const enhancedQueries = [
+    `${name} מוצר`,
+    `${name} סופרמרקט`,
+    `${name} תמונה`,
+    name,
+  ];
+
   const queries = [
-    { q: name, site: null },
+    // חיפושים מורחבים
+    ...enhancedQueries.map((q) => ({ q, site: null })),
+    // חיפושים ספציפיים לדומיינים
     ...domains.map((d) => ({ q: name, site: d })),
-    ...(useBarcode ? [{ q: barcode, site: null }] : []),
-    ...(useBarcode ? domains.map((d) => ({ q: barcode, site: d })) : []),
+    // חיפושי ברקוד אם קיים
+    ...(useBarcode
+      ? [
+          { q: barcode, site: null },
+          ...domains.map((d) => ({ q: barcode, site: d })),
+        ]
+      : []),
   ];
 
   // 1) גוגל CSE

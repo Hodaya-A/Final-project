@@ -27,7 +27,7 @@ const products = ref<Product[]>([]) // מערך מוצרים עם טיפוס ב�
 
 onMounted(async () => {
   try {
-    const response = await axios.get<Product[]>('http://localhost:3000/api/products')
+    const response = await axios.get<Product[]>('/api/products')
     products.value = response.data
   } catch (error) {
     console.error('❌ שגיאה בטעינת מוצרים:', error)

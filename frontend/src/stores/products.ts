@@ -33,7 +33,7 @@ export const useProductStore = defineStore('products', {
       this.error = null
 
       try {
-        const res: ApiResponse = await api.get('/api/inventory', { params })
+        const res: ApiResponse = await api.get('/products', { params })
         this.items = res.data
       } catch (err: unknown) {
         if (err instanceof Error) {
