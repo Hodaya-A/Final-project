@@ -1,30 +1,58 @@
 <template>
   <div class="product-card-wrapper">
-    <router-link :to="`/product/${product._id}`" class="product-card">
-      <!-- 🖼️ תמונה עם Fallback -->
-      <img
-        :src="imgSrc"
-        :alt="product.name"
-        class="product-image"
-        loading="lazy"
-        @error="onImgError"
-      />
+    <div class="product-card">
+      <!-- 🖼️ תמונה עם Fallback או כפתור העלאה -->
+      <div class="image-container" @click="handleImageClick">
+        <img
+          v-if="imgSrc !== FALLBACK"
+          :src="imgSrc"
+          :alt="product.name"
+          class="product-image"
+          loading="lazy"
+          @error="onImgError"
+        />
+        <div v-else class="upload-placeholder">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <p>לחץ להעלאת תמונה</p>
+        </div>
+        <input
+          type="file"
+          ref="fileInput"
+          @change="handleFileUpload"
+          accept="image/*"
+          style="display: none"
+        />
+      </div>
 
       <!-- 🏷️ שם וקטגוריה -->
-      <h3 class="product-name">{{ product.name }}</h3>
-      <p class="product-category">{{ product.category }}</p>
+      <router-link :to="`/product/${product._id}`" class="product-link">
+        <h3 class="product-name">{{ product.name }}</h3>
+        <p class="product-category">{{ product.category }}</p>
 
-      <!-- 💰 מחיר רגיל + מחיר מבצע -->
-      <p class="product-price">
-        <span v-if="product.salePrice" class="discounted">
-          ₪{{ product.salePrice.toFixed(2) }}
-        </span>
-        <span :class="{ original: product.salePrice }"> ₪{{ product.price.toFixed(2) }} </span>
-      </p>
+        <!-- 💰 מחיר רגיל + מחיר מבצע -->
+        <p class="product-price">
+          <span v-if="product.salePrice" class="discounted">
+            ₪{{ product.salePrice.toFixed(2) }}
+          </span>
+          <span :class="{ original: product.salePrice }"> ₪{{ product.price.toFixed(2) }} </span>
+        </p>
 
-      <!-- 🗓️ תאריך תפוגה -->
-      <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
-    </router-link>
+        <!-- 🗓️ תאריך תפוגה -->
+        <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
+      </router-link>
+    </div>
 
     <!-- 🛒 כפתור הוספה לסל -->
     <button class="add-btn" @click="addToCart">הוסף לסל</button>
@@ -35,114 +63,94 @@
 import { ref } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import type { Product } from '@/stores/products'
+import axios from 'axios'
 
 const cartStore = useCartStore()
 
 const props = defineProps<{ product: Product }>()
 const formattedDate = new Date(props.product.expiryDate || '').toLocaleDateString('he-IL')
 
-// מיפוי קטגוריות לתמונות ברירת מחדל - מערך של תמונות שונות לכל קטגוריה
-const categoryImages: Record<string, string[]> = {
-  'מוצרי חלב': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/SGG26_L_P_48185_1.png',
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/JCY12_L_P_42015_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0001/front_he.3.400.jpg',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0002/front_he.3.400.jpg',
-  ],
-  'לחם ומאפים טריים': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/KXY14_L_P_97825_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0010/front_he.3.400.jpg',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0011/front_he.3.400.jpg',
-  ],
-  'ירקות ופירות': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/YYK17_L_P_15872_1.png',
-    'https://images.openfoodfacts.org/images/products/000/000/000/0100/front_he.3.400.jpg',
-    'https://images.openfoodfacts.org/images/products/000/000/000/0101/front_he.3.400.jpg',
-  ],
-  קפואים: [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/FBI28_L_P_56845_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0020/front_he.3.400.jpg',
-  ],
-  'משקאות חמים': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/BYR52_L_P_17859_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0030/front_he.3.400.jpg',
-  ],
-  משקאות: [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/MYF38_L_P_97412_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0031/front_he.3.400.jpg',
-  ],
-  'אחזקת הבית': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/DFV47_L_P_23678_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0040/front_he.3.400.jpg',
-  ],
-  'חטיפים ומתוקים': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/KOP29_L_P_78945_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0050/front_he.3.400.jpg',
-  ],
-  'מוצרי יסוד': [
-    'https://res.cloudinary.com/shufersal/image/upload/f_auto,q_auto/v1551800922/prod/product_images/products_large/JCY12_L_P_42015_1.png',
-    'https://images.openfoodfacts.org/images/products/729/000/000/0060/front_he.3.400.jpg',
-  ],
-}
+const fileInput = ref<HTMLInputElement | null>(null)
 
-// פונקציה לבחירת תמונה מתוך מערך בצורה קבועה (לפי hash של שם המוצר)
-function getImageFromArray(images: string[], seed: string): string {
-  if (images.length === 0) return FALLBACK
-  if (images.length === 1) return images[0]
-  // יצירת hash פשוט מהשם כדי לבחור באופן קבוע אותו אינדקס
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i)
-    hash = hash & hash
-  }
-  return images[Math.abs(hash) % images.length]
-}
-
-// ✅ אם אין imageUrl – ננסה לפי קטגוריה, אחרת fallback כללי
 const FALLBACK = 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image'
+
 const getDefaultImage = () => {
-  // בדיקה אם יש תמונה תקפה (לא ריק, לא null, לא undefined)
+  console.log('Product:', props.product.name, 'ImageURL:', props.product.imageUrl)
+
   if (props.product.imageUrl && props.product.imageUrl.trim()) {
-    return props.product.imageUrl
+    const url = props.product.imageUrl.trim()
+
+    // אם זה URL מלא (HTTP/HTTPS) - חשוב לבדוק קודם!
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      console.log('Using external URL:', url)
+      return url
+    }
+    // אם זה נתיב מקומי
+    if (url.startsWith('/uploads/')) {
+      console.log('Using local path:', url)
+      return url
+    }
+    // אם זה נתיב יחסי, נוסיף את הקידומת
+    const fullPath = `/uploads/images/${url}`
+    console.log('Using relative path:', fullPath)
+    return fullPath
   }
-  const category = props.product.category
-  if (category && categoryImages[category]) {
-    return getImageFromArray(categoryImages[category], props.product.name + props.product._id)
-  }
-  return FALLBACK
+  console.log('Using fallback image')
 }
+
 const imgSrc = ref<string>(getDefaultImage())
 
-function onImgError() {
-  // אם התמונה נכשלה, ננסה את תמונת הקטגוריה
-  const category = props.product.category
-  if (category && categoryImages[category]) {
-    const categoryFallback = getImageFromArray(
-      categoryImages[category],
-      props.product.name + props.product._id,
-    )
-    if (categoryFallback && imgSrc.value !== categoryFallback) {
-      imgSrc.value = categoryFallback
-      return
-    }
-  }
+function onImgError(event: Event) {
+  console.log('Image load error for:', imgSrc.value)
   if (imgSrc.value !== FALLBACK) {
+    console.log('Switching to fallback image')
     imgSrc.value = FALLBACK
   }
 }
 
-function addToCart() {
-  const category = props.product.category
-  let defaultImg = FALLBACK
-  if (category && categoryImages[category]) {
-    defaultImg = getImageFromArray(categoryImages[category], props.product.name + props.product._id)
+function handleImageClick(e: Event) {
+  if (imgSrc.value === FALLBACK) {
+    e.preventDefault()
+    e.stopPropagation()
+    fileInput.value?.click()
   }
-  const validImageUrl = props.product.imageUrl?.trim() || defaultImg
+}
+
+async function handleFileUpload(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('image', file)
+  formData.append('productId', props.product._id)
+
+  try {
+    const response = await axios.post('/api/upload/product-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    if (response.data.success) {
+      imgSrc.value = `${response.data.imageUrl}?t=${Date.now()}`
+      alert('✅ התמונה הועלתה בהצלחה!')
+    }
+  } catch (error) {
+    console.error('שגיאה בהעלאת תמונה:', error)
+    alert('❌ שגיאה בהעלאת התמונה')
+  }
+}
+
+function addToCart() {
+  const imageUrl = props.product.imageUrl?.trim() || FALLBACK
+  // אין צורך להוסיף localhost - ה-proxy מטפל בזה
   cartStore.addToCart({
     id: props.product._id,
     name: props.product.name,
     price: props.product.salePrice || props.product.price,
-    imageUrl: validImageUrl,
+    imageUrl,
   })
 }
 </script>
@@ -196,12 +204,22 @@ function addToCart() {
   opacity: 1;
 }
 
+.image-container {
+  width: 100%;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 1rem;
+}
+
 .product-image {
   width: 100%;
   height: 150px;
   object-fit: contain;
   border-radius: 12px;
-  margin-bottom: 1rem;
   background: var(--bg-secondary);
   padding: 0.5rem;
   transition: transform 0.2s ease;
@@ -209,6 +227,45 @@ function addToCart() {
 
 .product-card:hover .product-image {
   transform: scale(1.03);
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+  border: 2px dashed #cbd5e0;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  color: #64748b;
+}
+
+.upload-placeholder:hover {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+  border-color: #94a3b8;
+  color: #475569;
+}
+
+.upload-placeholder svg {
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.upload-placeholder p {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.product-link {
+  text-decoration: none;
+  color: inherit;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .product-name {
