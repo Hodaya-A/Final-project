@@ -170,6 +170,16 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       profile = new ImportProfile({
         shopId,
         name: "Default Profile",
+        shopName: "החנות שלי",
+        shopLocation: {
+          type: "Point",
+          coordinates: [34.7818, 32.0853], // תל אביב
+        },
+        shopAddress: {
+          city: "תל אביב",
+          street: "",
+          number: "",
+        },
         fileOptions: {
           encoding: "utf8",
           delimiter: ",",
@@ -353,6 +363,18 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         `🖼️ קישור תמונה סופי עבור "${rawName}": ${finalImageUrl || "אין"}`
       );
 
+      // שימוש במיקום של החנות מהפרופיל
+      const shopLocation = profile.shopLocation || {
+        type: "Point",
+        coordinates: [34.7818, 32.0853], // ברירת מחדל: תל אביב
+      };
+
+      const shopPlace = profile.shopAddress || {
+        city: "תל אביב",
+        street: "",
+        number: "",
+      };
+
       const doc = {
         shopId,
         barcode: rawBarcode || "",
@@ -364,6 +386,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         salePrice,
         quantity: Number.isNaN(quantity) ? 0 : quantity,
         expiryDate,
+        location: shopLocation, // מיקום החנות
+        place: shopPlace, // כתובת החנות
         ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
         ...(sellerId ? { sellerId } : {}),
         updatedAt: new Date(),

@@ -8,6 +8,16 @@ const ImportProfileSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  shopName: { type: String, default: "החנות שלי" },
+  shopLocation: {
+    type: { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], default: [34.7818, 32.0853] }, // [lng, lat]
+  },
+  shopAddress: {
+    city: { type: String, default: "תל אביב" },
+    street: { type: String, default: "" },
+    number: { type: String, default: "" },
+  },
   mapping: {
     barcode: { type: String, required: true },
     name: { type: String, required: true },
@@ -27,6 +37,8 @@ const ImportProfileSchema = new mongoose.Schema({
     priceInAgorot: { type: Boolean, default: false },
   },
 });
+
+ImportProfileSchema.index({ shopLocation: "2dsphere" });
 
 export default mongoose.models.ImportProfile ||
   mongoose.model("ImportProfile", ImportProfileSchema);

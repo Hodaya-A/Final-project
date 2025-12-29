@@ -159,11 +159,13 @@ async function handleUpload(mode: 'update' | 'renew') {
       (mode === 'renew' ? 'המלאי חודש בהצלחה! ' : 'המלאי עודכן בהצלחה! ') +
       `(הועבדו ${res.processed} שורות, שגיאות ${res.errors?.length || 0})`
     await loadInventory()
-  } catch (err: any) {
-    console.error('❌ Error in handleUpload:', err)
-    console.error('Error message:', err.message)
-    console.error('Error response:', err.response)
-    message.value = '❌ שגיאה בהעלאת הקובץ: ' + (err.response?.data?.error || err.message)
+  } catch (err) {
+    const error = err as { response?: { data?: { error?: string } }; message?: string }
+    console.error('❌ Error in handleUpload:', error)
+    console.error('Error message:', error.message)
+    console.error('Error response:', error.response)
+    message.value =
+      '❌ שגיאה בהעלאת הקובץ: ' + (error.response?.data?.error || error.message || 'שגיאה לא ידועה')
   } finally {
     // ניקוי בחירת הקובץ
     const input = document.querySelector('input[type="file"]') as HTMLInputElement | null
@@ -215,7 +217,8 @@ onMounted(() => loadInventory())
 .inventory-page {
   direction: rtl;
   padding: 2rem;
-  background: linear-gradient(180deg, #f7faf7 0%, #edf7f0 100%);
+  max-width: 1400px;
+  margin: 0 auto;
   min-height: 100vh;
 }
 
@@ -224,9 +227,12 @@ onMounted(() => loadInventory())
   align-items: center;
   gap: 0.6rem;
   font-size: 2rem;
-  font-weight: 800;
-  color: #1f5131;
-  margin-bottom: 1.5rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 2rem;
 }
 
 .inventory-grid {
@@ -245,27 +251,22 @@ onMounted(() => loadInventory())
 .upload-card,
 .inventory-card {
   background: white;
-  border-radius: 1.5rem;
+  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
-}
-.upload-card:hover,
-.inventory-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
 }
 
 .card-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #2b6243;
-  font-size: 1.25rem;
+  color: var(--neutral-dark);
+  font-size: 1.3rem;
   font-weight: 600;
   margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--primary);
 }
 
 /* --- העלאה --- */
@@ -276,34 +277,45 @@ onMounted(() => loadInventory())
 }
 
 .upload-btn {
-  background-color: #1f5131;
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  padding: 0.7rem 1.2rem;
-  border-radius: 10px;
+  padding: 0.75rem 1.2rem;
+  border-radius: 8px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
 }
-.upload-btn:hover {
-  background-color: #24733b;
+
+.upload-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
+
 .upload-btn:disabled {
-  background-color: #ccc;
+  background: var(--neutral-light);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* --- הודעה לאחר העלאה --- */
 .upload-message {
-  color: #2b6243;
+  color: #155724;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   margin-top: 1rem;
   font-weight: 500;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-radius: 8px;
+  border: 2px solid var(--success);
+  box-shadow: var(--shadow-sm);
 }
 
 /* --- טבלה --- */
@@ -321,23 +333,28 @@ onMounted(() => loadInventory())
 
 .refresh-btn,
 .download-btn {
-  background: transparent;
-  border: 1.5px solid #a9cbb0;
-  color: #2b6243;
-  padding: 0.4rem 0.8rem;
+  background: white;
+  border: 2px solid var(--border);
+  color: var(--neutral-dark);
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .refresh-btn:hover,
 .download-btn:hover {
-  background: #e9f4eb;
-  border-color: #6abf69;
-  transform: translateY(-2px);
+  background: linear-gradient(135deg, #fafbff 0%, #f5f7ff 100%);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow) 8f9fa;
+  border-color: #3498db;
+  color: #3498db;
 }
 
 /* --- מודל --- */
@@ -358,7 +375,8 @@ onMounted(() => loadInventory())
   text-align: center;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border);
 }
 
 .modal-title {
@@ -367,12 +385,12 @@ onMounted(() => loadInventory())
   justify-content: center;
   gap: 0.5rem;
   font-weight: 700;
-  color: #1f5131;
+  color: var(--neutral-dark);
   margin-bottom: 0.8rem;
 }
 
 .modal-text {
-  color: #555;
+  color: var(--neutral);
   margin-bottom: 1.2rem;
 }
 
@@ -380,11 +398,12 @@ onMounted(() => loadInventory())
   display: flex;
   justify-content: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .btn-update,
 .btn-renew {
-  padding: 0.6rem 1rem;
+  padding: 0.75rem 1.2rem;
   border-radius: 8px;
   color: white;
   font-weight: 600;
@@ -392,20 +411,30 @@ onMounted(() => loadInventory())
   align-items: center;
   gap: 0.4rem;
   border: none;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
 }
 
 .btn-update {
-  background-color: #1f5131;
+  background: var(--gradient-primary);
 }
+
 .btn-update:hover {
-  background-color: #24733b;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
+
 .btn-renew {
-  background-color: #c0392b;
+  background: var(--gradient-secondary);
 }
+
 .btn-renew:hover {
-  background-color: #e74c3c;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-renew:hover {
+  background-color: #c0392b;
 }
 
 /* --- כפתור ביטול --- */
@@ -416,20 +445,19 @@ onMounted(() => loadInventory())
   gap: 0.4rem;
   justify-content: center;
   background: white;
-  border: 2px solid #ccc;
-  border-radius: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
   padding: 0.6rem 1.2rem;
-  color: #444;
+  color: #555;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s;
 }
+
 .btn-cancel:hover {
-  background: #f5f5f5;
+  background: #f8f9fa;
   border-color: #aaa;
-  color: #000;
-  transform: translateY(-2px);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  color: #2c3e50;
 }
 
 /* --- אייקונים --- */
@@ -437,28 +465,15 @@ onMounted(() => loadInventory())
   width: 28px;
   height: 28px;
 }
+
 .icon-small {
   width: 22px;
   height: 22px;
 }
+
 .icon-tiny {
   width: 16px;
   height: 16px;
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.6s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* --- כפתור בחירת קובץ --- */
@@ -472,21 +487,32 @@ onMounted(() => loadInventory())
   justify-content: center;
   gap: 0.5rem;
   padding: 0.8rem 1.2rem;
-  border-radius: 10px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
-  color: #1f5131;
-  background: #f2f9f3;
-  border: 2px dashed #b9d8bf;
+  color: var(--neutral-dark);
+  background: linear-gradient(135deg, #fafbff 0%, #f5f7ff 100%);
+  border: 3px dashed var(--border);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .upload-label:hover {
-  background: #e5f5e7;
-  border-color: #76c48f;
-  color: #0f3d21;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(33, 81, 49, 0.1);
+  background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+/* --- אנימציה --- */
+.fade-zoom-enter-active,
+.fade-zoom-leave-active {
+  transition: all 0.2s;
+}
+
+.fade-zoom-enter-from,
+.fade-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
 }
 </style>
