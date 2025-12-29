@@ -18,6 +18,9 @@ import uploadRoutes from "./routes/upload.js";
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
 
+// מודלים
+import Inventory from "./models/Inventory.js";
+
 const app = express();
 
 /* ======================= Middleware ======================= */
@@ -86,3 +89,28 @@ app.put("/api/users/:uid/role", async (req, res) => {
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 שרת פועל על http://localhost:${PORT}`));
+
+/* ======================= הסרה אוטומטית של מוצרים שפג תוקפם ======================= */
+async function removeExpiredProducts() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // מתחיל היום
+
+    const result = await Inventory.deleteMany({
+      expiryDate: { $lt: today },
+    });
+
+    if (result.deletedCount > 0) {
+      console.log(`🗑️ נמחקו ${result.deletedCount} מוצרים שפג תוקפם`);
+    }
+  } catch (error) {
+    console.error("❌ שגיאה בהסרת מוצרים שפג תוקפם:", error);
+  }
+}
+
+// הרץ כל יום בחצות
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+setInterval(removeExpiredProducts, TWENTY_FOUR_HOURS);
+
+// הרץ מיד בהפעלת השרת
+removeExpiredProducts();

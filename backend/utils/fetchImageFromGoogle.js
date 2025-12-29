@@ -116,7 +116,7 @@ function normalizeUrl(raw) {
 function isAllowedHost(urlStr) {
   // מצב חיפוש מורחב - מקבל תמונות מכל דומיין
   return true;
-  
+
   /* מצב מוגבל - רק דומיינים ספציפיים
   try {
     const u = new URL(urlStr);

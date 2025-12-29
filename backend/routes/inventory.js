@@ -133,13 +133,20 @@ router.post("/", async (req, res) => {
 
 /** POST /api/inventory/upload — העלאת קובץ מלאי (CSV/XLSX) */
 router.post("/upload", upload.single("file"), async (req, res) => {
-  console.log("📤 התקבל בקשת העלאה");
+  console.log("=".repeat(80));
+  console.log("📤 התקבל בקשת העלאה ל-/api/inventory/upload");
+  console.log("🕒 זמן:", new Date().toISOString());
+  console.log("📋 req.method:", req.method);
+  console.log("📋 req.headers:", JSON.stringify(req.headers, null, 2));
   console.log("📁 req.file:", req.file);
   console.log("📋 req.body:", req.body);
+  console.log("=".repeat(80));
 
   const tmpPath = req.file?.path;
   if (!tmpPath) {
     console.error("❌ לא התקבל קובץ!");
+    console.error("req.file is:", req.file);
+    console.error("req.body is:", req.body);
     return res.status(400).json({ error: "No file uploaded" });
   }
 
@@ -156,7 +163,34 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       await Inventory.deleteMany({ shopId });
     }
 
-    const profile = await ImportProfile.findOne({ shopId });
+    let profile = await ImportProfile.findOne({ shopId });
+
+    // אם אין פרופיל, צור ברירת מחדל
+    if (!profile) {
+      profile = new ImportProfile({
+        shopId,
+        name: "Default Profile",
+        fileOptions: {
+          encoding: "utf8",
+          delimiter: ",",
+          headerRowIndex: 0,
+          dataStartRow: 1,
+          priceInAgorot: false,
+          dateFormat: "YYYY-MM-DD",
+        },
+        mapping: {
+          barcode: "ברקוד",
+          name: "שם מוצר",
+          price: "מחיר",
+          quantity: "כמות",
+          category: "קטגוריה",
+          salePrice: "מחיר מבצע",
+          expiryDate: "תוקף",
+        },
+      });
+      await profile.save();
+      console.log("✅ נוצר פרופיל ברירת מחדל");
+    }
 
     const fileName = (req.file.originalname || "").toLowerCase();
     const isCSV = fileName.endsWith(".csv");
@@ -304,7 +338,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       // אם אין תמונה בקובץ, ננסה לחפש בגוגל
       if (!finalImageUrl) {
         try {
-          console.log(`🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`);
+          console.log(
+            `🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`
+          );
           finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
           if (finalImageUrl) {
             console.log(`✅ נמצאה תמונה: ${finalImageUrl}`);
@@ -346,9 +382,11 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     if (bulk.length) await Inventory.bulkWrite(bulk, { ordered: false });
+
+    console.log("✅ קובץ עובד בהצלחה, מוחק קובץ זמני");
     fs.unlinkSync(tmpPath);
 
-    res.json({
+    const response = {
       ok: true,
       mode,
       detectedHeaders: headers,
@@ -356,13 +394,24 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       totalRows: rows.length,
       processed: bulk.length,
       errors,
-    });
+    };
+    console.log("📤 שולח תשובה:", response);
+    res.json(response);
   } catch (err) {
-    console.error("❌ שגיאה בעיבוד קובץ מלאי:", err);
+    console.error("=".repeat(80));
+    console.error("❌ שגיאה חמורה בעיבוד קובץ מלאי!");
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+    console.error("Error stack:", err.stack);
+    console.error("=".repeat(80));
     try {
       fs.unlinkSync(tmpPath);
     } catch {}
-    res.status(500).json({ error: "Failed to process inventory file" });
+    res.status(500).json({
+      error: "Failed to process inventory file",
+      details: err.message,
+      errorType: err.name,
+    });
   }
 });
 

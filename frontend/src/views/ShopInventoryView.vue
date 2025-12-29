@@ -131,26 +131,39 @@ function closeModal() {
 }
 
 async function handleUpload(mode: 'update' | 'renew') {
-  if (!file.value) return
+  console.log('🎯 handleUpload called with mode:', mode)
+  console.log('📁 file.value:', file.value)
+
+  if (!file.value) {
+    console.warn('⚠️ No file selected')
+    return
+  }
+
   showModal.value = false
 
   if (mode === 'renew') {
     const confirmDelete = confirm(
       'האם את בטוחה שברצונך לחדש את המלאי? פעולה זו תמחק את כל המוצרים הקיימים!',
     )
-    if (!confirmDelete) return
+    if (!confirmDelete) {
+      console.log('❌ User cancelled renew operation')
+      return
+    }
   }
 
   try {
+    console.log('📤 Calling uploadInventory...')
     const res = await uploadInventory(file.value, mode) // ← שימוש ב-service, בלי /api כפול
     console.log('✅ תשובת העלאה:', res)
     message.value =
       (mode === 'renew' ? 'המלאי חודש בהצלחה! ' : 'המלאי עודכן בהצלחה! ') +
       `(הועבדו ${res.processed} שורות, שגיאות ${res.errors?.length || 0})`
     await loadInventory()
-  } catch (err) {
-    console.error(err)
-    message.value = '❌ שגיאה בהעלאת הקובץ'
+  } catch (err: any) {
+    console.error('❌ Error in handleUpload:', err)
+    console.error('Error message:', err.message)
+    console.error('Error response:', err.response)
+    message.value = '❌ שגיאה בהעלאת הקובץ: ' + (err.response?.data?.error || err.message)
   } finally {
     // ניקוי בחירת הקובץ
     const input = document.querySelector('input[type="file"]') as HTMLInputElement | null
