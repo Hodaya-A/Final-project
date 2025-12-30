@@ -6,6 +6,7 @@ export interface ManagedUser {
   email: string
   name?: string
   role: UserRole
+  courierOptIn?: boolean
   storeId?: string
   createdAt?: string
 }
@@ -31,6 +32,7 @@ export async function createUser(user: {
   password: string
   name?: string
   role?: UserRole
+  courierOptIn?: boolean
   storeId?: string
 }): Promise<ManagedUser> {
   const res = await fetch(BASE_URL, {
@@ -75,5 +77,21 @@ export async function updateUserRole(uid: string, role: UserRole): Promise<void>
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}))
     throw new Error(errorData.message || 'עדכון התפקיד נכשל')
+  }
+}
+
+/**
+ * עדכון סטטוס משלוחן של משתמש
+ */
+export async function updateUserCourierStatus(uid: string, courierOptIn: boolean): Promise<void> {
+  const res = await fetch(`${BASE_URL}/${uid}/courier`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ courierOptIn }),
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.message || 'עדכון סטטוס משלוחן נכשל')
   }
 }

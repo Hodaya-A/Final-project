@@ -10,6 +10,7 @@ function sanitizeUser(doc) {
     email: data.email || "",
     name: data.name || "",
     role: data.role || "user",
+    courierOptIn: data.courierOptIn || false,
     storeId: data.storeId || "",
     createdAt: data.createdAt
       ? data.createdAt.toDate
@@ -35,7 +36,14 @@ router.get("/", async (_req, res) => {
 
 // ✅ יצירת משתמש חדש (ע"י אדמין) — הסיסמה לא מוחזרת ללקוח
 router.post("/", async (req, res) => {
-  const { email, password, name = "", role = "user", storeId = "" } = req.body;
+  const {
+    email,
+    password,
+    name = "",
+    role = "user",
+    courierOptIn = false,
+    storeId = "",
+  } = req.body;
 
   if (!email || !password) {
     return res
@@ -60,6 +68,7 @@ router.post("/", async (req, res) => {
       email,
       name,
       role,
+      courierOptIn,
       storeId,
       createdAt: new Date(),
     };
@@ -72,18 +81,17 @@ router.post("/", async (req, res) => {
         email,
         name,
         role,
+        courierOptIn,
         storeId,
       },
     });
   } catch (err) {
     console.error("Failed to create user", err);
-    return res
-      .status(500)
-      .json({
-        success: false,
-        message: "Failed to create user",
-        error: err.message,
-      });
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create user",
+      error: err.message,
+    });
   }
 });
 
@@ -114,18 +122,42 @@ router.put("/:uid/role", async (req, res) => {
 
   try {
     await db.collection("users").doc(uid).update({ role: newRole });
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Role updated",
-        user: { uid, role: newRole },
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Role updated",
+      user: { uid, role: newRole },
+    });
   } catch (err) {
     console.error(err);
     return res
       .status(500)
       .json({ success: false, message: "Error updating role" });
+  }
+});
+
+// ✅ עדכון סטטוס משלוחן
+router.put("/:uid/courier", async (req, res) => {
+  const uid = req.params.uid;
+  const courierOptIn = req.body.courierOptIn;
+
+  if (typeof courierOptIn !== "boolean") {
+    return res
+      .status(400)
+      .json({ success: false, message: "courierOptIn must be boolean" });
+  }
+
+  try {
+    await db.collection("users").doc(uid).update({ courierOptIn });
+    return res.status(200).json({
+      success: true,
+      message: "Courier status updated",
+      user: { uid, courierOptIn },
+    });
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Error updating courier status" });
   }
 });
 

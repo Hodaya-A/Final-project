@@ -111,6 +111,14 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/store-manager/StoreReportsView.vue'),
     meta: { requiresAuth: true, roles: ['storeManager'] },
   },
+
+  // ---- Courier ----
+  {
+    path: '/courier',
+    name: 'courier-dashboard',
+    component: () => import('@/views/CourierDashboard.vue'),
+    meta: { requiresAuth: true },
+  },
   // {
   // path: '/store-products',
   // name: 'store-products',

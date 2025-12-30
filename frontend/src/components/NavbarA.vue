@@ -25,6 +25,17 @@
       <div class="store-text">החנות שלי</div>
     </div>
 
+    <!-- ✅ קיצור דרך לדאש משלוחנים -->
+    <div
+      class="courier-shortcut"
+      v-if="userStore.isCourier"
+      @click="goToCourier"
+      title="דאש משלוחנים"
+    >
+      <div class="courier-icon">🚚</div>
+      <div class="courier-text">משלוחים</div>
+    </div>
+
     <!-- ✅ סל קניות -->
     <div class="cart-summary" @click="toggleCart">
       <svg
@@ -90,6 +101,10 @@ function toggleCategory(name: string) {
 
 function goToStore() {
   router.push('/store')
+}
+
+function goToCourier() {
+  router.push('/courier')
 }
 
 function toggleCart() {
@@ -245,7 +260,39 @@ function closeCart() {
   color: #1d4320;
   white-space: nowrap;
 }
+/* קיצור דרך לדאש משלוחנים */
+.courier-shortcut {
+  width: 140px;
+  height: 100px;
+  background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(255, 107, 0, 0.25);
+  margin-left: 5px;
+}
 
+.courier-shortcut:hover {
+  transform: scale(1.03);
+  box-shadow: 0 6px 14px rgba(255, 107, 0, 0.35);
+}
+
+.courier-icon {
+  font-size: 2.5rem;
+}
+
+.courier-text {
+  font-weight: 700;
+  color: white;
+  font-size: 0.85rem;
+}
 /* עיצוב לסל */
 .cart-summary {
   width: 240px;

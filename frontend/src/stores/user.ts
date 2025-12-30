@@ -11,6 +11,7 @@ export const useUserStore = defineStore('user', () => {
   const name = ref('')
   const storeId = ref('')
   const role = ref<'user' | 'admin' | 'storeManager' | ''>('')
+  const courierOptIn = ref(false)
   const initialized = ref(false)
 
   function setUser(
@@ -19,12 +20,14 @@ export const useUserStore = defineStore('user', () => {
     userRole: 'user' | 'admin' | 'storeManager',
     userName: string = '',
     userStoreId: string = '',
+    userCourierOptIn: boolean = false,
   ) {
     uid.value = userUid
     email.value = userEmail
     role.value = userRole
     name.value = userName
     storeId.value = userStoreId
+    courierOptIn.value = userCourierOptIn
   }
 
   async function logout() {
@@ -44,6 +47,7 @@ export const useUserStore = defineStore('user', () => {
     email.value = ''
     role.value = ''
     name.value = ''
+    courierOptIn.value = false
 
     // Clear local cart to avoid showing previous user's items to another user
     try {
@@ -76,7 +80,8 @@ export const useUserStore = defineStore('user', () => {
 
           const docData = snapshot.exists() ? snapshot.data() : {}
           const sId = (docData && (docData as any).storeId) || ''
-          setUser(user.uid, user.email || '', role, user.displayName || '', sId)
+          const courier = (docData && (docData as any).courierOptIn) || false
+          setUser(user.uid, user.email || '', role, user.displayName || '', sId, courier)
           // Load stored cart for this user (if any)
           try {
             const m = await import('@/stores/cart')
@@ -99,6 +104,7 @@ export const useUserStore = defineStore('user', () => {
   const isAdmin = computed(() => role.value === 'admin')
   const isStoreManager = computed(() => role.value === 'storeManager')
   const isUser = computed(() => role.value === 'user')
+  const isCourier = computed(() => courierOptIn.value)
 
   return {
     uid,
@@ -106,11 +112,13 @@ export const useUserStore = defineStore('user', () => {
     name,
     storeId,
     role,
+    courierOptIn,
     initialized,
     isLoggedIn,
     isAdmin,
     isStoreManager,
     isUser,
+    isCourier,
     setUser,
     logout,
     initializeUser,

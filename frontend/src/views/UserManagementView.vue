@@ -37,6 +37,12 @@
               <option value="admin">⚙️ ניהול אתר</option>
             </select>
           </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input v-model="newUser.courierOptIn" type="checkbox" />
+              <span>🚚 אפשר למשתמש זה להיות משלוחן</span>
+            </label>
+          </div>
           <button type="submit" :disabled="saving" class="btn-add">
             <span v-if="!saving">✅ הוסף משתמש</span>
             <span v-else>⏳ שומר...</span>
@@ -87,6 +93,16 @@
                   <option value="admin">⚙️ ניהול אתר</option>
                 </select>
               </div>
+              <div class="courier-toggle">
+                <label>
+                  <input
+                    v-model="user.courierOptIn"
+                    type="checkbox"
+                    @change="saveCourierStatus(user)"
+                  />
+                  <span>🚚 משלוחן</span>
+                </label>
+              </div>
               <button class="btn-delete" @click="confirmDelete(user)">🗑️ מחק משתמש</button>
             </div>
           </div>
@@ -113,6 +129,7 @@ import {
   deleteUserByUid,
   fetchUsers,
   updateUserRole,
+  updateUserCourierStatus,
   type ManagedUser,
   type UserRole,
 } from '@/services/userService'
@@ -131,6 +148,7 @@ const newUser = reactive({
   email: '',
   password: '',
   role: 'user' as UserRole,
+  courierOptIn: false,
 })
 
 async function loadUsers() {
@@ -165,6 +183,7 @@ async function addUser() {
       password: newUser.password,
       name: newUser.name,
       role: newUser.role,
+      courierOptIn: newUser.courierOptIn,
     })
     users.value.push(created)
     roleCache.value[created.uid] = created.role
@@ -172,6 +191,7 @@ async function addUser() {
     newUser.email = ''
     newUser.password = ''
     newUser.role = 'user'
+    newUser.courierOptIn = false
   } catch (err: any) {
     errorMessage.value = err?.message || 'שגיאה בהוספת המשתמש'
   } finally {
@@ -221,9 +241,27 @@ async function saveRole(user: ManagedUser) {
   try {
     await updateUserRole(user.uid, user.role)
     roleCache.value[user.uid] = user.role
+    // אם זה המשתמש הנוכחי, עדכן את ה-store כדי שהnavbar ישתנה מיד
+    if (user.uid === userStore.uid) {
+      userStore.role = user.role
+    }
   } catch (err: any) {
     errorMessage.value = err?.message || 'שגיאה בעדכון התפקיד'
     user.role = previousRole
+  }
+}
+
+async function saveCourierStatus(user: ManagedUser) {
+  const previousStatus = user.courierOptIn
+  try {
+    await updateUserCourierStatus(user.uid, user.courierOptIn || false)
+    // אם זה המשתמש הנוכחי, עדכן את ה-store כדי שהnavbar ישתנה מיד
+    if (user.uid === userStore.uid) {
+      userStore.courierOptIn = user.courierOptIn || false
+    }
+  } catch (err: any) {
+    errorMessage.value = err?.message || 'שגיאה בעדכון סטטוס משלוחן'
+    user.courierOptIn = previousStatus
   }
 }
 
@@ -301,6 +339,26 @@ onMounted(() => {
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.9rem;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-group input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.checkbox-group span {
+  font-size: 1rem;
+  color: #2c3e50;
 }
 
 .form-group input,
@@ -568,6 +626,35 @@ onMounted(() => {
 .role-selector select:focus {
   outline: none;
   border-color: #667eea;
+}
+
+.courier-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0.6rem;
+  background: #f8f9ff;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.courier-toggle label:hover {
+  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 140, 0, 0.1));
+  border-color: #ff8c00;
+}
+
+.courier-toggle input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #ff8c00;
+}
+
+.courier-toggle span {
+  font-size: 0.95rem;
+  color: #2c3e50;
 }
 
 .btn-delete {
