@@ -3,8 +3,6 @@
     <h1>עמוד ניהול</h1>
 
     <div class="actions">
-      <button @click="addProduct">הוסף מוצר</button>
-      <button @click="deleteExpiredProducts">מחק מוצרים שפג תוקפם</button>
       <button @click="deleteAllProducts">מחק את כל המוצרים</button>
       <button @click="goToUserManagement">ניהול משתמשים</button>
       <button @click="goToReports">הנפקת דוחות</button>
@@ -26,14 +24,6 @@ import axios from 'axios'
 const userStore = useUserStore()
 const isAdmin = userStore.isAdmin
 const router = useRouter()
-
-function addProduct() {
-  router.push('/admin/add-product')
-}
-
-function deleteExpiredProducts() {
-  alert('🔧 פונקציה למחיקת מוצרים שפג תוקפם תתווסף בהמשך')
-}
 
 function goToReports() {
   router.push('/admin/reports')

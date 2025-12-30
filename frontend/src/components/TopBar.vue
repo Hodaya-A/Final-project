@@ -95,6 +95,10 @@
             <template v-if="userStore.isLoggedIn">
               <p class="username">שלום, {{ userStore.email }}</p>
               <hr class="divider" />
+              <router-link to="/shop/settings" class="menu-link" @click="showMenu = false">
+                ⚙️ הגדרות חנות
+              </router-link>
+              <hr class="divider" />
               <button @click="logout">התנתקות</button>
             </template>
             <template v-else>
@@ -402,6 +406,21 @@ const submitSearch = () => {
   border: none;
   border-top: 1px solid #ccc;
 }
+
+.menu-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.2s;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.menu-link:hover {
+  background: #f0f0f0;
+}
+
 .login-link,
 .user-dropdown button {
   display: block;

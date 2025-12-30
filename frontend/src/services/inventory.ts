@@ -57,13 +57,34 @@ export async function uploadInventory(
   file: File,
   mode: 'update' | 'renew' = 'update',
 ): Promise<UploadResult> {
+  console.log('🚀 uploadInventory called')
+  console.log('📁 File:', file.name, 'Size:', file.size, 'Type:', file.type)
+  console.log('🔄 Mode:', mode)
+
   const formData = new FormData()
   formData.append('file', file)
   formData.append('mode', mode)
 
-  // אל תקבע Content-Type ידנית – ה־boundary צריך להיקבע אוטומטית
-  const { data }: AxiosResponse<UploadResult> = await api.post('/inventory/upload', formData)
-  return data
+  console.log('📦 FormData created, entries:')
+  for (const [key, value] of formData.entries()) {
+    console.log(`  ${key}:`, value)
+  }
+
+  try {
+    console.log('📤 Sending POST request to /inventory/upload')
+    const { data }: AxiosResponse<UploadResult> = await api.post('/inventory/upload', formData, {
+      headers: {
+        'Content-Type': undefined, // זה אומר ל-axios לא לדרוס ולתת לדפדפן לקבוע
+      },
+    })
+    console.log('✅ Upload successful:', data)
+    return data
+  } catch (error: any) {
+    console.error('❌ Upload failed:', error)
+    console.error('Error response:', error.response?.data)
+    console.error('Error status:', error.response?.status)
+    throw error
+  }
 }
 
 /** שמירת פרופיל ייבוא (המסלול בשרת הוא /api/importProfiles) */

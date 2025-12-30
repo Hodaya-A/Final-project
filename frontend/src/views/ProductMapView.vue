@@ -132,8 +132,13 @@ async function geocodeLocation() {
 
 async function loadProducts() {
   if (!userLat.value || !userLng.value) return
-  const res = await axios.get('http://localhost:3000/api/products')
+  console.log('🔍 Loading products from /api/inventory...')
+  const res = await axios.get('http://localhost:3000/api/inventory', {
+    params: { _limit: 2000 },
+  })
   const products: Product[] = Array.isArray(res.data) ? res.data : res.data.data || []
+  console.log(`📦 Total products loaded: ${products.length}`)
+  console.log('📍 Products with location:', products.filter((p) => p.location?.coordinates).length)
 
   if (productLayer) productLayer.clearLayers()
   if (userCircle) userCircle.remove()

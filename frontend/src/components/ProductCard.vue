@@ -1,6 +1,11 @@
 <template>
   <div class="product-card-wrapper">
-    <div class="product-card">
+    <div class="product-card" :class="{ 'expiring-soon': isExpiringSoon }">
+      <!-- ⚠️ אזהרת תפוגה -->
+      <div v-if="isExpiringSoon" class="expiry-warning">
+        ⚠️ עומד לפוג בעוד {{ daysUntilExpiry }} ימים!
+      </div>
+
       <!-- 🖼️ תמונה עם Fallback או כפתור העלאה -->
       <div class="image-container" @click="handleImageClick">
         <img
@@ -60,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import type { Product } from '@/stores/products'
 import axios from 'axios'
@@ -71,6 +76,20 @@ const props = defineProps<{ product: Product }>()
 const formattedDate = new Date(props.product.expiryDate || '').toLocaleDateString('he-IL')
 
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// חישוב ימים עד תפוגה
+const daysUntilExpiry = computed(() => {
+  const today = new Date()
+  const expiryDate = new Date(props.product.expiryDate || '')
+  const diffTime = expiryDate.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+})
+
+// בדיקה אם המוצר עומד לפוג בעוד 3 ימים או פחות
+const isExpiringSoon = computed(() => {
+  return daysUntilExpiry.value <= 3 && daysUntilExpiry.value > 0
+})
 
 const FALLBACK = 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image'
 
@@ -96,11 +115,12 @@ const getDefaultImage = () => {
     return fullPath
   }
   console.log('Using fallback image')
+  return FALLBACK
 }
 
 const imgSrc = ref<string>(getDefaultImage())
 
-function onImgError(event: Event) {
+function onImgError() {
   console.log('Image load error for:', imgSrc.value)
   if (imgSrc.value !== FALLBACK) {
     console.log('Switching to fallback image')
@@ -182,6 +202,35 @@ function addToCart() {
   overflow: hidden;
 }
 
+.product-card.expiring-soon {
+  border-color: #ff6b6b;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+}
+
+.expiry-warning {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #ff6b6b, #ff8787);
+  color: white;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  z-index: 10;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 .product-card::before {
   content: '';
   position: absolute;
@@ -213,6 +262,11 @@ function addToCart() {
   cursor: pointer;
   position: relative;
   margin-bottom: 1rem;
+  margin-top: 2rem;
+}
+
+.product-card.expiring-soon .image-container {
+  margin-top: 3rem;
 }
 
 .product-image {
