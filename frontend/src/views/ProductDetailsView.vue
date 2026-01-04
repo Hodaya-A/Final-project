@@ -4,6 +4,10 @@
     <img :src="product.imageUrl" alt="תמונה" class="product-image" />
 
     <div class="info">
+      <p v-if="product.description" class="description">
+        <strong>📝 תיאור:</strong><br />
+        {{ product.description }}
+      </p>
       <p><strong>🧭 קטגוריה:</strong> {{ product.category }}</p>
       <p>
         <strong>💰 מחיר רגיל:</strong>
@@ -34,6 +38,7 @@ const product = ref<null | {
   priceOriginal: number
   priceDiscounted: number
   expiryDate: string
+  description?: string
   lat: number
   lng: number
 }>(null)
@@ -75,6 +80,16 @@ onMounted(async () => {
 .info p {
   font-size: 1.1rem;
   margin: 0.5rem 0;
+}
+
+.description {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-right: 4px solid #7c3aed;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
 .price-original {

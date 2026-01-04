@@ -13,6 +13,7 @@ const InventorySchema = new mongoose.Schema({
   quantity: { type: Number, default: 0 },
   expiryDate: { type: Date },
   imageUrl: { type: String },
+  description: { type: String }, // 📝 תיאור מפורט של המוצר
   // GeoJSON location (optional) - לא מוסיפים ברירת מחדל!
   location: {
     type: { type: String, enum: ["Point"] },

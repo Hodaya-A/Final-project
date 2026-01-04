@@ -89,7 +89,7 @@ input {
 button {
   width: 100%;
   padding: 0.6rem;
-  background-color: #27ae60;
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
   color: white;
   font-weight: bold;
   border: none;

@@ -59,9 +59,15 @@ const DEFAULT_SHOP_ID = new mongoose.Types.ObjectId("64a000000000000000000000");
 router.get("/", async (req, res) => {
   try {
     const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
-    const { category, q, _page = 1, _limit = 50 } = req.query;
+    const { category, q, _page = 1, _limit = 50, sellerId } = req.query;
 
     const filter = { shopId };
+
+    // סינון לפי sellerId אם קיים
+    if (sellerId) {
+      filter.sellerId = sellerId;
+    }
+
     if (category) filter.category = category;
     if (q) filter.name = { $regex: q, $options: "i" };
 
@@ -160,7 +166,14 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
   try {
     if (mode === "renew") {
-      await Inventory.deleteMany({ shopId });
+      // מחיקה רק של המוצרים של המוכר הנוכחי (לפי sellerId)
+      if (sellerId) {
+        await Inventory.deleteMany({ sellerId });
+        console.log(`🗑️ נמחקו כל המוצרים של המוכר: ${sellerId}`);
+      } else {
+        await Inventory.deleteMany({ shopId });
+        console.log(`🗑️ נמחקו כל המוצרים של החנות: ${shopId}`);
+      }
     }
 
     let profile = await ImportProfile.findOne({ shopId });
@@ -266,6 +279,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       "salePrice",
       "expiryDate",
       "imageUrl",
+      "description",
     ];
 
     if (profile?.mapping) {
@@ -389,6 +403,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         location: shopLocation, // מיקום החנות
         place: shopPlace, // כתובת החנות
         ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
+        ...(mapping.description
+          ? { description: String(pick("description") || "") }
+          : {}),
         ...(sellerId ? { sellerId } : {}),
         updatedAt: new Date(),
       };

@@ -1,7 +1,9 @@
 <template>
   <div class="thank-you">
     <h1>תודה על ההזמנה! 🙏</h1>
-    <p>המייל עם פרטי ההזמנה נשלח אל: <strong>{{ userStore.email }}</strong></p>
+    <p>
+      המייל עם פרטי ההזמנה נשלח אל: <strong>{{ userStore.email }}</strong>
+    </p>
     <p>תוכל לצפות בהזמנות הקודמות שלך בכל עת בלחיצה על "הזמנות קודמות" בסרגל העליון.</p>
     <router-link to="/" class="btn-home">חזרה לדף הבית</router-link>
   </div>
@@ -20,7 +22,7 @@ const userStore = useUserStore()
   padding: 2rem;
   text-align: center;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .btn-home {

@@ -63,7 +63,7 @@ onMounted(() => {
   const map = L.map('map').setView([32.08, 34.78], 13)
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: '© OpenStreetMap',
   }).addTo(map)
 
   map.on('click', (e: L.LeafletMouseEvent) => {
@@ -91,8 +91,8 @@ async function handleSubmit() {
     imageUrl: imageUrl.value,
     location: {
       type: 'Point',
-      coordinates: [lng.value, lat.value]
-    }
+      coordinates: [lng.value, lat.value],
+    },
   }
 
   try {

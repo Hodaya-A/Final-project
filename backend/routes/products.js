@@ -177,6 +177,17 @@ router.get("/:id", async (req, res) => {
 // ✅ עדכון מוצר
 router.put("/:id", async (req, res) => {
   try {
+    const product = await Inventory.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    // בדיקה שהמשתמש יכול לערוך רק את המוצרים שלו
+    const userEmail = req.user?.email || req.body.sellerId;
+    if (product.sellerId && userEmail && product.sellerId !== userEmail) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to edit this product" });
+    }
+
     await Inventory.findByIdAndUpdate(req.params.id, req.body);
     res.json({ success: true });
   } catch (err) {
@@ -187,6 +198,17 @@ router.put("/:id", async (req, res) => {
 // ✅ מחיקת מוצר בודד
 router.delete("/:id", async (req, res) => {
   try {
+    const product = await Inventory.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+
+    // בדיקה שהמשתמש יכול למחוק רק את המוצרים שלו
+    const userEmail = req.user?.email || req.body.sellerId;
+    if (product.sellerId && userEmail && product.sellerId !== userEmail) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to delete this product" });
+    }
+
     await Inventory.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
