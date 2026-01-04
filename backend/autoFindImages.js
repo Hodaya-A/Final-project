@@ -117,7 +117,6 @@ async function downloadImage(url, filename) {
 
     return true;
   } catch (error) {
-    console.error(`   ❌ שגיאה בהורדת ${filename}:`, error.message);
     return false;
   }
 }
@@ -125,17 +124,13 @@ async function downloadImage(url, filename) {
 async function searchAndDownloadImages() {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ מחובר ל-MongoDB\n");
 
     const products = await Inventory.find({});
-    console.log(`🔍 מעבד ${products.length} מוצרים\n`);
 
     let successCount = 0;
     let failCount = 0;
 
     for (const product of products) {
-      console.log(`\n📦 ${product.name}`);
-
       try {
         let imageUrl = null;
 
@@ -147,16 +142,12 @@ async function searchAndDownloadImages() {
         ) {
           imageUrl = await fetchImageFromGoogle(product.name, product.barcode);
           if (imageUrl) {
-            console.log(
-              `   🎯 נמצא דרך Google: ${imageUrl.substring(0, 50)}...`
-            );
           }
         }
 
         // שלב 2: אם לא נמצא - שימוש בתמונת ברירת מחדל
         if (!imageUrl) {
           imageUrl = getFallbackImageUrl(product.name);
-          console.log(`   📸 משתמש בתמונת ברירת מחדל`);
         }
 
         const filename = `${product._id}.jpg`;
@@ -173,28 +164,19 @@ async function searchAndDownloadImages() {
             }
           );
           successCount++;
-          console.log(`   ✅ נשמר בפרויקט`);
         } else {
-          failCount++;
+          failCount;
         }
 
         // המתנה בין בקשות
         await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`   ❌ שגיאה: ${error.message}`);
         failCount++;
       }
     }
-
-    console.log(`\n\n📊 סיכום:`);
-    console.log(`✅ הצלחות: ${successCount} תמונות הורדו ונשמרו`);
-    console.log(`⚠️  כישלונות: ${failCount} מוצרים ידרשו העלאה ידנית`);
-    console.log(`📁 התמונות נשמרו ב: ${IMAGES_DIR}`);
   } catch (error) {
-    console.error("❌ שגיאה:", error);
   } finally {
     await mongoose.connection.close();
-    console.log("\n👋 סיום");
     process.exit(0);
   }
 }

@@ -94,8 +94,6 @@ async function searchByName(productName) {
 // 3. הורדת תמונה ושמירה לוקאלית
 async function downloadImage(imageUrl, productId) {
   try {
-    console.log(`   📥 מוריד מ: ${imageUrl.substring(0, 60)}...`);
-
     const response = await axios.get(imageUrl, {
       responseType: "arraybuffer",
       headers: {
@@ -118,7 +116,6 @@ async function downloadImage(imageUrl, productId) {
 
     return `/uploads/images/${filename}`;
   } catch (error) {
-    console.log(`   ❌ שגיאה בהורדה: ${error.message}`);
     return null;
   }
 }
@@ -151,11 +148,8 @@ async function processAllProducts() {
     await mongoose.connect(
       process.env.MONGO_URI || "mongodb://localhost:27017/freshend"
     );
-    console.log("✅ מחובר למסד הנתונים\n");
 
     const products = await Inventory.find({ shopId: DEFAULT_SHOP_ID });
-    console.log(`📦 מעבד ${products.length} מוצרים\n`);
-    console.log("=".repeat(60) + "\n");
 
     let stats = {
       byBarcode: 0,
@@ -166,17 +160,14 @@ async function processAllProducts() {
 
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
-      console.log(`[${i + 1}/${products.length}] 🔍 ${product.name}`);
 
       let imageUrl = null;
       let localPath = null;
 
       // שלב 1: ניסיון לפי ברקוד
       if (product.barcode) {
-        console.log(`   🔢 מחפש לפי ברקוד: ${product.barcode}`);
         imageUrl = await searchByBarcode(product.barcode);
         if (imageUrl) {
-          console.log(`   ✅ נמצא לפי ברקוד!`);
           localPath = await downloadImage(imageUrl, product._id);
           if (localPath) {
             stats.byBarcode++;
@@ -186,10 +177,8 @@ async function processAllProducts() {
 
       // שלב 2: ניסיון לפי שם
       if (!localPath) {
-        console.log(`   📝 מחפש לפי שם מוצר`);
         imageUrl = await searchByName(product.name);
         if (imageUrl) {
-          console.log(`   ✅ נמצא לפי שם!`);
           localPath = await downloadImage(imageUrl, product._id);
           if (localPath) {
             stats.byName++;
@@ -199,7 +188,6 @@ async function processAllProducts() {
 
       // שלב 3: fallback איכותי
       if (!localPath) {
-        console.log(`   🎨 משתמש בתמונת fallback איכותית`);
         imageUrl = getFallbackImage(product.name, product.category);
         localPath = await downloadImage(imageUrl, product._id);
         if (localPath) {
@@ -215,30 +203,13 @@ async function processAllProducts() {
           { _id: product._id },
           { $set: { imageUrl: localPath } }
         );
-        console.log(`   💾 נשמר: ${localPath}\n`);
       } else {
-        console.log(`   ⚠️  לא הצלחנו למצוא תמונה\n`);
       }
 
       // המתנה קצרה בין מוצרים
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
-
-    console.log("\n" + "=".repeat(60));
-    console.log(`🎉 סיימתי לעבד את כל המוצרים!`);
-    console.log(`📊 סטטיסטיקות:`);
-    console.log(`   🔢 לפי ברקוד: ${stats.byBarcode} מוצרים`);
-    console.log(`   📝 לפי שם: ${stats.byName} מוצרים`);
-    console.log(`   🎨 Fallback: ${stats.fallback} מוצרים`);
-    console.log(`   ❌ נכשלו: ${stats.failed} מוצרים`);
-    console.log(
-      `   ✅ סה"כ הצלחה: ${stats.byBarcode + stats.byName + stats.fallback}/${
-        products.length
-      }`
-    );
-    console.log("=".repeat(60));
   } catch (error) {
-    console.error("❌ שגיאה כללית:", error);
   } finally {
     await mongoose.disconnect();
   }

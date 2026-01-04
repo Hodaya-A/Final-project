@@ -41,9 +41,9 @@ onAuthStateChanged(auth, async (user) => {
     try {
       const userRef = doc(db, 'users', user.uid)
       const snapshot = await getDoc(userRef)
-      const sId = snapshot.exists() ? (snapshot.data() as any).storeId || '' : ''
+      const sId = snapshot.exists() ? (snapshot.data() as { storeId?: string }).storeId || '' : ''
       userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '', sId)
-    } catch (e) {
+    } catch {
       userStore.setUser(user.uid || '', user.email || '', role, user.displayName || '', '')
     }
   } else {

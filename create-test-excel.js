@@ -128,11 +128,3 @@ XLSX.utils.book_append_sheet(wb, ws, "מוצרים");
 
 // שמירת הקובץ
 XLSX.writeFile(wb, "מוצרים-בדיקה-חדש.xlsx");
-
-console.log("✅ הקובץ נוצר בהצלחה: מוצרים-בדיקה-חדש.xlsx");
-console.log("📅 תאריכים:");
-console.log("  - פג אתמול:", today.subtract(1, "day").format("YYYY-MM-DD"));
-console.log("  - פג היום:", today.format("YYYY-MM-DD"));
-console.log("  - פוגה מחר:", today.add(1, "day").format("YYYY-MM-DD"));
-console.log("  - פוגה ב-2 ימים:", today.add(2, "day").format("YYYY-MM-DD"));
-console.log("  - פוגה ב-3 ימים:", today.add(3, "day").format("YYYY-MM-DD"));
