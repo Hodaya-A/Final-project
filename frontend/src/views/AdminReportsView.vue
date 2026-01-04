@@ -1,18 +1,18 @@
 <template>
   <div class="admin-reports">
-    <h1>📊 דוחות מנהל</h1>
+    <h1>דוחות מנהל</h1>
 
     <div class="buttons">
-      <button @click="loadReport('sales')">📈 דוח מכירות</button>
-      <button @click="loadReport('expiring')">⏰ מוצרים קרובים לתפוגה</button>
-      <button @click="loadReport('unsold')">🚫 מוצרים שלא נמכרו</button>
+      <button @click="loadReport('sales')">דוח מכירות</button>
+      <button @click="loadReport('expiring')">מוצרים קרובים לתפוגה</button>
+      <button @click="loadReport('unsold')">מוצרים שלא נמכרו</button>
     </div>
 
-    <div v-if="loading">⏳ טוען דוח...</div>
+    <div v-if="loading">טוען דוח...</div>
 
-    <!-- 📈 דוח מכירות -->
+    <!-- דוח מכירות -->
     <div v-if="reportType === 'sales' && salesReport" class="report-section print-area">
-      <h2>📈 דוח מכירות</h2>
+      <h2>דוח מכירות</h2>
       <p><strong>סה"כ הכנסות:</strong> ₪{{ salesReport.totalRevenue.toFixed(2) }}</p>
       <p><strong>סה"כ הזמנות:</strong> {{ salesReport.orderCount }}</p>
 
@@ -34,12 +34,12 @@
       </table>
     </div>
 
-    <!-- ⏰ מוצרים קרובים לתפוגה -->
+    <!-- מוצרים קרובים לתפוגה -->
     <div
       v-if="reportType === 'expiring' && expiringProducts.length"
       class="report-section print-area"
     >
-      <h2>⏰ מוצרים שקרובים לתפוגה</h2>
+      <h2>מוצרים שקרובים לתפוגה</h2>
       <table>
         <thead>
           <tr>
@@ -58,9 +58,9 @@
       </table>
     </div>
 
-    <!-- 🚫 מוצרים שלא נמכרו -->
+    <!-- מוצרים שלא נמכרו -->
     <div v-if="reportType === 'unsold' && unsoldProducts.length" class="report-section print-area">
-      <h2>🚫 מוצרים שלא נמכרו כלל</h2>
+      <h2>מוצרים שלא נמכרו כלל</h2>
       <table>
         <thead>
           <tr>
@@ -84,7 +84,7 @@
       v-if="reportType && (salesReport || expiringProducts.length || unsoldProducts.length)"
       class="print-btn"
     >
-      <button @click="printReport">🖨️ הדפס דוח</button>
+      <button @click="printReport">הדפס דוח</button>
     </div>
   </div>
 </template>

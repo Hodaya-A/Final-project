@@ -32,20 +32,20 @@
           <div class="form-group">
             <label>תפקיד</label>
             <select v-model="newUser.role">
-              <option value="user">👤 משתמש רגיל</option>
-              <option value="storeManager">🏪 מנהל חנות</option>
-              <option value="admin">⚙️ ניהול אתר</option>
+              <option value="user">משתמש רגיל</option>
+              <option value="storeManager">מנהל חנות</option>
+              <option value="admin">ניהול אתר</option>
             </select>
           </div>
           <div class="form-group checkbox-group">
             <label>
               <input v-model="newUser.courierOptIn" type="checkbox" />
-              <span>🚚 אפשר למשתמש זה להיות משלוחן</span>
+              <span>אפשר למשתמש זה להיות משלוחן</span>
             </label>
           </div>
           <button type="submit" :disabled="saving" class="btn-add">
-            <span v-if="!saving">✅ הוסף משתמש</span>
-            <span v-else>⏳ שומר...</span>
+            <span v-if="!saving">הוסף משתמש</span>
+            <span v-else>שומר...</span>
           </button>
         </form>
       </section>
@@ -88,9 +88,9 @@
               <div class="role-selector">
                 <label>שינוי תפקיד:</label>
                 <select v-model="user.role" @change="saveRole(user)">
-                  <option value="user">👤 משתמש</option>
-                  <option value="storeManager">🏪 מנהל חנות</option>
-                  <option value="admin">⚙️ ניהול אתר</option>
+                  <option value="user">משתמש</option>
+                  <option value="storeManager">מנהל חנות</option>
+                  <option value="admin">ניהול אתר</option>
                 </select>
               </div>
               <div class="courier-toggle">
@@ -100,10 +100,10 @@
                     type="checkbox"
                     @change="saveCourierStatus(user)"
                   />
-                  <span>🚚 משלוחן</span>
+                  <span>משלוחן</span>
                 </label>
               </div>
-              <button class="btn-delete" @click="confirmDelete(user)">🗑️ מחק משתמש</button>
+              <button class="btn-delete" @click="confirmDelete(user)">מחק משתמש</button>
             </div>
           </div>
         </div>
@@ -229,9 +229,9 @@ function getUserInitials(user: ManagedUser): string {
 
 function getRoleLabel(role: UserRole): string {
   const labels: Record<UserRole, string> = {
-    admin: '⚙️ ניהול אתר',
-    storeManager: '🏪 מנהל חנות',
-    user: '👤 משתמש',
+    admin: 'ניהול אתר',
+    storeManager: 'מנהל חנות',
+    user: 'משתמש',
   }
   return labels[role] || role
 }

@@ -1,11 +1,11 @@
 <template>
   <div class="store-reports" v-if="isStoreManager">
-    <h1>📊 דוחות לחנות שלך</h1>
+    <h1>דוחות לחנות שלך</h1>
 
     <div class="buttons">
-      <button @click="loadReport('sales')">📈 דוח מכירות</button>
-      <button @click="loadReport('expiring')">⏰ מוצרים בתוקף קרוב</button>
-      <button @click="loadReport('unsold')">🚫 מוצרים שלא נמכרו</button>
+      <button @click="loadReport('sales')">דוח מכירות</button>
+      <button @click="loadReport('expiring')">מוצרים בתוקף קרוב</button>
+      <button @click="loadReport('unsold')">מוצרים שלא נמכרו</button>
     </div>
 
     <div v-if="loading">⏳ טוען...</div>

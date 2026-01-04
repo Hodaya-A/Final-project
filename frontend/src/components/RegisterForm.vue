@@ -1,6 +1,6 @@
 <template>
   <form class="register-form" @submit.prevent="handleRegister">
-    <h2>📝 Sign Up</h2>
+    <h2>Sign Up</h2>
 
     <div class="form-group">
       <label for="email">Email</label>
