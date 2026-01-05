@@ -57,7 +57,8 @@ router.put("/location", async (req, res) => {
     const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
     const { shopName, coordinates, city, street, number } = req.body;
 
-    console.log("📍 עדכון מיקום חנות:", {
+    console.log("📍 עדכון/יצירת מיקום חנות:", {
+      shopId,
       shopName,
       coordinates,
       city,
@@ -81,14 +82,10 @@ router.put("/location", async (req, res) => {
     const profile = await ImportProfile.findOneAndUpdate(
       { shopId },
       { $set: update },
-      { new: true, upsert: false }
+      { new: true, upsert: true } // ✅ שינוי: upsert: true כדי ליצור אם לא קיים
     );
 
-    if (!profile) {
-      return res.status(404).json({ error: "Profile not found" });
-    }
-
-    console.log("✅ מיקום חנות עודכן בהצלחה");
+    console.log("✅ מיקום חנות עודכן/נוצר בהצלחה");
     res.json({ ok: true, profile });
   } catch (err) {
     console.error("❌ שגיאה בעדכון מיקום:", err);

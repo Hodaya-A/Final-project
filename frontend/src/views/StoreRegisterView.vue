@@ -19,8 +19,29 @@
       </div>
 
       <div class="form-group">
-        <label for="store">כתובת החנות</label>
-        <input id="store" v-model="storeAddress" type="text" required />
+        <label for="storeName">שם החנות</label>
+        <input
+          id="storeName"
+          v-model="storeName"
+          type="text"
+          required
+          placeholder="לדוגמה: סופר פרש"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="city">עיר</label>
+        <input id="city" v-model="city" type="text" required placeholder="לדוגמה: תל אביב" />
+      </div>
+
+      <div class="form-group">
+        <label for="street">רחוב</label>
+        <input id="street" v-model="street" type="text" required placeholder="לדוגמה: דיזנגוף" />
+      </div>
+
+      <div class="form-group">
+        <label for="number">מספר בית</label>
+        <input id="number" v-model="houseNumber" type="text" required placeholder="לדוגמה: 50" />
       </div>
 
       <button type="submit" :disabled="loading">
@@ -38,11 +59,15 @@ import { useRouter } from 'vue-router'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth, db } from '@/services/firebase'
 import { doc, setDoc } from 'firebase/firestore'
+import axios from 'axios'
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
-const storeAddress = ref('')
+const storeName = ref('')
+const city = ref('')
+const street = ref('')
+const houseNumber = ref('')
 const error = ref('')
 const loading = ref(false)
 const router = useRouter()
@@ -55,14 +80,37 @@ async function handleRegister() {
     const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value)
     const uid = userCredential.user.uid
 
+    // שמירת המשתמש ב-Firestore
     await setDoc(doc(db, 'users', uid), {
       email: email.value,
       name: name.value,
       uid,
       role: 'storeManager',
-      storeAddress: storeAddress.value,
+      storeName: storeName.value,
+      storeAddress: `${street.value} ${houseNumber.value}, ${city.value}`,
       createdAt: new Date(),
     })
+
+    // יצירת/עדכון ImportProfile בבק-אנד עם פרטי החנות
+    try {
+      const token = await userCredential.user.getIdToken()
+      await axios.put(
+        'http://localhost:3000/api/importProfiles/location',
+        {
+          shopName: storeName.value,
+          city: city.value,
+          street: street.value,
+          number: houseNumber.value,
+          coordinates: [34.7818, 32.0853], // ברירת מחדל - ניתן להוסיף geolocation
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+      console.log('✅ פרופיל חנות נוצר בהצלחה')
+    } catch (profileErr) {
+      console.error('⚠️ שגיאה ביצירת פרופיל חנות:', profileErr)
+    }
 
     router.push('/store')
   } catch (err: any) {

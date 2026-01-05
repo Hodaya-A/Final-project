@@ -204,6 +204,7 @@ body {
   grid-template-columns: repeat(5, 1fr);
   gap: 1.5rem;
   width: 100%;
+  direction: rtl;
 }
 
 @media (max-width: 1300px) {
