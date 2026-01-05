@@ -18,7 +18,7 @@ const upload = multer({ dest: "uploads/" });
 // מילון שמות אפשריים לעמודות
 const SYNONYMS = {
   barcode: ["barcode", "ברקוד", 'מק"ט', "item_code", "sku", "code"],
-  name: ["name", "שם מוצר", "תיאור", "description", "product_name"],
+  name: ["name", "שם מוצר", "product_name"],
   price: ["price", "מחיר", "מחיר ליח'", "מחיר ליחידה"],
   priceOriginal: [
     "priceoriginal",
@@ -40,6 +40,7 @@ const SYNONYMS = {
   category: ["category", "קטגוריה", "מחלקה", "קבוצה"],
   expiryDate: ["expirydate", "תוקף", "תאריך תפוגה", "exp", "exp_date"],
   imageUrl: ["imageurl", "תמונה", "קישור תמונה", "image", "image_url"],
+  description: ["description", "תיאור", "פירוט", "תיאור מפורט", "פרטים"],
 };
 
 // פונקציה למציאת כותרת מתאימה
@@ -87,6 +88,58 @@ router.get("/", async (req, res) => {
   }
 });
 
+/** GET /api/inventory/:id — שליפת מוצר בודד */
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const item = await Inventory.findById(id);
+
+    if (!item) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    // שלוף את שם החנות מה-ImportProfile
+    let shopName = "לא ידוע";
+    let shopAddress = "";
+    let shopCity = "";
+
+    if (item.shopId) {
+      const profile = await ImportProfile.findOne({ shopId: item.shopId });
+      console.log("📋 Profile found:", profile);
+      if (profile) {
+        shopName = profile.shopName || "לא ידוע";
+        if (profile.shopAddress) {
+          const street = profile.shopAddress.street || "";
+          const number = profile.shopAddress.number || "";
+          shopCity = profile.shopAddress.city || "";
+          shopAddress = street && number ? `${street} ${number}` : street;
+        }
+      }
+    }
+
+    console.log("📦 Item data:", {
+      name: item.name,
+      description: item.description,
+      shopName,
+      shopAddress,
+      shopCity,
+    });
+
+    // הוסף את שם החנות לתשובה
+    const response = {
+      ...item.toObject(),
+      shopName,
+      shopAddress,
+      shopCity,
+    };
+
+    res.json(response);
+  } catch (err) {
+    console.error("❌ שגיאה בשליפת מוצר:", err);
+    res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
 /** POST /api/inventory — הוספת פריט יחיד */
 router.post("/", async (req, res) => {
   try {
@@ -116,6 +169,22 @@ router.post("/", async (req, res) => {
     }
     console.log(`🖼️ קישור תמונה עבור "${name}": ${finalImageUrl || "אין"}`);
 
+    // קבל כתובת חנות מהפרופיל
+    let profile = await ImportProfile.findOne({ shopId });
+    const shopLocation = profile?.shopLocation || {
+      type: "Point",
+      coordinates: [34.7818, 32.0853],
+    };
+    const shopPlace = profile?.shopAddress || {
+      city: "תל אביב",
+      street: "",
+      number: "",
+    };
+    const fullAddress =
+      shopPlace.street && shopPlace.number
+        ? `${shopPlace.street} ${shopPlace.number}`
+        : shopPlace.street || "";
+
     const item = await Inventory.create({
       shopId,
       barcode: barcode || "",
@@ -126,6 +195,11 @@ router.post("/", async (req, res) => {
       quantity: Number.isNaN(quantity) ? 0 : quantity,
       expiryDate,
       imageUrl: finalImageUrl, // יכול להיות null
+      location: shopLocation,
+      place: {
+        city: shopPlace.city || "",
+        address: fullAddress,
+      },
       ...(sellerId ? { sellerId } : {}),
       updatedAt: new Date(),
     });
@@ -134,6 +208,40 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error("❌ שגיאה בהוספת מוצר:", err);
     res.status(500).json({ error: "Failed to add product" });
+  }
+});
+
+/** PUT /api/inventory/:id — עדכון מוצר */
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body };
+    delete updateData._id; // מסיר את ה-_id מה-body
+
+    const updated = await Inventory.findByIdAndUpdate(id, updateData, {
+      new: true,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error("❌ שגיאה בעדכון מוצר:", err);
+    res.status(500).json({ error: "Failed to update product" });
+  }
+});
+
+/** DELETE /api/inventory/:id — מחיקת מוצר */
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Inventory.findByIdAndDelete(id);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("❌ שגיאה במחיקת מוצר:", err);
+    res.status(500).json({ error: "Failed to delete product" });
   }
 });
 
@@ -282,6 +390,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       "description",
     ];
 
+    console.log("📋 Headers from file:", headers);
+
     if (profile?.mapping) {
       wanted.forEach((k) => {
         const mapped = profile.mapping[k]?.trim();
@@ -292,6 +402,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     } else {
       wanted.forEach((k) => (mapping[k] = findHeader(headers, k)));
     }
+
+    console.log("🗺️ Final mapping:", mapping);
 
     const errors = [];
     const bulk = [];
@@ -389,6 +501,21 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         number: "",
       };
 
+      // בנה כתובת מלאה מהפרופיל
+      const fullAddress =
+        shopPlace.street && shopPlace.number
+          ? `${shopPlace.street} ${shopPlace.number}`
+          : shopPlace.street || "";
+
+      // שלוף תיאור מהקובץ
+      const descriptionFromFile = mapping.description
+        ? String(pick("description") || "")
+        : "";
+
+      console.log(
+        `📝 Product: ${rawName}, Description from file: "${descriptionFromFile}"`
+      );
+
       const doc = {
         shopId,
         barcode: rawBarcode || "",
@@ -401,11 +528,12 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         quantity: Number.isNaN(quantity) ? 0 : quantity,
         expiryDate,
         location: shopLocation, // מיקום החנות
-        place: shopPlace, // כתובת החנות
+        place: {
+          city: shopPlace.city || "",
+          address: fullAddress,
+        }, // כתובת החנות
         ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
-        ...(mapping.description
-          ? { description: String(pick("description") || "") }
-          : {}),
+        ...(descriptionFromFile ? { description: descriptionFromFile } : {}),
         ...(sellerId ? { sellerId } : {}),
         updatedAt: new Date(),
       };
