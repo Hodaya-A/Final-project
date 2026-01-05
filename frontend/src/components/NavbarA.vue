@@ -25,14 +25,13 @@
       <div class="store-text">החנות שלי</div>
     </div>
 
-    <!-- ✅ קיצור דרך לדאש משלוחנים -->
+    <!-- קיצור דרך לדאש משלוחנים -->
     <div
       class="courier-shortcut"
       v-if="userStore.isCourier"
       @click="goToCourier"
       title="דאש משלוחנים"
     >
-      <div class="courier-icon">🚚</div>
       <div class="courier-text">משלוחים</div>
     </div>
 

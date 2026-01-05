@@ -1,10 +1,10 @@
 <template>
   <div class="store-manager-dashboard">
-    <h1>📦 לוח ניהול חנות</h1>
+    <h1>לוח ניהול חנות</h1>
 
     <div class="actions">
-      <button @click="goTo('/store-products')">📋 ניהול מוצרים</button>
-      <button @click="goTo('/store-reports')">📊 דוחות אישיים</button>
+      <button @click="goTo('/store-products')">ניהול מוצרים</button>
+      <button @click="goTo('/store-reports')">דוחות אישיים</button>
     </div>
   </div>
 </template>

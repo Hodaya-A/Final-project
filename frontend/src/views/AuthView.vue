@@ -1,7 +1,7 @@
 <template>
   <div class="auth-container">
     <div class="auth-box">
-      <h2>{{ isRegistering ? '📝 הרשמה' : '🔐 התחברות' }}</h2>
+      <h2>{{ isRegistering ? 'הרשמה' : 'התחברות' }}</h2>
 
       <form @submit.prevent="isRegistering ? handleRegister() : handleLogin()">
         <div class="form-group">
@@ -24,13 +24,13 @@
 
           <div class="manager-link">
             <p v-if="!isStoreManager" @click="isStoreManager = true">
-              🔒 רוצה להירשם כמנהל חנות? לחץ כאן
+              רוצה להירשם כמנהל חנות? לחץ כאן
             </p>
-            <p v-else @click="isStoreManager = false">👤 רוצה להירשם כלקוח רגיל? לחץ כאן</p>
+            <p v-else @click="isStoreManager = false">רוצה להירשם כלקוח רגיל? לחץ כאן</p>
           </div>
 
           <div v-if="isStoreManager" class="store-fields">
-            <h3>🏪 פרטי חנות</h3>
+            <h3>פרטי חנות</h3>
 
             <div class="form-group">
               <label>שם החנות</label>
@@ -61,7 +61,7 @@
         </template>
 
         <button type="submit" :disabled="loading">
-          {{ loading ? '⏳ טוען...' : isRegistering ? 'הירשם' : 'התחבר' }}
+          {{ loading ? 'טוען...' : isRegistering ? 'הירשם' : 'התחבר' }}
         </button>
 
         <p class="toggle-auth">

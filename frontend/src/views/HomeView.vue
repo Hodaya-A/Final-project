@@ -3,15 +3,14 @@
     <!-- העמוד כולו נעטף במיכל שנדחף כאשר הסל פתוח -->
     <div class="page-wrapper" :class="{ 'cart-open': isCartOpen }">
       <div class="content">
-        <!-- 🖼️ באנר -->
+        <!-- באנר -->
         <section class="main-banner">
           <img :src="bannerImg" alt="Fresh Banner" class="banner" />
         </section>
 
-        <!-- 🛒 מוצרים -->
+        <!-- מוצרים -->
         <section class="products-section">
           <h2>
-            🛒
             {{ activeCategory ? `מוצרים בקטגוריה: ${activeCategory}` : 'מבצעים טריים ב-Fresh End' }}
           </h2>
 
@@ -106,11 +105,11 @@ async function fetchProducts(reset = false) {
       hasMore.value = false
     }
 
-    // ✅ שינוי עיקרי: במקום /products -> /inventory
+    // שינוי עיקרי: במקום /products -> /inventory
     const res = await api.get('/inventory', { params })
 
     const data = res.data
-    console.log('📦 Products loaded:', data) // 👈 הוסיפי את זה כאן
+    console.log('Products loaded:', data)
 
     if (reset) {
       products.value = data
@@ -152,7 +151,7 @@ body {
   width: 100%;
 }
 
-/* ✅ מיכל שנדחף ימינה כשהסל פתוח */
+/* מיכל שנדחף ימינה כשהסל פתוח */
 .page-wrapper {
   transition: margin-right 0.3s ease;
 }
@@ -245,7 +244,7 @@ body {
   padding: 2rem;
 }
 
-/* ✅ עיצוב לכפתור "ניהול מלאי" */
+/* עיצוב לכפתור "ניהול מלאי" */
 .inventory-link {
   text-align: center;
   margin-top: 2rem;

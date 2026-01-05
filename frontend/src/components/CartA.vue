@@ -4,14 +4,11 @@
     <div class="cart-summary">
       <span class="price">₪ {{ totalPrice.toFixed(2) }}</span>
       <div class="cart-icon">
-        🛒
         <span class="badge">{{ totalItems }}</span>
       </div>
     </div>
     <div class="cart-title-row">
-      <button class="clear-btn" @click="confirmingClear = true">
-        <span class="icon">🗑️</span> רוקן סל
-      </button>
+      <button class="clear-btn" @click="confirmingClear = true">רוקן סל</button>
     </div>
 
     <div class="cart-items">

@@ -1,6 +1,6 @@
 <template>
   <div class="store-products" v-if="isStoreManager">
-    <h1>📦 ניהול מוצרים לחנות שלך</h1>
+    <h1>ניהול מוצרים לחנות שלך</h1>
 
     <form @submit.prevent="handleSubmit" class="product-form">
       <label>
