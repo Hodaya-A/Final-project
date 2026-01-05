@@ -79,8 +79,8 @@ export const useUserStore = defineStore('user', () => {
           }
 
           const docData = snapshot.exists() ? snapshot.data() : {}
-          const sId = (docData && (docData as any).storeId) || ''
-          const courier = (docData && (docData as any).courierOptIn) || false
+          const sId = (docData && docData.storeId) || ''
+          const courier = (docData && docData.courierOptIn) || false
           setUser(user.uid, user.email || '', role, user.displayName || '', sId, courier)
           // Load stored cart for this user (if any)
           try {

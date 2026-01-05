@@ -16,10 +16,18 @@
 
         <!-- הרשמה בלבד -->
         <template v-if="isRegistering">
-          <!-- 🔘 טקסט להחלפה בין לקוח למנהל חנות -->
+          <!-- טקסט להחלפה בין לקוח למנהל חנות -->
           <div class="form-group">
             <label for="name">שם</label>
             <input id="name" v-model="name" type="text" required />
+          </div>
+
+          <!-- אופציה להירשם כשליח -->
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" v-model="isCourier" />
+              אני רוצה להירשם גם כשליח
+            </label>
           </div>
 
           <div class="manager-link">
@@ -111,6 +119,7 @@ const error = ref<string>('')
 const loading = ref<boolean>(false)
 const isRegistering = ref<boolean>(false)
 const isStoreManager = ref<boolean>(false)
+const isCourier = ref<boolean>(false)
 
 // Store fields
 const storeName = ref<string>('')
@@ -169,6 +178,7 @@ function toggleMode() {
   isRegistering.value = !isRegistering.value
   error.value = ''
   isStoreManager.value = false
+  isCourier.value = false
   storeName.value = ''
   // storeAddress.value = ''
   city.value = ''
@@ -298,12 +308,13 @@ const handleRegister = async () => {
         { merge: true },
       )
     } else {
-      // רישום כלקוח רגיל
+      // רישום כלקוח רגיל או שליח
+      const role = isCourier.value ? 'courier' : 'user'
       await setDoc(doc(db, 'users', uid), {
         uid,
         email: email.value,
         name: name.value || '',
-        role: 'user',
+        role: role,
         createdAt: Date.now(),
       })
     }
@@ -523,5 +534,25 @@ select {
   border: 1px solid #ccc;
   border-radius: 6px;
   background: white;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.checkbox-group input[type='checkbox'] {
+  width: auto;
+  cursor: pointer;
+  margin: 0;
 }
 </style>
