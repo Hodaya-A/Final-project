@@ -59,18 +59,37 @@ const DEFAULT_SHOP_ID = new mongoose.Types.ObjectId("64a000000000000000000000");
 /** GET /api/inventory */
 router.get("/", async (req, res) => {
   try {
-    const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
-    const { category, q, _page = 1, _limit = 50, sellerId } = req.query;
+    const {
+      category,
+      q,
+      _page = 1,
+      _limit = 50,
+      sellerId,
+      minPrice,
+      maxPrice,
+    } = req.query;
 
-    const filter = { shopId };
+    const filter = {};
 
-    // סינון לפי sellerId אם קיים
+    // סינון לפי sellerId - חובה! כל חנות רואה רק את המוצרים שלה
     if (sellerId) {
       filter.sellerId = sellerId;
+      console.log(`🔍 מחפש מוצרים עבור sellerId: ${sellerId}`);
+    } else {
+      // אם אין sellerId, מחזיר את כל המוצרים (למשתמש רגיל/אדמין)
+      console.log("🔍 מחזיר את כל המוצרים (אין sellerId)");
     }
 
     if (category) filter.category = category;
     if (q) filter.name = { $regex: q, $options: "i" };
+
+    // סינון לפי טווח מחירים
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+      console.log(`💰 סינון מחירים: ${minPrice || 0} - ${maxPrice || "∞"} ₪`);
+    }
 
     const page = parseInt(_page);
     const limit = Math.min(parseInt(_limit), 2000);
@@ -81,6 +100,7 @@ router.get("/", async (req, res) => {
       .limit(limit)
       .sort({ name: 1 });
 
+    console.log(`📦 נמצאו ${items.length} מוצרים`);
     res.json(items);
   } catch (err) {
     console.error("❌ שגיאה בשליפת מלאי:", err);
@@ -98,42 +118,16 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // שלוף את שם החנות מה-ImportProfile
-    let shopName = "לא ידוע";
-    let shopAddress = "";
-    let shopCity = "";
-
-    if (item.shopId) {
-      const profile = await ImportProfile.findOne({ shopId: item.shopId });
-      console.log("📋 Profile found:", profile);
-      if (profile) {
-        shopName = profile.shopName || "לא ידוע";
-        if (profile.shopAddress) {
-          const street = profile.shopAddress.street || "";
-          const number = profile.shopAddress.number || "";
-          shopCity = profile.shopAddress.city || "";
-          shopAddress = street && number ? `${street} ${number}` : street;
-        }
-      }
-    }
-
     console.log("📦 Item data:", {
       name: item.name,
       description: item.description,
-      shopName,
-      shopAddress,
-      shopCity,
+      shopName: item.shopName,
+      shopAddress: item.shopAddress,
+      shopCity: item.shopCity,
     });
 
-    // הוסף את שם החנות לתשובה
-    const response = {
-      ...item.toObject(),
-      shopName,
-      shopAddress,
-      shopCity,
-    };
-
-    res.json(response);
+    // החזר את המוצר כמו שהוא, עם הפרטים שנשמרו בו
+    res.json(item.toObject());
   } catch (err) {
     console.error("❌ שגיאה בשליפת מוצר:", err);
     res.status(500).json({ error: "Failed to fetch product" });
@@ -218,6 +212,16 @@ router.put("/:id", async (req, res) => {
     const updateData = { ...req.body };
     delete updateData._id; // מסיר את ה-_id מה-body
 
+    // אם יש sellerId בבקשה, בדוק שהמוצר שייך לאותו מוכר
+    if (updateData.sellerId) {
+      const existingProduct = await Inventory.findById(id);
+      if (existingProduct && existingProduct.sellerId !== updateData.sellerId) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to update this product" });
+      }
+    }
+
     const updated = await Inventory.findByIdAndUpdate(id, updateData, {
       new: true,
     });
@@ -233,10 +237,39 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+/** DELETE /api/inventory/all — מחיקת כל המלאי של מוכר */
+router.delete("/all", async (req, res) => {
+  try {
+    const sellerId = req.query.sellerId;
+    if (!sellerId) {
+      return res.status(400).json({ error: "Missing sellerId" });
+    }
+
+    const result = await Inventory.deleteMany({ sellerId });
+    console.log(`🗑️ נמחקו ${result.deletedCount} מוצרים של המוכר: ${sellerId}`);
+    res.json({ ok: true, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error("❌ שגיאה במחיקת כל המלאי:", err);
+    res.status(500).json({ error: "Failed to delete all inventory" });
+  }
+});
+
 /** DELETE /api/inventory/:id — מחיקת מוצר */
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const sellerId = req.query.sellerId;
+
+    // אם יש sellerId, בדוק שהמוצר שייך לאותו מוכר
+    if (sellerId) {
+      const existingProduct = await Inventory.findById(id);
+      if (existingProduct && existingProduct.sellerId !== sellerId) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to delete this product" });
+      }
+    }
+
     await Inventory.findByIdAndDelete(id);
     res.json({ ok: true });
   } catch (err) {
@@ -266,11 +299,23 @@ router.post("/upload", upload.single("file"), async (req, res) => {
 
   const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
   const mode = req.body.mode || "update";
-  const sellerId = req.body.sellerId || req.query.sellerId || null;
+  const sellerId = req.body.sellerId || req.query.sellerId;
+
+  if (!sellerId) {
+    console.error("❌ חסר sellerId!");
+    return res.status(400).json({ error: "Missing sellerId" });
+  }
+
+  // פרטי החנות מהפרונט-אנד
+  const shopName = req.body.shopName || "לא ידוע";
+  const shopCity = req.body.shopCity || "";
+  const shopStreet = req.body.shopStreet || "";
+  const shopNumber = req.body.shopNumber || "";
 
   console.log("🏪 shopId:", shopId);
   console.log("📧 sellerId:", sellerId);
   console.log("🔄 mode:", mode);
+  console.log("🏪 פרטי חנות:", { shopName, shopCity, shopStreet, shopNumber });
 
   try {
     if (mode === "renew") {
@@ -489,23 +534,17 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         `🖼️ קישור תמונה סופי עבור "${rawName}": ${finalImageUrl || "אין"}`
       );
 
-      // שימוש במיקום של החנות מהפרופיל
-      const shopLocation = profile.shopLocation || {
+      // השתמש בפרטי החנות מה-req.body (מהפרונט-אנד)
+      const shopLocation = {
         type: "Point",
-        coordinates: [34.7818, 32.0853], // ברירת מחדל: תל אביב
+        coordinates: [34.7818, 32.0853],
       };
 
-      const shopPlace = profile.shopAddress || {
-        city: "תל אביב",
-        street: "",
-        number: "",
-      };
-
-      // בנה כתובת מלאה מהפרופיל
+      // בנה כתובת מלאה
       const fullAddress =
-        shopPlace.street && shopPlace.number
-          ? `${shopPlace.street} ${shopPlace.number}`
-          : shopPlace.street || "";
+        shopStreet && shopNumber
+          ? `${shopStreet} ${shopNumber}`
+          : shopStreet || "";
 
       // שלוף תיאור מהקובץ
       const descriptionFromFile = mapping.description
@@ -513,7 +552,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         : "";
 
       console.log(
-        `📝 Product: ${rawName}, Description from file: "${descriptionFromFile}"`
+        `📝 Product: ${rawName}, Description: "${descriptionFromFile}", Shop: ${shopName}, Address: ${fullAddress}, City: ${shopCity}`
       );
 
       const doc = {
@@ -529,12 +568,15 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         expiryDate,
         location: shopLocation, // מיקום החנות
         place: {
-          city: shopPlace.city || "",
+          city: shopCity || "",
           address: fullAddress,
         }, // כתובת החנות
+        shopName: shopName || "", // שם החנות
+        shopAddress: fullAddress, // כתובת מלאה
+        shopCity: shopCity || "", // עיר
         ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
         ...(descriptionFromFile ? { description: descriptionFromFile } : {}),
-        ...(sellerId ? { sellerId } : {}),
+        sellerId, // תמיד נכלול את ה-sellerId
         updatedAt: new Date(),
       };
 

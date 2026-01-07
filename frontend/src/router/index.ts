@@ -33,12 +33,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ShopInventoryView.vue'),
     meta: { requiresAuth: false },
   },
-  {
-    path: '/shop/settings',
-    name: 'ShopSettings',
-    component: () => import('@/views/ShopSettingsView.vue'),
-    meta: { requiresAuth: false },
-  },
 
   {
     path: '/thank-you',

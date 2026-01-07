@@ -7,26 +7,74 @@
       </router-link>
     </div>
 
-    <!-- שדה חיפוש -->
-    <div class="search-box">
-      <input
-        type="text"
-        v-model="searchTerm"
-        ref="searchInput"
-        @keydown.enter="submitSearch"
-        placeholder="חיפוש פריט, קטגוריה או מותג..."
-        autocomplete="on"
-      />
-      <button class="search-btn" @click="submitSearch">
-        <img src="@/assets/icon_search.png" alt="חיפוש" class="search-icon" />
-      </button>
+    <!-- שדה חיפוש ומסננים -->
+    <div class="search-container">
+      <div class="search-wrapper">
+        <input
+          type="text"
+          v-model="searchTerm"
+          ref="searchInput"
+          @keydown.enter="submitSearch"
+          placeholder="איזור, עיר שכונה או רחוב..."
+          class="search-input"
+        />
+
+        <!-- מסנן מחיר -->
+        <div class="filter-dropdown" ref="priceDropdownRef">
+          <button class="filter-toggle" @click="togglePriceFilter">
+            <span class="filter-icon">▼</span>
+            מחיר
+          </button>
+          <div v-if="showPriceFilter" class="dropdown-content">
+            <div class="price-inputs">
+              <input
+                type="number"
+                v-model.number="minPrice"
+                placeholder="0 ₪"
+                class="price-input"
+                min="0"
+                max="100"
+              />
+              <span class="separator">—</span>
+              <input
+                type="number"
+                v-model.number="maxPrice"
+                placeholder="+20,000 ₪"
+                class="price-input"
+                min="0"
+                max="100"
+              />
+            </div>
+            <div class="price-sliders">
+              <input
+                type="range"
+                v-model.number="minPrice"
+                :min="0"
+                :max="100"
+                :step="1"
+                class="price-slider"
+              />
+              <input
+                type="range"
+                v-model.number="maxPrice"
+                :min="0"
+                :max="100"
+                :step="1"
+                class="price-slider"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button class="search-button" @click="submitSearch">חיפוש</button>
+      </div>
     </div>
 
-    <!-- פעולות -->
-    <div class="actions">
-      <!-- ניהול מערכת -->
+    <!-- ניווט ואייקונים -->
+    <div class="nav-icons">
+      <!-- ניהול מערכת - רק למנהלים -->
       <router-link
-        v-if="userStore.isLoggedIn && userStore.isAdmin"
+        v-if="userStore.role === 'admin'"
         to="/admin"
         class="icon-button"
         title="ניהול מערכת"
@@ -95,10 +143,6 @@
             <template v-if="userStore.isLoggedIn">
               <p class="username">שלום, {{ userStore.email }}</p>
               <hr class="divider" />
-              <router-link to="/shop/settings" class="menu-link" @click="showMenu = false">
-                ⚙️ הגדרות חנות
-              </router-link>
-              <hr class="divider" />
               <button @click="logout">התנתקות</button>
             </template>
             <template v-else>
@@ -126,10 +170,31 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const searchTerm = ref('')
+const minPrice = ref<number>(0)
+const maxPrice = ref<number>(100)
 const showMenu = ref(false)
+const showPriceFilter = ref(false)
 const isCartOpen = ref(false)
 const userIconRef = ref<HTMLElement | null>(null)
+const priceDropdownRef = ref<HTMLElement | null>(null)
 const dropdownStyle = ref({ top: '0px', left: '0px' })
+
+const togglePriceFilter = async () => {
+  showPriceFilter.value = !showPriceFilter.value
+
+  if (showPriceFilter.value) {
+    await nextTick()
+    const dropdown = priceDropdownRef.value
+    if (dropdown) {
+      const rect = dropdown.getBoundingClientRect()
+      const topBarHeight = 80 // Approximate height of top bar
+
+      // Set CSS variables for positioning
+      dropdown.style.setProperty('--dropdown-top', `${topBarHeight}px`)
+      dropdown.style.setProperty('--dropdown-left', `${rect.left + rect.width / 2}px`)
+    }
+  }
+}
 
 const toggleMenu = async () => {
   showMenu.value = !showMenu.value
@@ -152,6 +217,12 @@ function handleClickOutside(event: MouseEvent) {
   if (menu && !menu.contains(target)) {
     showMenu.value = false
   }
+
+  // Close price filter dropdown when clicking outside
+  const priceFilter = priceDropdownRef.value
+  if (priceFilter && !priceFilter.contains(target)) {
+    showPriceFilter.value = false
+  }
 }
 
 onMounted(() => {
@@ -171,9 +242,21 @@ const logout = async () => {
 }
 
 const submitSearch = () => {
+  const query: Record<string, string> = {}
+
   if (searchTerm.value.trim() !== '') {
-    router.push({ name: 'home', query: { search: searchTerm.value.trim() } })
+    query.search = searchTerm.value.trim()
   }
+
+  if (minPrice.value > 0) {
+    query.minPrice = String(minPrice.value)
+  }
+
+  if (maxPrice.value < 100 && maxPrice.value > 0) {
+    query.maxPrice = String(maxPrice.value)
+  }
+
+  router.push({ name: 'home', query })
 }
 </script>
 
@@ -197,7 +280,7 @@ const submitSearch = () => {
   justify-content: space-between;
   align-items: center;
   background: var(--bg-secondary);
-  padding: 1rem 2rem;
+  padding: 0.75rem 2rem;
   gap: 1.5rem;
   position: sticky;
   top: 0;
@@ -206,6 +289,8 @@ const submitSearch = () => {
   max-width: 100vw;
   overflow-x: hidden;
   box-sizing: border-box;
+  height: auto;
+  min-height: 70px;
 }
 .logo {
   transition: transform 0.3s ease;
@@ -215,11 +300,180 @@ const submitSearch = () => {
   transform: scale(1.05);
 }
 
+.search-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 50px;
+  padding: 0.5rem;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 800px;
+}
+
+.search-input {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  background: transparent;
+  text-align: right;
+  direction: rtl;
+  color: #333;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.filter-toggle:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.filter-icon {
+  font-size: 0.7rem;
+  transition: transform 0.3s ease;
+}
+
+.filter-dropdown.active .filter-icon {
+  transform: rotate(180deg);
+}
+
+.dropdown-content {
+  position: fixed;
+  top: calc(var(--dropdown-top, 80px));
+  right: auto;
+  left: var(--dropdown-left, 50%);
+  transform: translateX(-50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 1.5rem;
+  min-width: 300px;
+  z-index: 1000;
+}
+
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.price-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 0.9rem;
+  outline: none;
+  direction: rtl;
+}
+
+.price-input:focus {
+  border-color: #667eea;
+}
+
+.separator {
+  color: #999;
+  font-weight: bold;
+}
+
+.price-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.price-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.price-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.price-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.search-button {
+  padding: 0.75rem 2rem;
+  background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.search-button:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 /* לוגו */
 .logo-img {
-  height: 55px;
+  height: 50px;
   width: auto;
-  max-width: 250px;
+  max-width: 200px;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
@@ -300,6 +554,13 @@ const submitSearch = () => {
   transform: scale(1.1);
 } */
 
+.nav-icons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .icon-button {
   width: 44px;
   height: 44px;
@@ -309,7 +570,6 @@ const submitSearch = () => {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-left: 0.5rem;
   background: transparent;
   border: 1px solid transparent;
   color: var(--primary);

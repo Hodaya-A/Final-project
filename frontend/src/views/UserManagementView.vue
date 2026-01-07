@@ -79,6 +79,12 @@
               <div class="user-details">
                 <h3>{{ user.name || 'ללא שם' }}</h3>
                 <p class="email">{{ user.email }}</p>
+                <p v-if="user.role === 'storeManager' && user.shopName" class="shop-name">
+                  🏪 {{ user.shopName }}
+                </p>
+                <p v-if="user.role === 'storeManager' && user.shopAddress" class="shop-address">
+                  📍 {{ user.shopAddress }}, {{ user.shopCity }}
+                </p>
                 <span class="badge" :class="`badge-${user.role}`">{{
                   getRoleLabel(user.role)
                 }}</span>
@@ -561,6 +567,25 @@ onMounted(() => {
   color: #666;
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
+}
+
+.shop-name {
+  color: #667eea;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.3rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shop-address {
+  color: #888;
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .badge {

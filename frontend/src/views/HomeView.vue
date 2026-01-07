@@ -55,6 +55,8 @@ const userStore = useUserStore()
 
 const route = useRoute()
 const searchTerm = ref<string>((route.query.search as string) || '')
+const minPrice = ref<number>(route.query.minPrice ? Number(route.query.minPrice) : 0)
+const maxPrice = ref<number>(route.query.maxPrice ? Number(route.query.maxPrice) : 100)
 const activeCategory = computed(() => (route.query.category as string) || '')
 
 const products = ref<Product[]>([])
@@ -82,6 +84,15 @@ watch(
 )
 
 watch(
+  () => [route.query.minPrice, route.query.maxPrice],
+  () => {
+    minPrice.value = route.query.minPrice ? Number(route.query.minPrice) : 0
+    maxPrice.value = route.query.maxPrice ? Number(route.query.maxPrice) : 100
+    fetchProducts(true)
+  },
+)
+
+watch(
   () => route.query.category,
   () => {
     fetchProducts(true)
@@ -104,6 +115,8 @@ async function fetchProducts(reset = false) {
       params.category = activeCategory.value
       hasMore.value = false
     }
+    if (minPrice.value > 0) params.minPrice = minPrice.value
+    if (maxPrice.value < 100 && maxPrice.value > 0) params.maxPrice = maxPrice.value
 
     // שינוי עיקרי: במקום /products -> /inventory
     const res = await api.get('/inventory', { params })

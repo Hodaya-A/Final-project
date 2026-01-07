@@ -58,7 +58,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { auth, db } from '@/services/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, collection, addDoc } from 'firebase/firestore'
 import axios from 'axios'
 
 const name = ref('')
@@ -80,6 +80,19 @@ async function handleRegister() {
     const userCredential = await createUserWithEmailAndPassword(auth, email.value, password.value)
     const uid = userCredential.user.uid
 
+    // יצירת החנות בקולקשן stores
+    const storeRef = await addDoc(collection(db, 'stores'), {
+      name: storeName.value,
+      city: city.value,
+      street: street.value,
+      houseNumber: houseNumber.value,
+      address: `${street.value} ${houseNumber.value}, ${city.value}`,
+      ownerUid: uid,
+      createdAt: new Date(),
+    })
+    const storeId = storeRef.id
+    console.log('✅ חנות נוצרה בהצלחה:', storeId)
+
     // שמירת המשתמש ב-Firestore
     await setDoc(doc(db, 'users', uid), {
       email: email.value,
@@ -87,7 +100,11 @@ async function handleRegister() {
       uid,
       role: 'storeManager',
       storeName: storeName.value,
+      city: city.value,
+      street: street.value,
+      number: houseNumber.value,
       storeAddress: `${street.value} ${houseNumber.value}, ${city.value}`,
+      storeId: storeId,
       createdAt: new Date(),
     })
 

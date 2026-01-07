@@ -51,6 +51,11 @@
               <span class="icon-tiny">⬇️</span>
               הורד קובץ
             </button>
+
+            <button @click="deleteAllInventory" class="delete-all-btn">
+              <span class="icon-tiny">🗑️</span>
+              מחק כל המלאי
+            </button>
           </div>
         </div>
 
@@ -304,6 +309,13 @@ async function handleUpload(mode: 'update' | 'renew') {
 
     // צרפי גם מזהה המוכר כדי שפריטים ייקלטו עם owner נכון
     formData.append('sellerId', sellerId)
+
+    // שלוף פרטי החנות מ-user store ושלח אותם
+    formData.append('shopName', userStore.storeName || '')
+    formData.append('shopCity', userStore.city || '')
+    formData.append('shopStreet', userStore.street || '')
+    formData.append('shopNumber', userStore.houseNumber || '')
+
     // אל תקבעי Content-Type ידנית – axios יוסיף boundary נכון
     const { data } = await axios.post('/api/inventory/upload', formData)
 
@@ -345,11 +357,28 @@ function downloadExcel() {
 
 async function loadProducts() {
   try {
-    const { data } = await axios.get(`/api/inventory?sellerId=${sellerId}`)
+    const { data } = await axios.get(`/api/inventory?sellerId=${encodeURIComponent(sellerId)}`)
     products.value = data
   } catch (err) {
     console.error('שגיאה בטעינת מוצרים:', err)
     products.value = []
+  }
+}
+
+async function deleteAllInventory() {
+  const confirmDelete = confirm(
+    'האם את בטוחה שברצונך למחוק את כל המלאי? פעולה זו תמחק את כל המוצרים שלך ולא ניתן לשחזר אותם!',
+  )
+  if (!confirmDelete) return
+
+  try {
+    // מחיקה של כל המוצרים של המוכר הנוכחי
+    await axios.delete(`/api/inventory/all?sellerId=${encodeURIComponent(sellerId)}`)
+    alert('✅ כל המלאי נמחק בהצלחה!')
+    await loadProducts()
+  } catch (err) {
+    console.error('שגיאה במחיקת המלאי:', err)
+    alert('❌ שגיאה במחיקת המלאי')
   }
 }
 
@@ -409,7 +438,7 @@ function clearForm() {
 async function deleteProduct(id: string) {
   if (confirm('האם למחוק מוצר זה?')) {
     try {
-      await axios.delete(`/api/inventory/${id}`)
+      await axios.delete(`/api/inventory/${id}?sellerId=${encodeURIComponent(sellerId)}`)
       alert('✅ המוצר נמחק בהצלחה!')
       loadProducts()
     } catch (err) {
@@ -575,6 +604,30 @@ function formatDate(dateStr: string) {
   background: #fafbff;
   border-color: #7c3aed;
   color: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.delete-all-btn {
+  padding: 0.5rem 1rem;
+  background: #fee;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.delete-all-btn:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
   transform: translateY(-1px);
   box-shadow:
     0 1px 3px 0 rgba(0, 0, 0, 0.1),

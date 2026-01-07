@@ -8,6 +8,9 @@ export interface ManagedUser {
   role: UserRole
   courierOptIn?: boolean
   storeId?: string
+  shopName?: string
+  shopAddress?: string
+  shopCity?: string
   createdAt?: string
 }
 
@@ -21,7 +24,30 @@ export async function fetchUsers(): Promise<ManagedUser[]> {
     throw new Error(errorData.message || 'טעינת המשתמשים נכשלה')
   }
   const data = await res.json()
-  return (data.users || []) as ManagedUser[]
+  const users = (data.users || []) as ManagedUser[]
+  
+  // טען פרטי חנויות למשתמשים עם storeId
+  const { getFirestore, doc, getDoc } = await import('firebase/firestore')
+  const { db } = await import('./firebase')
+  
+  for (const user of users) {
+    if (user.storeId && user.role === 'storeManager') {
+      try {
+        const storeRef = doc(db, 'stores', user.storeId)
+        const storeSnap = await getDoc(storeRef)
+        if (storeSnap.exists()) {
+          const storeData = storeSnap.data()
+          user.shopName = storeData.name || storeData.shopName
+          user.shopAddress = storeData.address || storeData.shopAddress
+          user.shopCity = storeData.city || storeData.shopCity
+        }
+      } catch (error) {
+        console.error(`Error loading store ${user.storeId}:`, error)
+      }
+    }
+  }
+  
+  return users
 }
 
 /**

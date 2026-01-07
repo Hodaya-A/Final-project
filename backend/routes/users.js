@@ -1,5 +1,6 @@
 import express from "express";
 import { auth, db } from "../config/firebaseAdmin.js";
+import Inventory from "../models/Inventory.js";
 
 const router = express.Router();
 
@@ -95,12 +96,40 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ✅ מחיקת משתמש (Auth + Firestore)
+// ✅ מחיקת משתמש (Auth + Firestore + מוצרים)
 router.delete("/:uid", async (req, res) => {
   const uid = req.params.uid;
   try {
+    // שלוף את המשתמש כדי לקבל את ה-email (sellerId) ואת ה-storeId
+    const userDoc = await db.collection("users").doc(uid).get();
+    const userData = userDoc.data();
+
+    // מחק את כל המוצרים של המשתמש לפי email (sellerId)
+    if (userData && userData.email) {
+      const deleteResult = await Inventory.deleteMany({
+        sellerId: userData.email,
+      });
+      console.log(
+        `🗑️ נמחקו ${deleteResult.deletedCount} מוצרים של המשתמש ${userData.email}`
+      );
+    }
+
+    // מחק את החנות מקולקשן stores אם קיים storeId
+    if (userData && userData.storeId) {
+      try {
+        await db.collection("stores").doc(userData.storeId).delete();
+        console.log(`🗑️ החנות ${userData.storeId} נמחקה`);
+      } catch (storeErr) {
+        console.error("⚠️ שגיאה במחיקת חנות:", storeErr);
+      }
+    }
+
+    // מחק את המשתמש מ-Firestore
     await db.collection("users").doc(uid).delete();
+
+    // מחק את המשתמש מ-Firebase Auth
     await auth.deleteUser(uid);
+
     return res.status(200).json({ success: true, message: "User deleted" });
   } catch (err) {
     console.error(err);

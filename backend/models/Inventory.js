@@ -14,6 +14,10 @@ const InventorySchema = new mongoose.Schema({
   expiryDate: { type: Date },
   imageUrl: { type: String },
   description: { type: String }, // 📝 תיאור מפורט של המוצר
+  // פרטי החנות
+  shopName: { type: String }, // 🏪 שם החנות
+  shopAddress: { type: String }, // 📍 כתובת החנות (רחוב + מספר)
+  shopCity: { type: String }, // 🌆 עיר
   // GeoJSON location (optional) - לא מוסיפים ברירת מחדל!
   location: {
     type: { type: String, enum: ["Point"] },
