@@ -25,11 +25,11 @@ export async function fetchUsers(): Promise<ManagedUser[]> {
   }
   const data = await res.json()
   const users = (data.users || []) as ManagedUser[]
-  
+
   // טען פרטי חנויות למשתמשים עם storeId
-  const { getFirestore, doc, getDoc } = await import('firebase/firestore')
+  const { doc, getDoc } = await import('firebase/firestore')
   const { db } = await import('./firebase')
-  
+
   for (const user of users) {
     if (user.storeId && user.role === 'storeManager') {
       try {
@@ -46,7 +46,7 @@ export async function fetchUsers(): Promise<ManagedUser[]> {
       }
     }
   }
-  
+
   return users
 }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="add-product" v-if="isAdmin">
-    <h1>➕ הוסף מוצר חדש</h1>
+    <h1>הוסף מוצר חדש</h1>
     <form @submit.prevent="handleSubmit">
       <label>
         שם מוצר:
@@ -22,18 +22,18 @@
         <input v-model="imageUrl" type="url" required />
       </label>
 
-      <h3>🌍 בחר מיקום על גבי המפה:</h3>
+      <h3>בחר מיקום על גבי המפה:</h3>
       <div id="map" class="map"></div>
-      <p v-if="lat && lng">🧭 מיקום נבחר: {{ lat.toFixed(5) }}, {{ lng.toFixed(5) }}</p>
+      <p v-if="lat && lng">מיקום נבחר: {{ lat.toFixed(5) }}, {{ lng.toFixed(5) }}</p>
 
-      <button type="submit">💾 שמור</button>
+      <button type="submit">שמור</button>
     </form>
 
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
   </div>
 
   <div v-else class="unauthorized">
-    <h2>⛔ אין לך גישה לעמוד זה</h2>
+    <h2>אין לך גישה לעמוד זה</h2>
     <router-link to="/">חזרה</router-link>
   </div>
 </template>

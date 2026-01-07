@@ -5,23 +5,23 @@
 
     <div class="info">
       <p v-if="product.description" class="description">
-        <strong>📝 תיאור מפורט:</strong><br />
+        <strong>תיאור מפורט:</strong><br />
         {{ product.description }}
       </p>
-      <p v-else class="no-description"><strong>📝 תיאור:</strong> אין תיאור זמין למוצר זה</p>
-      <p><strong>🧭 קטגוריה:</strong> {{ product.category }}</p>
+      <p v-else class="no-description"><strong>תיאור:</strong> אין תיאור זמין למוצר זה</p>
+      <p><strong>קטגוריה:</strong> {{ product.category }}</p>
       <p>
         <strong>💰 מחיר רגיל:</strong>
         <span class="price-original">₪{{ product.priceOriginal }}</span>
       </p>
       <p>
-        <strong>🔥 מחיר מבצע:</strong>
+        <strong>מחיר מבצע:</strong>
         <span class="price-discounted">₪{{ product.priceDiscounted }}</span>
       </p>
-      <p><strong>📆 פג תוקף:</strong> {{ formattedDate }}</p>
-      <p v-if="product.shopName"><strong>🏪 חנות:</strong> {{ product.shopName }}</p>
+      <p><strong>פג תוקף:</strong> {{ formattedDate }}</p>
+      <p v-if="product.shopName"><strong>חנות:</strong> {{ product.shopName }}</p>
       <p v-if="product.shopAddress || product.shopCity">
-        <strong>📍 כתובת:</strong>
+        <strong>כתובת:</strong>
         {{ product.shopAddress }}
         <span v-if="product.shopCity">, {{ product.shopCity }}</span>
       </p>
@@ -58,12 +58,12 @@ const formattedDate = ref('')
 
 onMounted(async () => {
   const id = route.params.id
-  console.log('🔍 Fetching product with ID:', id)
+  console.log('Fetching product with ID:', id)
   const { data } = await axios.get(`http://localhost:3000/api/inventory/${id}`)
-  console.log('📦 Product data received:', data)
-  console.log('📝 Description:', data.description)
-  console.log('🏪 Shop name:', data.shopName)
-  console.log('📍 Shop address:', data.shopAddress)
+  console.log('Product data received:', data)
+  console.log('Description:', data.description)
+  console.log('Shop name:', data.shopName)
+  console.log('Shop address:', data.shopAddress)
   product.value = data
   formattedDate.value = new Date(data.expiryDate).toLocaleDateString('he-IL')
 })

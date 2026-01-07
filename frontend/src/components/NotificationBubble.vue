@@ -234,7 +234,7 @@ const getNearbyProducts = () => {
                   name: p.name,
                   price: p.priceDiscounted,
                   imageUrl: p.imageUrl ?? '',
-                } as ProductForCart)})'>➕ הוסף לסל</button>
+                } as ProductForCart)}">הוסף לסל</button>
               </div>
             `,
             )

@@ -1,13 +1,13 @@
 <template>
   <div class="shop-settings-container">
     <div class="settings-header">
-      <h1>⚙️ הגדרות חנות</h1>
+      <h1>הגדרות חנות</h1>
       <p>הגדר את מיקום החנות שלך כדי שהמוצרים יופיעו במפה הנכונה</p>
     </div>
 
     <div class="settings-content">
       <div class="form-section">
-        <h2>📍 מיקום החנות</h2>
+        <h2>מיקום החנות</h2>
 
         <div class="form-group">
           <label>שם החנות</label>
@@ -31,7 +31,7 @@
           </div>
         </div>
 
-        <button @click="geocodeAddress" class="btn-secondary">🔍 מצא כתובת במפה</button>
+        <button @click="geocodeAddress" class="btn-secondary">מצא כתובת במפה</button>
 
         <div class="coordinates-display">
           <p>📌 קואורדינטות: {{ coordinates[1].toFixed(4) }}, {{ coordinates[0].toFixed(4) }}</p>
@@ -45,7 +45,7 @@
       </div>
 
       <button @click="saveLocation" class="btn-save" :disabled="saving">
-        {{ saving ? 'שומר...' : '💾 שמור הגדרות' }}
+        {{ saving ? 'שומר...' : 'שמור הגדרות' }}
       </button>
 
       <div v-if="message" :class="['message', messageType]">

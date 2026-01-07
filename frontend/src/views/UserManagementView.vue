@@ -2,13 +2,13 @@
   <div class="user-management-wrapper">
     <div class="user-management" v-if="isAdmin">
       <header class="page-header">
-        <h1>👥 ניהול משתמשים</h1>
+        <h1>ניהול משתמשים</h1>
         <p class="subtitle">צפייה וניהול של כל המשתמשים במערכת</p>
       </header>
 
       <section class="add-user">
         <div class="section-header">
-          <h2>➕ הוספת משתמש חדש</h2>
+          <h2>הוספת משתמש חדש</h2>
           <p class="hint">כל הסיסמאות מאובטחות ואינן מוצגות בממשק</p>
         </div>
         <form class="add-user__form" @submit.prevent="addUser">
@@ -68,7 +68,6 @@
         </div>
 
         <div v-else-if="users.length === 0" class="empty-state">
-          <span class="icon">📭</span>
           <p>אין משתמשים במערכת</p>
         </div>
 
@@ -80,10 +79,10 @@
                 <h3>{{ user.name || 'ללא שם' }}</h3>
                 <p class="email">{{ user.email }}</p>
                 <p v-if="user.role === 'storeManager' && user.shopName" class="shop-name">
-                  🏪 {{ user.shopName }}
+                  {{ user.shopName }}
                 </p>
                 <p v-if="user.role === 'storeManager' && user.shopAddress" class="shop-address">
-                  📍 {{ user.shopAddress }}, {{ user.shopCity }}
+                  {{ user.shopAddress }}, {{ user.shopCity }}
                 </p>
                 <span class="badge" :class="`badge-${user.role}`">{{
                   getRoleLabel(user.role)
@@ -118,7 +117,6 @@
 
     <div v-else class="unauthorized">
       <div class="unauthorized-content">
-        <span class="icon">⛔</span>
         <h2>אין לך הרשאה לעמוד זה</h2>
         <p>עמוד זה זמין למנהלי מערכת בלבד</p>
         <router-link to="/" class="btn-back">חזרה לדף הבית</router-link>
@@ -169,8 +167,8 @@ async function loadUsers() {
       },
       {} as Record<string, UserRole>,
     )
-  } catch (err: any) {
-    errorMessage.value = err?.message || 'שגיאה בטעינת המשתמשים'
+  } catch (err) {
+    errorMessage.value = (err as Error)?.message || 'שגיאה בטעינת המשתמשים'
   } finally {
     loading.value = false
   }
@@ -198,8 +196,8 @@ async function addUser() {
     newUser.password = ''
     newUser.role = 'user'
     newUser.courierOptIn = false
-  } catch (err: any) {
-    errorMessage.value = err?.message || 'שגיאה בהוספת המשתמש'
+  } catch (err) {
+    errorMessage.value = (err as Error)?.message || 'שגיאה בהוספת המשתמש'
   } finally {
     saving.value = false
   }
@@ -209,10 +207,11 @@ async function deleteUser(uid: string) {
   try {
     await deleteUserByUid(uid)
     users.value = users.value.filter((u) => u.uid !== uid)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { [uid]: _, ...rest } = roleCache.value
     roleCache.value = rest
-  } catch (err: any) {
-    errorMessage.value = err?.message || 'שגיאה במחיקה'
+  } catch (err) {
+    errorMessage.value = (err as Error)?.message || 'שגיאה במחיקה'
   }
 }
 
@@ -251,8 +250,8 @@ async function saveRole(user: ManagedUser) {
     if (user.uid === userStore.uid) {
       userStore.role = user.role
     }
-  } catch (err: any) {
-    errorMessage.value = err?.message || 'שגיאה בעדכון התפקיד'
+  } catch (err) {
+    errorMessage.value = (err as Error)?.message || 'שגיאה בעדכון התפקיד'
     user.role = previousRole
   }
 }
@@ -265,8 +264,8 @@ async function saveCourierStatus(user: ManagedUser) {
     if (user.uid === userStore.uid) {
       userStore.courierOptIn = user.courierOptIn || false
     }
-  } catch (err: any) {
-    errorMessage.value = err?.message || 'שגיאה בעדכון סטטוס משלוחן'
+  } catch (err) {
+    errorMessage.value = (err as Error)?.message || 'שגיאה בעדכון סטטוס משלוחן'
     user.courierOptIn = previousStatus
   }
 }

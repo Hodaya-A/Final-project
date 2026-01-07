@@ -132,7 +132,7 @@ export const useUserStore = defineStore('user', () => {
                 sCity = String(storeData?.city || sCity || '')
                 sStreet = String(storeData?.street || sStreet || '')
                 sNumber = String(storeData?.houseNumber || sNumber || '')
-                console.log('📦 Store details loaded from stores collection:', {
+                console.log('Store details loaded from stores collection:', {
                   sName,
                   sCity,
                   sStreet,
@@ -140,11 +140,11 @@ export const useUserStore = defineStore('user', () => {
                 })
               }
             } catch (err) {
-              console.error('⚠️ Failed to load store details:', err)
+              console.error('Failed to load store details:', err)
             }
           }
 
-          console.log('📦 User store loading:', { sName, sCity, sStreet, sNumber })
+          console.log('User store loading:', { sName, sCity, sStreet, sNumber })
 
           setUser(
             user.uid,

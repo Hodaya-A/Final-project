@@ -1,12 +1,12 @@
 <template>
   <div class="product-card-wrapper">
     <div class="product-card" :class="{ 'expiring-soon': isExpiringSoon }">
-      <!-- ⚠️ אזהרת תפוגה -->
+      <!-- אזהרת תפוגה -->
       <div v-if="isExpiringSoon" class="expiry-warning">
-        ⚠️ עומד לפוג בעוד {{ daysUntilExpiry }} ימים!
+        עומד לפוג בעוד {{ daysUntilExpiry }} ימים!
       </div>
 
-      <!-- 🖼️ תמונה עם Fallback או כפתור העלאה -->
+      <!-- תמונה עם Fallback או כפתור העלאה -->
       <div class="image-container" @click="handleImageClick">
         <img
           v-if="imgSrc !== FALLBACK"
@@ -41,12 +41,12 @@
         />
       </div>
 
-      <!-- 🏷️ שם וקטגוריה -->
+      <!-- שם וקטגוריה -->
       <router-link :to="`/product/${product._id}`" class="product-link">
         <h3 class="product-name">{{ product.name }}</h3>
         <p class="product-category">{{ product.category }}</p>
 
-        <!-- 💰 מחיר רגיל + מחיר מבצע -->
+        <!-- מחיר רגיל + מחיר מבצע -->
         <p class="product-price">
           <span v-if="product.salePrice" class="discounted">
             ₪{{ product.salePrice.toFixed(2) }}
@@ -54,7 +54,7 @@
           <span :class="{ original: product.salePrice }"> ₪{{ product.price.toFixed(2) }} </span>
         </p>
 
-        <!-- 🗓️ תאריך תפוגה -->
+        <!-- תאריך תפוגה -->
         <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
       </router-link>
     </div>

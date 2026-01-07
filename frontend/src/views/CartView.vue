@@ -3,9 +3,7 @@
     <h1>סל הקניות שלי</h1>
 
     <div class="cart-title-row" v-if="cartStore.items.length > 0 && !confirmingClear">
-      <button class="clear-btn" @click="confirmingClear = true">
-        <span class="icon">🗑️</span> רוקן סל
-      </button>
+      <button class="clear-btn" @click="confirmingClear = true">רוקן סל</button>
     </div>
 
     <div v-if="confirmingClear" class="confirm-area">

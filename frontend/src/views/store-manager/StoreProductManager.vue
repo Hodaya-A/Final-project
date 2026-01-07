@@ -1,34 +1,23 @@
 <template>
   <div class="inventory-page animate-fade-in" v-if="isStoreManager">
-    <h1 class="page-title">
-      <span class="icon">📦</span>
-      ניהול מוצרים לחנות שלך
-    </h1>
+    <h1 class="page-title">ניהול מוצרים לחנות שלך</h1>
 
     <!-- גריד עיקרי -->
     <div class="inventory-grid">
       <!-- תיבת העלאה -->
       <div class="upload-card">
-        <h2 class="card-title">
-          <span class="icon-small">📤</span>
-          העלאת קובץ מלאי
-        </h2>
+        <h2 class="card-title">העלאת קובץ מלאי</h2>
 
         <div class="upload-box">
           <label class="upload-label">
-            <span class="icon-small">⬆️</span>
             בחר קובץ
             <input type="file" @change="onFileChange" accept=".csv,.xlsx" class="file-input" />
           </label>
 
-          <button :disabled="!file" @click="openModal" class="upload-btn">
-            <span class="icon-small">📤</span>
-            העלאה
-          </button>
+          <button :disabled="!file" @click="openModal" class="upload-btn">העלאה</button>
         </div>
 
         <p v-if="uploadMessage" class="upload-message">
-          <span class="icon-small">✓</span>
           {{ uploadMessage }}
         </p>
       </div>
@@ -36,26 +25,14 @@
       <!-- טבלת המלאי -->
       <div class="inventory-card">
         <div class="card-header">
-          <h2 class="card-title">
-            <span class="icon-small">📃</span>
-            רשימת מוצרים
-          </h2>
+          <h2 class="card-title">רשימת מוצרים</h2>
 
           <div class="header-buttons">
-            <button @click="loadProducts" class="refresh-btn">
-              <span class="icon-tiny">🔄</span>
-              רענן
-            </button>
+            <button @click="loadProducts" class="refresh-btn">רענן</button>
 
-            <button @click="downloadExcel" class="download-btn">
-              <span class="icon-tiny">⬇️</span>
-              הורד קובץ
-            </button>
+            <button @click="downloadExcel" class="download-btn">הורד קובץ</button>
 
-            <button @click="deleteAllInventory" class="delete-all-btn">
-              <span class="icon-tiny">🗑️</span>
-              מחק כל המלאי
-            </button>
+            <button @click="deleteAllInventory" class="delete-all-btn">מחק כל המלאי</button>
           </div>
         </div>
 
@@ -83,12 +60,8 @@
                 <td>{{ formatDate(product.expiryDate) }}</td>
                 <td>{{ product.category }}</td>
                 <td class="actions">
-                  <button @click="openEditModal(product)" class="edit-btn">
-                    <span class="icon-tiny">✏️</span>
-                  </button>
-                  <button @click="deleteProduct(product._id)" class="delete-btn">
-                    <span class="icon-tiny">🗑️</span>
-                  </button>
+                  <button @click="openEditModal(product)" class="edit-btn">ערוך</button>
+                  <button @click="deleteProduct(product._id)" class="delete-btn">מחק</button>
                 </td>
               </tr>
             </tbody>
@@ -102,10 +75,7 @@
 
     <!-- הוספת מוצר בודד -->
     <div class="single-product-card">
-      <h2 class="card-title">
-        <span class="icon-small">➕</span>
-        הוספת מוצר בודד
-      </h2>
+      <h2 class="card-title">הוספת מוצר בודד</h2>
       <form @submit.prevent="handleSubmit" class="product-form">
         <label>
           שם מוצר:
@@ -137,9 +107,9 @@
           <input v-model="imageUrl" type="url" />
         </label>
 
-        <button type="submit" class="btn-save">{{ editingId ? '💾 עדכן' : '💾 הוסף' }} מוצר</button>
+        <button type="submit" class="btn-save">{{ editingId ? 'עדכן' : 'הוסף' }} מוצר</button>
         <button v-if="editingId" type="button" @click="clearForm" class="btn-cancel-edit">
-          ❌ בטל עריכה
+          בטל עריכה
         </button>
       </form>
     </div>
@@ -148,10 +118,7 @@
     <transition name="fade-zoom">
       <div v-if="showEditModal" class="modal-backdrop" @click.self="closeEditModal">
         <div class="modal edit-modal">
-          <h2 class="modal-title">
-            <span class="icon-small">✏️</span>
-            עריכת מוצר
-          </h2>
+          <h2 class="modal-title">עריכת מוצר</h2>
           <form @submit.prevent="updateProduct" class="edit-form">
             <label>
               שם מוצר:
@@ -184,8 +151,8 @@
             </label>
 
             <div class="modal-actions">
-              <button type="submit" class="btn-update">💾 שמור שינויים</button>
-              <button type="button" @click="closeEditModal" class="btn-cancel">❌ ביטול</button>
+              <button type="submit" class="btn-update">שמור שינויים</button>
+              <button type="button" @click="closeEditModal" class="btn-cancel">ביטול</button>
             </div>
           </form>
         </div>
@@ -196,25 +163,13 @@
     <transition name="fade-zoom">
       <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
         <div class="modal">
-          <h2 class="modal-title">
-            <span class="icon-small">⚙️</span>
-            בחירת סוג העלאה
-          </h2>
+          <h2 class="modal-title">בחירת סוג העלאה</h2>
           <p class="modal-text">האם לעדכן את המלאי הקיים או לחדש לגמרי?</p>
           <div class="modal-actions">
-            <button @click="handleUpload('update')" class="btn-update">
-              <span class="icon-small">📝</span>
-              עדכון מלאי קיים
-            </button>
-            <button @click="handleUpload('renew')" class="btn-renew">
-              <span class="icon-small">🔄</span>
-              חידוש מלאי
-            </button>
+            <button @click="handleUpload('update')" class="btn-update">עדכון מלאי קיים</button>
+            <button @click="handleUpload('renew')" class="btn-renew">חידוש מלאי</button>
           </div>
-          <button @click="closeModal" class="btn-cancel">
-            <span class="icon-tiny">❌</span>
-            ביטול
-          </button>
+          <button @click="closeModal" class="btn-cancel">ביטול</button>
         </div>
       </div>
     </transition>
@@ -953,14 +908,6 @@ tbody tr:last-child td {
 /* --- אייקונים --- */
 .icon {
   font-size: 28px;
-}
-
-.icon-small {
-  font-size: 20px;
-}
-
-.icon-tiny {
-  font-size: 16px;
 }
 
 /* --- כפתור בחירת קובץ --- */

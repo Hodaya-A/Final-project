@@ -1,6 +1,6 @@
 <template>
   <form class="register-form" @submit.prevent="handleRegister">
-    <h2>📝 הרשמה</h2>
+    <h2>הרשמה</h2>
 
     <div class="form-group">
       <label for="name">שם</label>
