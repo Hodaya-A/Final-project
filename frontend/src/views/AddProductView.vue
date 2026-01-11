@@ -97,7 +97,7 @@ async function handleSubmit() {
 
   try {
     await axios.post('/api/products', product)
-    successMessage.value = '✅ המוצר נשמר בהצלחה!'
+    successMessage.value = 'המוצר נשמר בהצלחה!'
     setTimeout(() => {
       router.push('/admin')
     }, 1500)
@@ -138,23 +138,31 @@ input {
 button {
   padding: 0.8rem;
   font-weight: bold;
-  background-color: #2c3e50;
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 .success {
-  color: green;
+  color: var(--success);
   margin-top: 1rem;
   text-align: center;
+  font-weight: 600;
 }
 
 .unauthorized {
   text-align: center;
   padding: 4rem;
-  color: red;
+  color: var(--danger);
 }
 
 .map {

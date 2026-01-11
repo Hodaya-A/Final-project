@@ -27,7 +27,7 @@
 
     <!-- קיצור דרך לדאש משלוחנים -->
     <div
-      class="courier-shortcut"
+      :class="['courier-shortcut', { active: route.path === '/courier' }]"
       v-if="userStore.isCourier"
       @click="goToCourier"
       title="דאש משלוחנים"
@@ -262,8 +262,8 @@ function closeCart() {
 /* קיצור דרך לדאש משלוחנים */
 .courier-shortcut {
   width: 140px;
-  height: 100px;
-  background: linear-gradient(135deg, #ff8c00 0%, #ff6b00 100%);
+  height: 90px; /* שיהיה סימטרי עם יתר האלמנטים */
+  background: var(--gradient-primary);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -274,13 +274,24 @@ function closeCart() {
     transform 0.2s ease,
     box-shadow 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 3px 8px rgba(255, 107, 0, 0.25);
-  margin-left: 5px;
+  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
+  margin-left: 12px; /* מרווח נוח מהאלמנטים הסמוכים */
+  margin-right: 12px; /* מרווח נוח משני הצדדים */
+  border: 2px solid var(--primary-light);
 }
 
 .courier-shortcut:hover {
   transform: scale(1.03);
-  box-shadow: 0 6px 14px rgba(255, 107, 0, 0.35);
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.1);
+}
+
+.courier-shortcut.active {
+  box-shadow:
+    0 8px 20px rgba(99, 102, 241, 0.35),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+  transform: scale(1.02); /* פחות קפיצה כדי לשמור על קו אחיד */
+  border-color: var(--primary);
 }
 
 .courier-icon {
@@ -290,7 +301,8 @@ function closeCart() {
 .courier-text {
   font-weight: 700;
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.82rem; /* מעט קטן יותר לסימטריה */
+  line-height: 1; /* מרכז אנכי מדויק יותר */
 }
 /* עיצוב לסל */
 .cart-summary {

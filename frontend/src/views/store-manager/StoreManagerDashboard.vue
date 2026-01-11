@@ -3,6 +3,9 @@
     <h1>📦 לוח ניהול חנות</h1>
 
     <div class="actions">
+      <button class="urgent" @click="goTo('/store/pending-orders')">
+        🔔 הזמנות ממתינות לאישור
+      </button>
       <button @click="goTo('/store/products')">📋 ניהול מוצרים</button>
       <button @click="goTo('/store/reports')">📊 דוחות אישיים</button>
     </div>
@@ -56,5 +59,16 @@ if (userStore.role !== 'storeManager') {
 
 .actions button:hover {
   background-color: #34495e;
+}
+
+.actions button.urgent {
+  background-color: #e74c3c;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+}
+
+.actions button.urgent:hover {
+  background-color: #c0392b;
+  box-shadow: 0 0 15px rgba(231, 76, 60, 0.7);
 }
 </style>

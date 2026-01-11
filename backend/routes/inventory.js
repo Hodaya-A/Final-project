@@ -53,8 +53,8 @@ const findHeader = (headers, wanted) => {
   return idx >= 0 ? headers[idx] : null;
 };
 
-// מזהה חנות ברירת מחדל (ObjectId תקין)
-const DEFAULT_SHOP_ID = new mongoose.Types.ObjectId("64a000000000000000000000");
+// מזהה חנות ברירת מחדל (Firebase storeId)
+const DEFAULT_SHOP_ID = "FrzzphZ80X6CEYONGelr";
 
 /** GET /api/inventory */
 router.get("/", async (req, res) => {
@@ -163,8 +163,14 @@ router.post("/", async (req, res) => {
     }
     console.log(`🖼️ קישור תמונה עבור "${name}": ${finalImageUrl || "אין"}`);
 
-    // קבל כתובת חנות מהפרופיל
-    let profile = await ImportProfile.findOne({ shopId });
+    // קבל כתובת חנות מהפרופיל (נסה למצוא לפי shopId, אם לא קיים השתמש בברירת מחדל)
+    let profile = null;
+    try {
+      profile = await ImportProfile.findOne({ shopId });
+    } catch (err) {
+      console.warn(`⚠️ לא נמצא פרופיל עבור shopId: ${shopId}`);
+    }
+
     const shopLocation = profile?.shopLocation || {
       type: "Point",
       coordinates: [34.7818, 32.0853],

@@ -100,6 +100,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, roles: ['storeManager'] },
   },
   {
+    path: '/store/pending-orders',
+    name: 'pending-orders',
+    component: () => import('@/views/PendingOrdersView.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
+  {
     path: '/store/products',
     name: 'store-products',
     component: () => import('@/views/store-manager/StoreProductManager.vue'),

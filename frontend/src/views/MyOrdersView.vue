@@ -17,6 +17,11 @@
         <div class="order-header" @click="toggle(i)">
           <p><strong> תאריך:</strong> {{ formatDate(order.date) }}</p>
           <p><strong> סכום:</strong> ₪{{ order.total.toFixed(2) }}</p>
+          <div class="status-badge" :class="getOrderStatusClass(order)">
+            {{ getOrderStatusText(order) }}
+          </div>
+          <!-- התראה אם זה הומר ממשלוח לאיסוף -->
+          <div v-if="wasConvertedToPickup(order)" class="timeout-warning">⚠️ הומר לאיסוף עצמי</div>
           <button class="details-btn">
             {{ expandedOrder === i ? 'הסתר פרטים' : 'הצג פרטים' }}
           </button>
@@ -73,9 +78,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
+import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
 interface OrderItem {
@@ -91,6 +97,12 @@ interface Order {
   total: number
   items: OrderItem[]
   rating?: number
+  approvedAt?: Date | null
+  _id?: string
+  readyForPickup?: boolean
+  deliveryMethod?: 'delivery' | 'pickup'
+  courierId?: string | null
+  deliveredAt?: Date | null
 }
 
 interface BackendOrderItem {
@@ -103,20 +115,30 @@ interface BackendOrderItem {
 }
 
 interface BackendOrder {
+  _id?: string
   createdAt?: string | number | Date
   totalPrice?: number
   items?: BackendOrderItem[]
+  approvedAt?: string | Date | null
+  deliveredAt?: string | Date | null
+  readyForPickup?: boolean
+  deliveryMethod?: 'delivery' | 'pickup'
+  courierId?: string | null
 }
 
 const userStore = useUserStore()
 const cartStore = useCartStore()
+const toast = useToast()
 
 const orders = ref<Order[]>([])
 const loading = ref(true)
 const error = ref('')
 const expandedOrder = ref<number | null>(null)
+const previousStatuses = ref<Map<string, string>>(new Map())
+const mutedOrders = ref<Set<string>>(new Set())
+let pollingInterval: number | null = null
 
-async function fetchOrders(uid?: string) {
+async function fetchOrders(uid?: string, silent = false) {
   if (!uid) {
     orders.value = []
     error.value = 'לא ניתן לטעון הזמנות – אין משתמש מחובר.'
@@ -125,7 +147,7 @@ async function fetchOrders(uid?: string) {
   }
 
   try {
-    loading.value = true
+    if (!silent) loading.value = true
     error.value = ''
 
     console.log('MyOrdersView: fetching orders for uid=', uid)
@@ -133,7 +155,8 @@ async function fetchOrders(uid?: string) {
     let resp = await axios.get(`http://localhost:3000/api/orders/${encodeURIComponent(uid)}`)
     console.log('MyOrdersView: received response', resp.status, resp.data)
 
-    orders.value = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
+    const newOrders = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
+      _id: o._id,
       date: o.createdAt ? new Date(o.createdAt) : new Date(),
       total: o.totalPrice ?? 0,
       items: (o.items || []).map((it: BackendOrderItem) => ({
@@ -144,7 +167,26 @@ async function fetchOrders(uid?: string) {
         imageUrl: it.imageUrl,
       })) as OrderItem[],
       rating: 0,
+      approvedAt: o.approvedAt ? new Date(o.approvedAt) : null,
+      readyForPickup: o.readyForPickup || false,
+      deliveryMethod: o.deliveryMethod,
+      courierId: o.courierId,
+      deliveredAt: o.deliveredAt ? new Date(o.deliveredAt) : null,
     }))
+
+    // בדוק שינויי סטטוס והצג התראות
+    if (previousStatuses.value.size > 0) {
+      checkStatusChanges(newOrders)
+    }
+
+    // עדכן את ה-map של הסטטוסים הקודמים
+    newOrders.forEach((order: Order) => {
+      const orderId = order._id || ''
+      const currentStatus = getOrderStatusText(order)
+      previousStatuses.value.set(orderId, currentStatus)
+    })
+
+    orders.value = newOrders
 
     // fallback: if no orders found for uid, try fetching by email (some orders may have been saved using email)
     if (orders.value.length === 0 && userStore.email) {
@@ -155,6 +197,7 @@ async function fetchOrders(uid?: string) {
         )
         console.log('MyOrdersView: received response for email', resp.status, resp.data)
         const byEmail = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
+          _id: o._id,
           date: o.createdAt ? new Date(o.createdAt) : new Date(),
           total: o.totalPrice ?? 0,
           items: (o.items || []).map((it: BackendOrderItem) => ({
@@ -165,6 +208,9 @@ async function fetchOrders(uid?: string) {
             imageUrl: it.imageUrl,
           })) as OrderItem[],
           rating: 0,
+          approvedAt: o.approvedAt ? new Date(o.approvedAt) : null,
+          readyForPickup: o.readyForPickup || false,
+          deliveryMethod: o.deliveryMethod,
         }))
 
         if (byEmail.length > 0) {
@@ -178,9 +224,57 @@ async function fetchOrders(uid?: string) {
     }
   } catch (err: unknown) {
     console.error('Error fetching orders:', err)
-    error.value = 'אירעה שגיאה בעת טעינת ההזמנות.'
+    if (!silent) error.value = 'אירעה שגיאה בעת טעינת ההזמנות.'
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
+  }
+}
+
+// בדיקת שינויי סטטוס והצגת התראות
+function checkStatusChanges(newOrders: Order[]) {
+  newOrders.forEach((order: Order) => {
+    const orderId = order._id || ''
+    const previousStatus = previousStatuses.value.get(orderId)
+    const currentStatus = getOrderStatusText(order)
+
+    if (previousStatus && previousStatus !== currentStatus) {
+      // הסטטוס השתנה - הצג התראה!
+      showStatusNotification(order, previousStatus, currentStatus)
+    }
+  })
+}
+
+// הצגת התראה על שינוי סטטוס
+function showStatusNotification(order: Order, oldStatus: string, newStatus: string) {
+  const orderId = (order._id || '').slice(-6)
+
+  // אם הזמנה הומרה לאיסוף עצמי (timeout)
+  if (wasConvertedToPickup(order)) {
+    toast.warning(`⚠️ הזמנה ${orderId}: לא נמצא שליח זמין.\nההזמנה מוכנה לאיסוף עצמי בחנות.`, {
+      timeout: 10000,
+      closeOnClick: true,
+      pauseOnHover: true,
+    })
+    return
+  }
+
+  // אל תשלח עוד התראות אחרי האישור הראשוני — למעט אזהרת timeout
+  const fullOrderId = order._id || ''
+  if (mutedOrders.value.has(fullOrderId)) {
+    return
+  }
+
+  // התראות אחרות
+  if (newStatus === 'אושר') {
+    toast.success(`✅ הזמנה ${orderId} אושרה על ידי החנות!`, { timeout: 5000 })
+    // השתק התראות נוספות עבור הזמנה זו (למנוע ספאם)
+    mutedOrders.value.add(fullOrderId)
+  } else if (newStatus === 'מוכן לאיסוף') {
+    toast.info(`📦 הזמנה ${orderId} מוכנה לאיסוף!`, { timeout: 5000 })
+  } else if (newStatus === 'בדרך אליך') {
+    toast.info(`🚚 הזמנה ${orderId} בדרך אליך!`, { timeout: 5000 })
+  } else if (newStatus === 'נאסף') {
+    toast.success(`🎉 הזמנה ${orderId} נאספה בהצלחה!`, { timeout: 5000 })
   }
 }
 
@@ -192,6 +286,21 @@ watch(
   },
   { immediate: true },
 )
+
+// Polling אוטומטי כל 10 שניות
+onMounted(() => {
+  pollingInterval = window.setInterval(() => {
+    if (userStore.uid) {
+      fetchOrders(userStore.uid as string, true) // silent=true כדי לא להציג spinner
+    }
+  }, 10000) // כל 10 שניות
+})
+
+onBeforeUnmount(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
+})
 
 function formatDate(dt: Date): string {
   try {
@@ -242,6 +351,42 @@ function orderId(order: Order) {
   } catch {
     return ''
   }
+}
+
+function getOrderStatusClass(order: Order) {
+  if (order.deliveredAt) return 'delivered'
+  if (order.readyForPickup) return 'ready'
+  if (order.approvedAt) return 'approved'
+  return 'pending'
+}
+
+function getOrderStatusText(order: Order) {
+  if (order.deliveredAt) {
+    return 'נאסף'
+  }
+  if (order.readyForPickup) {
+    if (order.deliveryMethod === 'pickup') {
+      return 'מוכן לאיסוף'
+    }
+    // משלוח: אם יש שליח — בדרך אליך; אחרת — מחכה למשלוח
+    if (order.courierId) {
+      return 'בדרך אליך'
+    }
+    return 'מחכה למשלוח'
+  }
+  if (order.approvedAt) return 'אושר'
+  return 'ממתין לאישור'
+}
+
+// בדיקה אם הזמנה הומרה ממשלוח לאיסוף (timeout)
+function wasConvertedToPickup(order: Order) {
+  // אם ההזמנה מוכנה והיא איסוף, אבל אין courierId - כנראה הומרה
+  return (
+    order.readyForPickup &&
+    order.deliveryMethod === 'pickup' &&
+    !order.courierId &&
+    !order.deliveredAt
+  )
 }
 </script>
 
@@ -333,6 +478,53 @@ function orderId(order: Order) {
 
 .order-header strong {
   color: var(--primary);
+}
+
+.status-badge {
+  padding: 0.4rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.status-badge.pending {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+  color: #856404;
+  border: 2px solid var(--warning);
+}
+
+.status-badge.approved {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+  border: 2px solid var(--success);
+}
+
+.status-badge.ready {
+  background: linear-gradient(135deg, #cfe2ff 0%, #9ec5fe 100%);
+  color: #084298;
+  border: 2px solid #0d6efd;
+}
+
+.status-badge.delivered {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  color: #1e293b;
+  border: 2px solid #64748b;
+}
+
+.timeout-warning {
+  padding: 0.4rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 2px solid #f59e0b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
 }
 
 .details-btn {

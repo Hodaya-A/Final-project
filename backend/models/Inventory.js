@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 
 const InventorySchema = new mongoose.Schema({
-  shopId: { type: mongoose.Schema.Types.ObjectId, required: true, index: true },
+  shopId: { type: String, required: true, index: true }, // ✅ Firebase storeId (string, not ObjectId)
   barcode: { type: String, default: "", index: true },
   name: { type: String, required: true },
   category: { type: String, default: "" },

@@ -8,6 +8,8 @@ export interface CartItem {
   price: number
   quantity: number
   imageUrl?: string
+  shopId?: string // ✅ מזהה החנות
+  sellerId?: string // ✅ מזהה המוכר (Firebase UID)
 }
 
 interface CartState {
@@ -35,6 +37,8 @@ export const useCartStore = defineStore('cart', {
       name: string
       price: number
       imageUrl?: string
+      shopId?: string // ✅ מזהה החנות
+      sellerId?: string // ✅ מזהה המוכר
       quantity?: number
     }) {
       const qty = payload.quantity ?? 1
@@ -50,6 +54,8 @@ export const useCartStore = defineStore('cart', {
           name: payload.name,
           price: payload.price,
           imageUrl: image,
+          shopId: payload.shopId, // ✅
+          sellerId: payload.sellerId, // ✅
           quantity: qty,
         })
       }

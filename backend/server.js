@@ -3,6 +3,11 @@ import "dotenv/config";
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
+import emailjs from "@emailjs/nodejs";
+
+// models
+import Inventory from "./models/Inventory.js";
+import Order from "./models/Order.js";
 
 // routes
 import inventoryRoutes from "./routes/inventory.js";
@@ -18,9 +23,6 @@ import usersRoutes from "./routes/users.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
-
-// מודלים
-import Inventory from "./models/Inventory.js";
 
 const app = express();
 
@@ -43,7 +45,6 @@ app.use("/uploads/images", express.static("uploads/images"));
 /* ======================= MongoDB ======================= */
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ מחובר ל-MongoDB"))
   .catch((err) => console.error("❌ שגיאה בחיבור למונגו:", err));
 
 /* ======================= Routes ======================= */
@@ -62,7 +63,7 @@ app.use("/api/users", usersRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 שרת פועל על http://localhost:${PORT}`));
+app.listen(PORT);
 
 /* ======================= הסרה אוטומטית של מוצרים שפג תוקפם ======================= */
 async function removeExpiredProducts() {
@@ -74,9 +75,7 @@ async function removeExpiredProducts() {
       expiryDate: { $lt: today },
     });
 
-    if (result.deletedCount > 0) {
-      console.log(`🗑️ נמחקו ${result.deletedCount} מוצרים שפג תוקפם`);
-    }
+    // שקט — אין לוגים להסרת מוצרים
   } catch (error) {
     console.error("❌ שגיאה בהסרת מוצרים שפג תוקפם:", error);
   }
@@ -88,3 +87,72 @@ setInterval(removeExpiredProducts, TWENTY_FOUR_HOURS);
 
 // הרץ מיד בהפעלת השרת
 removeExpiredProducts();
+/* ======================= בדיקת הזמנות משלוח שפג תוקפן ======================= */
+async function checkExpiredOrders() {
+  try {
+    const now = new Date();
+
+    // מצא הזמנות שהן:
+    // 1. deliveryMethod = "delivery" (משלוח)
+    // 2. readyForPickup = true (מוכנות)
+    // 3. אין courierId (אף שליח לא לקח)
+    // 4. readyForPickupExpiresAt < now (עבר הזמן)
+    const expiredOrders = await Order.find({
+      deliveryMethod: "delivery",
+      readyForPickup: true,
+      $or: [
+        { courierId: { $exists: false } },
+        { courierId: null },
+        { courierId: "" },
+      ],
+      readyForPickupExpiresAt: { $lt: now, $ne: null },
+    });
+
+    for (const order of expiredOrders) {
+      // המר ל-איסוף עצמי
+      order.deliveryMethod = "pickup";
+      order.readyForPickupExpiresAt = null; // נקה את הפקיעה
+      await order.save();
+
+      // שקט — אין לוגים להמרה לאיסוף עצמי
+
+      // שלח מייל ללקוח
+      try {
+        const serviceId = process.env.EMAILJS_SERVICE_ID;
+        const templateId = process.env.EMAILJS_TEMPLATE_ID;
+        const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+
+        if (serviceId && templateId && publicKey) {
+          const templateParams = {
+            user_email: order.userEmail,
+            title: `הזמנה מס' ${order._id} - עדכון חשוב`,
+            order_items: `לצערנו, לא נמצא שליח זמין עבור הזמנתך.`,
+            order_total: "ההזמנה מוכנה לאיסוף עצמי מהחנות",
+            order_date: new Date().toLocaleString("he-IL"),
+            message: `שלום,\n\nהזמנתך מס' ${order._id} ממתינה לאיסוף בחנות.\nנא להגיע לאסוף את ההזמנה בהקדם האפשרי.\n\nתודה!`,
+          };
+
+          await emailjs.send(serviceId, templateId, templateParams, {
+            publicKey: publicKey,
+          });
+          // שקט — אין לוגים לאחר שליחת המייל
+        } else {
+          console.warn("⚠️ EmailJS לא מוגדר - לא ניתן לשלוח מייל");
+        }
+      } catch (emailError) {
+        console.error(`❌ שגיאה בשליחת מייל:`, emailError);
+      }
+    }
+
+    // שקט — אין סיכומי לוגים
+  } catch (error) {
+    console.error("❌ שגיאה בבדיקת הזמנות שפג תוקפן:", error);
+  }
+}
+
+// הרץ כל דקה
+const ONE_MINUTE = 60 * 1000;
+setInterval(checkExpiredOrders, ONE_MINUTE);
+
+// הרץ מיד בהפעלת השרת
+checkExpiredOrders();
