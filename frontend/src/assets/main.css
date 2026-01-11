@@ -230,3 +230,96 @@ img[src*='icon']:not([src*='logo']):not(.logo-img):hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 1.5rem;
 }
+
+/* ===========================
+   Toast Notifications - Custom Purple Theme
+   =========================== */
+.Vue-Toastification__container {
+  left: 0px !important;
+  right: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.Vue-Toastification__toast {
+  background-color: #ffffff !important;
+  border: 2px solid #8b5cf6 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2) !important;
+  padding: 1rem 1.5rem !important;
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  margin: 8px !important;
+}
+
+.Vue-Toastification__toast--success {
+  border-color: #8b5cf6 !important;
+}
+
+.Vue-Toastification__toast--error {
+  border-color: #ef4444 !important;
+}
+
+.Vue-Toastification__toast--warning {
+  border-color: #f59e0b !important;
+}
+
+.Vue-Toastification__toast--info {
+  border-color: #8b5cf6 !important;
+}
+
+/* הסרת כל האייקונים - כללים מחמירים */
+.Vue-Toastification__icon,
+.Vue-Toastification__toast-icon,
+.Vue-Toastification__toast .Vue-Toastification__icon,
+[class*="Vue-Toastification__icon"],
+.Vue-Toastification__toast svg,
+.Vue-Toastification__toast img,
+.Vue-Toastification__toast i {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* הסתרת emoji ו-pseudo elements */
+.Vue-Toastification__toast-body::before,
+.Vue-Toastification__toast::before,
+.Vue-Toastification__toast-body::after,
+.Vue-Toastification__toast::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* כיווץ רווחים מיותרים */
+.Vue-Toastification__toast-component-body {
+  gap: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* טקסט של Toast */
+.Vue-Toastification__toast-body {
+  color: #1f2937 !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* כפתור סגירה */
+.Vue-Toastification__close-button {
+  color: #8b5cf6 !important;
+  opacity: 0.7 !important;
+}
+
+.Vue-Toastification__close-button:hover {
+  opacity: 1 !important;
+}
+
+/* פס התקדמות */
+.Vue-Toastification__progress-bar {
+  background-color: #8b5cf6 !important;
+  opacity: 0.3 !important;
+}

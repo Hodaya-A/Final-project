@@ -285,4 +285,53 @@ router.get("/cities", (req, res) => {
   res.json(citiesList);
 });
 
+// ✅ חיפוש כתובת חופשי (לשימוש במערכת ההתראות)
+router.get("/search", async (req, res) => {
+  const { q } = req.query;
+
+  if (!q || String(q).trim().length < 3) {
+    return res.status(400).json({ error: "נא להזין לפחות 3 תווים" });
+  }
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=il&addressdetails=1&q=${encodeURIComponent(
+      q
+    )}`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "fresh-end-app/1.0 (contact: admin@fresh-end)",
+        "Accept-Language": "he,en",
+      },
+    });
+
+    if (!response.ok) {
+      console.error("Nominatim search status:", response.status);
+      return res.status(502).json({ error: "שגיאה בחיפוש כתובת" });
+    }
+
+    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      return res.json({ found: false });
+    }
+
+    const result = data[0];
+    return res.json({
+      found: true,
+      lat: parseFloat(result.lat),
+      lng: parseFloat(result.lon),
+      city:
+        result.address?.city ||
+        result.address?.town ||
+        result.address?.village ||
+        "",
+      address: result.display_name,
+    });
+  } catch (error) {
+    console.error("Error in geocode search:", error);
+    return res.status(500).json({ error: "שגיאה בחיפוש כתובת" });
+  }
+});
+
 export default router;

@@ -123,6 +123,24 @@
         </svg>
       </router-link>
 
+      <!-- התראות -->
+      <div class="notification-wrapper" v-if="userStore.isLoggedIn">
+        <div class="icon-button" @click="toggleNotifications" title="התראות">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+          >
+            <path
+              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+            />
+          </svg>
+          <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+        </div>
+      </div>
+
       <!-- תפריט משתמש -->
       <div class="user-menu-wrapper" :class="{ open: showMenu }">
         <div class="icon-button" @click="toggleMenu" ref="userIconRef">
@@ -159,12 +177,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { signOut } from 'firebase/auth'
 import { auth } from '@/services/firebase'
 import CartSidebar from '@/components/CartSidebar.vue'
+import { fetchNotifications } from '@/services/notifications'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -175,9 +194,67 @@ const maxPrice = ref<number>(100)
 const showMenu = ref(false)
 const showPriceFilter = ref(false)
 const isCartOpen = ref(false)
+const showNotifications = ref(false)
+const unreadCount = ref(0)
 const userIconRef = ref<HTMLElement | null>(null)
 const priceDropdownRef = ref<HTMLElement | null>(null)
 const dropdownStyle = ref({ top: '0px', left: '0px' })
+
+// טעינת מספר התראות שלא נקראו
+const loadUnreadCount = async () => {
+  if (!userStore.uid) return
+  try {
+    const data = await fetchNotifications(userStore.uid, { limit: 1, unreadOnly: true })
+    unreadCount.value = data.unreadCount
+  } catch (error) {
+    console.error('Error loading unread count:', error)
+  }
+}
+
+// רענון תקופתי של ספירת התראות (כל 30 שניות)
+let refreshInterval: number | null = null
+
+onMounted(() => {
+  if (userStore.uid) {
+    loadUnreadCount()
+  }
+  // רענון אוטומטי כל 30 שניות
+  refreshInterval = window.setInterval(() => {
+    if (userStore.uid) {
+      loadUnreadCount()
+    }
+  }, 30000)
+
+  // האזנה לאירוע גלובלי של עדכון התראות
+  window.addEventListener('notifications-updated', loadUnreadCount as EventListener)
+})
+
+onBeforeUnmount(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+  window.removeEventListener('notifications-updated', loadUnreadCount as EventListener)
+})
+
+// עדכון מספר ההתראות כשהמשתמש מתחבר
+watch(
+  () => userStore.uid,
+  (newUid) => {
+    if (newUid) {
+      loadUnreadCount()
+    } else {
+      unreadCount.value = 0
+    }
+  },
+  { immediate: true },
+)
+
+const toggleNotifications = () => {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    router.push('/notifications')
+  }
+}
 
 const togglePriceFilter = async () => {
   showPriceFilter.value = !showPriceFilter.value
@@ -282,8 +359,10 @@ const submitSearch = () => {
   background: var(--bg-secondary);
   padding: 0.75rem 2rem;
   gap: 1.5rem;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   width: 100%;
   max-width: 100vw;
@@ -426,11 +505,13 @@ const submitSearch = () => {
   background: #e0e0e0;
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
   cursor: pointer;
 }
 
 .price-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   appearance: none;
   width: 18px;
   height: 18px;
@@ -630,6 +711,42 @@ const submitSearch = () => {
   padding: 2px 6px;
   font-size: 0.75rem;
   font-weight: bold;
+}
+
+/* התראות */
+.notification-wrapper {
+  position: relative;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: bold;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
 }
 
 /* תפריט משתמש */

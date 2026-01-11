@@ -125,8 +125,10 @@ function closeCart() {
   align-items: center;
   gap: 1.5rem;
   box-shadow: var(--shadow);
-  position: sticky;
+  position: fixed;
   top: 70px;
+  left: 0;
+  right: 0;
   z-index: 49;
   width: 100%;
   max-width: 100vw;
