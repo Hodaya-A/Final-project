@@ -96,10 +96,10 @@ onMounted(() => {
   fetchProducts(true)
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  // חילוף באנר אוטומטי כל 4 שניות
+  // חילוף באנר אוטומטי כל 7 שניות
   bannerInterval = window.setInterval(() => {
     currentBannerIndex.value = (currentBannerIndex.value + 1) % bannerImages.length
-  }, 4000)
+  }, 7000)
 })
 
 onBeforeUnmount(() => {
@@ -237,7 +237,8 @@ body {
 
 .main-banner img {
   width: 100%;
-  max-width: 100%;
+  max-width: 1200px;
+  height: auto;
   border-radius: 12px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
 }
@@ -298,15 +299,24 @@ body {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1.5rem;
   width: 100%;
   direction: rtl;
+  transition: grid-template-columns 0.3s ease;
+}
+
+/* כשהסל פתוח - 5 מוצרים בשורה */
+.cart-open .products-grid {
+  grid-template-columns: repeat(5, 1fr);
 }
 
 @media (max-width: 1300px) {
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+  .cart-open .products-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
