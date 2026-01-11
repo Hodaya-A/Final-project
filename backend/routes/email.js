@@ -52,4 +52,51 @@ router.post("/send-order-email", async (req, res) => {
   }
 });
 
+// POST /api/send-delivery-timeout-email
+router.post("/send-delivery-timeout-email", async (req, res) => {
+  try {
+    const { to, orderId, shopName } = req.body;
+
+    if (!to) return res.status(400).json({ error: "Missing 'to' email" });
+
+    // Read EmailJS config from env
+    const serviceId = process.env.EMAILJS_SERVICE_ID;
+    const templateId = process.env.EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      console.warn("⚠️ EmailJS not configured - missing env vars");
+      return res
+        .status(500)
+        .json({ error: "EmailJS not configured on server" });
+    }
+
+    // Send email using EmailJS
+    const templateParams = {
+      user_email: to,
+      title: `הזמנה מס' ${orderId || ""} - עדכון חשוב`,
+      order_items: `לצערנו, לא נמצא שליח זמין עבור הזמנתך מספר ${orderId}.`,
+      order_total: "ההזמנה מוכנה לאיסוף עצמי מהחנות",
+      order_date: new Date().toLocaleString("he-IL"),
+      message: `שלום,\n\nהזמנתך מס' ${orderId} ממתינה לאיסוף ב${
+        shopName || "החנות"
+      }.\nנא להגיע לאסוף את ההזמנה בהקדם האפשרי.\n\nתודה!`,
+    };
+
+    console.log("📧 Sending delivery timeout email to:", to);
+
+    const response = await emailjs.send(serviceId, templateId, templateParams, {
+      publicKey: publicKey,
+    });
+
+    console.log("✅ Timeout email sent successfully:", response.status);
+    res.json({ success: true, status: response.status });
+  } catch (err) {
+    console.error("❌ Error sending timeout email:", err);
+    res
+      .status(500)
+      .json({ error: "Error sending email", details: err.message });
+  }
+});
+
 export default router;

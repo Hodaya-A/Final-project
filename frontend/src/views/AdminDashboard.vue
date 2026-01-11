@@ -35,10 +35,10 @@ async function deleteAllProducts() {
 
   try {
     await axios.delete('http://localhost:3000/api/products')
-    alert('✅ כל המוצרים נמחקו בהצלחה!')
+    alert('כל המוצרים נמחקו בהצלחה!')
   } catch (err) {
     console.error(err)
-    alert('❌ שגיאה במחיקת המוצרים')
+    alert('שגיאה במחיקת המוצרים')
   }
 }
 
@@ -104,7 +104,7 @@ button:hover {
 }
 
 .unauthorized h2 {
-  color: #e53e3e;
+  color: var(--danger);
   margin-bottom: 1.5rem;
 }
 

@@ -8,10 +8,10 @@
       <button @click="loadReport('unsold')">מוצרים שלא נמכרו</button>
     </div>
 
-    <div v-if="loading">⏳ טוען...</div>
+    <div v-if="loading">טוען...</div>
 
     <div v-if="reportType === 'sales' && reportData" class="report-section">
-      <h2>📈 דוח מכירות</h2>
+      <h2>דוח מכירות</h2>
       <p><strong>סה"כ הכנסות:</strong> ₪{{ reportData.totalRevenue.toFixed(2) }}</p>
       <p><strong>סה"כ הזמנות:</strong> {{ reportData.orderCount }}</p>
 
@@ -34,7 +34,7 @@
     </div>
 
     <div v-if="reportType === 'expiring' && reportData" class="report-section">
-      <h2>⏰ מוצרים שתוקפם קרוב</h2>
+      <h2>מוצרים שתוקפם קרוב</h2>
       <table>
         <thead>
           <tr>
@@ -54,7 +54,7 @@
     </div>
 
     <div v-if="reportType === 'unsold' && reportData" class="report-section">
-      <h2>🚫 מוצרים שלא נמכרו כלל</h2>
+      <h2>מוצרים שלא נמכרו כלל</h2>
       <table>
         <thead>
           <tr>
@@ -123,17 +123,20 @@ function formatDate(dateStr: string) {
 }
 
 button {
-  background: #2c3e50;
+  background: var(--gradient-primary);
   color: white;
   border: none;
   padding: 0.75rem 1.2rem;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-weight: bold;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
 }
 
 button:hover {
-  background: #34495e;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
 }
 
 table {
@@ -151,6 +154,8 @@ td {
 }
 
 th {
-  background-color: #f0f0f0;
+  background-color: var(--bg-secondary);
+  color: var(--primary-dark);
+  font-weight: 600;
 }
 </style>
