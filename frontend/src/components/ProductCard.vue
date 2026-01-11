@@ -180,7 +180,8 @@ function addToCart() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 240px;
+  width: 100%;
+  max-width: 200px;
 }
 
 .product-card {
@@ -188,11 +189,11 @@ function addToCart() {
   flex-direction: column;
   justify-content: space-between;
   width: 100%;
-  min-height: 360px;
+  min-height: 320px;
   background: white;
   border: 2px solid var(--border);
-  border-radius: 16px;
-  padding: 1.25rem;
+  border-radius: 14px;
+  padding: 1rem;
   text-align: center;
   transition: all 0.3s ease;
   color: inherit;

@@ -200,11 +200,13 @@ body {
 
 /* מיכל שנדחף ימינה כשהסל פתוח */
 .page-wrapper {
-  transition: margin-right 0.3s ease;
+  transition: all 0.3s ease;
+  width: 100%;
 }
 
 .page-wrapper.cart-open {
-  margin-right: 300px; /* רוחב הסל */
+  margin-left: 380px; /* רוחב הסל */
+  width: calc(100% - 380px); /* מקטין את הרוחב כדי לפנות מקום לסל */
 }
 
 .homepage {
@@ -219,7 +221,7 @@ body {
 .content {
   width: 100%;
   max-width: 100%;
-  padding: 0 1rem;
+  padding: 0;
   margin: 0 auto;
 }
 
@@ -227,6 +229,8 @@ body {
   text-align: center;
   margin: 0.5rem auto 2rem;
   position: relative;
+  width: 100%;
+  max-width: 100%;
 }
 
 .banner-slider {
@@ -237,7 +241,7 @@ body {
 
 .main-banner img {
   width: 100%;
-  max-width: 1200px;
+  max-width: 100%;
   height: auto;
   border-radius: 12px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
@@ -288,27 +292,32 @@ body {
 }
 
 .products-section {
-  padding-top: 1rem;
+  padding: 1rem 0;
 }
 
 .products-section h2 {
   text-align: right;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
   color: #1c75bc;
 }
 
 .products-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 1.5rem;
+  gap: 0.1rem;
   width: 100%;
   direction: rtl;
-  transition: grid-template-columns 0.3s ease;
+  transition: all 0.3s ease;
+  padding: 0 0.1rem;
+  justify-items: center;
 }
 
-/* כשהסל פתוח - 5 מוצרים בשורה */
+/* כשהסל פתוח - 4 מוצרים בשורה */
 .cart-open .products-grid {
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.1rem;
+  padding: 0 0.1rem;
 }
 
 @media (max-width: 1300px) {
