@@ -3,6 +3,7 @@ import express from "express";
 import Inventory from "../models/Inventory.js"; // ✅ שימוש במודל Inventory במקום Product
 import mongoose from "mongoose";
 import { db } from "../config/firebaseAdmin.js";
+import { createNotificationsForNewProduct } from "../utils/notificationService.js";
 
 const router = express.Router();
 
@@ -101,6 +102,11 @@ router.post("/", async (req, res) => {
       sellerId: sellerId || null,
       updatedAt: new Date(),
     });
+
+    // ✅ יצירת התראות למשתמשים על מוצר חדש (אסינכרוני)
+    createNotificationsForNewProduct(item).catch((err) =>
+      console.error("Error creating notifications:", err)
+    );
 
     res.status(201).json(item);
   } catch (err) {

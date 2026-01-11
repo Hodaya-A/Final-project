@@ -90,7 +90,6 @@ interface ProductForCart {
 declare global {
   interface Window {
     addToCart: (product: ProductForCart) => void
-    addToCart: (product: AddToCartPayload) => void
   }
 }
 

@@ -3,9 +3,27 @@
     <!-- העמוד כולו נעטף במיכל שנדחף כאשר הסל פתוח -->
     <div class="page-wrapper" :class="{ 'cart-open': isCartOpen }">
       <div class="content">
-        <!-- באנר -->
+        <!-- באנר מתחלף -->
         <section class="main-banner">
-          <img :src="bannerImg" alt="Fresh Banner" class="banner" />
+          <div class="banner-slider">
+            <transition name="fade" mode="out-in">
+              <img
+                :key="currentBannerIndex"
+                :src="bannerImages[currentBannerIndex]"
+                alt="Fresh Banner"
+                class="banner"
+              />
+            </transition>
+            <div class="banner-dots">
+              <button
+                v-for="(img, index) in bannerImages"
+                :key="index"
+                @click="currentBannerIndex = index"
+                :class="['dot', { active: currentBannerIndex === index }]"
+                :aria-label="`עבור לבאנר ${index + 1}`"
+              ></button>
+            </div>
+          </div>
         </section>
 
         <!-- מוצרים -->
@@ -41,9 +59,17 @@ import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import ProductCard from '@/components/ProductCard.vue'
-import bannerImg from '@/assets/banner-pink.png'
+import banner1 from '@/assets/banner1.png'
+import banner2 from '@/assets/banner2.png'
+import banner3 from '@/assets/banner3.png'
+import banner4 from '@/assets/banner4.png'
 import api from '@/services/api'
 import type { Product } from '@/stores/products'
+
+// מערך תמונות באנר
+const bannerImages = [banner1, banner2, banner3, banner4]
+const currentBannerIndex = ref(0)
+let bannerInterval: number | null = null
 
 const cartStore = useCartStore()
 const { isCartOpen } = storeToRefs(cartStore)
@@ -69,10 +95,18 @@ const scrollContainer = ref<HTMLElement | null>(null)
 onMounted(() => {
   fetchProducts(true)
   window.addEventListener('scroll', onScroll, { passive: true })
+
+  // חילוף באנר אוטומטי כל 7 שניות
+  bannerInterval = window.setInterval(() => {
+    currentBannerIndex.value = (currentBannerIndex.value + 1) % bannerImages.length
+  }, 7000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
+  if (bannerInterval) {
+    clearInterval(bannerInterval)
+  }
 })
 
 watch(
@@ -192,13 +226,65 @@ body {
 .main-banner {
   text-align: center;
   margin: 0.5rem auto 2rem;
+  position: relative;
+}
+
+.banner-slider {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
 }
 
 .main-banner img {
   width: 100%;
-  max-width: 100%;
+  max-width: 1200px;
+  height: auto;
   border-radius: 12px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* אנימציית מעבר */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.6s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* נקודות ניווט */
+.banner-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.dot.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  transform: scale(1.3);
 }
 
 .products-section {
@@ -213,15 +299,24 @@ body {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1.5rem;
   width: 100%;
   direction: rtl;
+  transition: grid-template-columns 0.3s ease;
+}
+
+/* כשהסל פתוח - 5 מוצרים בשורה */
+.cart-open .products-grid {
+  grid-template-columns: repeat(5, 1fr);
 }
 
 @media (max-width: 1300px) {
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+  .cart-open .products-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 

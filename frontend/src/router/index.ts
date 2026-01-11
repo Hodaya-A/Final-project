@@ -28,6 +28,18 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/notifications',
+    name: 'notifications',
+    component: () => import('@/views/NotificationsView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notification-settings',
+    name: 'notification-settings',
+    component: () => import('@/views/NotificationSettingsView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/shop/inventory',
     name: 'ShopInventory',
     component: () => import('@/views/ShopInventoryView.vue'),
@@ -145,6 +157,14 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // אם יש מיקום שמור (כפתור חזור), חזור אליו
+    if (savedPosition) {
+      return savedPosition
+    }
+    // אחרת, גלול לראש הדף
+    return { top: 0, behavior: 'smooth' }
+  },
 })
 
 // ✅ הגנה על דפים שדורשים הרשאת admin או authentication

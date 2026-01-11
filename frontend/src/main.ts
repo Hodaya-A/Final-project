@@ -16,7 +16,16 @@ import { useUserStore } from '@/stores/user'
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
-app.use(Toast)
+app.use(Toast, {
+  hideProgressBar: false,
+  closeOnClick: true,
+  pauseOnHover: true,
+  draggable: true,
+  icon: false, // ✅ הסרת אייקונים
+  position: 'bottom-left',
+  timeout: 4000,
+  rtl: true,
+})
 
 let appHasMounted = false // ✅ מונע הרצה כפולה של mount
 

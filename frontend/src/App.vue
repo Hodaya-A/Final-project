@@ -16,19 +16,100 @@
     <footer class="footer">
       <p>&copy; 2025 Fresh End</p>
     </footer>
+
+    <!-- ⭐ התראות קופצות -->
+    <NotificationToast ref="toastRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, onBeforeUnmount } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import Navbar from '@/components/NavbarA.vue'
+import NotificationToast from '@/components/NotificationToast.vue'
 import { useUserStore } from '@/stores/user'
+import { fetchNotifications, markAsRead } from '@/services/notifications'
+import type { NotificationData } from '@/services/notifications'
 
 const userStore = useUserStore()
+const toastRef = ref()
+const lastCheckedTime = ref<Date>(new Date())
+let pollingInterval: number | null = null
+
+// בדיקת התראות חדשות
+const checkForNewNotifications = async () => {
+  if (!userStore.uid) return
+
+  try {
+    // קבלת כל ההתראות שלא נקראו שנוצרו מאז הבדיקה האחרונה
+    const data = await fetchNotifications(userStore.uid, {
+      limit: 50,
+      unreadOnly: true,
+    })
+
+    // סינון התראות שנוצרו אחרי הבדיקה האחרונה
+    const newNotifications = data.notifications.filter((notif: NotificationData) => {
+      const createdAt = new Date(notif.createdAt)
+      return createdAt > lastCheckedTime.value
+    })
+
+    // הצגת התראות חדשות
+    newNotifications.forEach((notification: NotificationData) => {
+      if (toastRef.value && toastRef.value.showNotification) {
+        toastRef.value.showNotification(notification)
+      }
+    })
+
+    // עדכון זמן הבדיקה האחרונה
+    if (newNotifications.length > 0) {
+      lastCheckedTime.value = new Date()
+    }
+  } catch (error) {
+    console.error('Error checking for new notifications:', error)
+  }
+}
+
+// האזנה לאירוע קבלת/התעלמות מהתראה
+const handleNotificationAction = async (event: Event) => {
+  const customEvent = event as CustomEvent
+  const { notification, action } = customEvent.detail
+
+  if (action === 'accept') {
+    // סימון כנקרא
+    try {
+      await markAsRead(notification._id)
+      // שליחת אירוע לעדכון הפעמון
+      window.dispatchEvent(new CustomEvent('notifications-updated'))
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+    }
+  }
+  // אם action === 'dismiss', לא עושים כלום - נשאר לא נקרא
+}
 
 onMounted(() => {
   userStore.initializeUser()
+
+  // התחלת polling כל 30 שניות
+  if (userStore.uid) {
+    checkForNewNotifications()
+  }
+
+  pollingInterval = window.setInterval(() => {
+    if (userStore.uid) {
+      checkForNewNotifications()
+    }
+  }, 30000) // כל 30 שניות
+
+  // האזנה לאירועים מהתראות קופצות
+  window.addEventListener('notification-action', handleNotificationAction)
+})
+
+onBeforeUnmount(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
+  window.removeEventListener('notification-action', handleNotificationAction)
 })
 </script>
 
@@ -70,6 +151,7 @@ onMounted(() => {
   padding: 1.5rem;
   width: 100%;
   min-height: calc(100vh - 250px);
+  margin-top: 180px; /* TopBar (70px) + NavbarA (110px) = 180px */
 }
 
 /* 🔻 תחתית הדף */

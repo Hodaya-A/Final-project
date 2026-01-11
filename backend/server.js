@@ -20,16 +20,23 @@ import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
 import usersRoutes from "./routes/users.js";
+import notificationsRoutes from "./routes/notifications.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
+import { createExpiringProductNotifications } from "./utils/notificationService.js";
 
 const app = express();
 
 /* ======================= Middleware ======================= */
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5174",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -60,6 +67,7 @@ app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
@@ -81,12 +89,23 @@ async function removeExpiredProducts() {
   }
 }
 
+/* ======================= יצירת התראות על מוצרים לפני פקיעה ======================= */
+async function sendExpiringNotifications() {
+  try {
+    await createExpiringProductNotifications();
+  } catch (error) {
+    console.error("❌ שגיאה ביצירת התראות:", error);
+  }
+}
+
 // הרץ כל יום בחצות
 const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 setInterval(removeExpiredProducts, TWENTY_FOUR_HOURS);
+setInterval(sendExpiringNotifications, TWENTY_FOUR_HOURS);
 
 // הרץ מיד בהפעלת השרת
 removeExpiredProducts();
+sendExpiringNotifications();
 /* ======================= בדיקת הזמנות משלוח שפג תוקפן ======================= */
 async function checkExpiredOrders() {
   try {
