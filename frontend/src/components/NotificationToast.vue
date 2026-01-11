@@ -55,10 +55,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
 import type { NotificationData } from '@/services/notifications'
 
-const router = useRouter()
 const visibleNotifications = ref<NotificationData[]>([])
 
 // הוספת התראה חדשה
@@ -77,9 +75,7 @@ const handleView = (notification: NotificationData) => {
     }),
   )
 
-  if (notification.productId) {
-    router.push(`/product/${notification.productId}`)
-  }
+  // רק סוגר את ההתראה ללא ניווט
   handleClose(notification)
 }
 

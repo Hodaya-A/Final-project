@@ -32,6 +32,24 @@
       @click="goToCourier"
       title="דאש משלוחנים"
     >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="34"
+        height="34"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="courier-icon"
+      >
+        <path d="M5 12h14" />
+        <path d="M12 5l7 7-7 7" />
+        <circle cx="7" cy="17" r="2" />
+        <circle cx="17" cy="17" r="2" />
+        <path d="M5 17H2v-6l3-5h9l4 5h1a2 2 0 0 1 2 2v4" />
+      </svg>
       <div class="courier-text">משלוחים</div>
     </div>
 
@@ -126,7 +144,7 @@ function closeCart() {
   gap: 1.5rem;
   box-shadow: var(--shadow);
   position: fixed;
-  top: 70px;
+  top: 60px;
   left: 0;
   right: 0;
   z-index: 49;
@@ -224,9 +242,9 @@ function closeCart() {
 /* קיצור דרך למנהל חנות */
 .store-shortcut {
   width: 140px;
-  height: 100px;
+  height: 90px;
   background-color: white;
-  border-radius: 16px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -234,14 +252,17 @@ function closeCart() {
   cursor: pointer;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-  margin-left: 5px;
+  box-shadow: var(--shadow);
+  margin-left: 0.5rem;
+  border: 2px solid var(--border);
 }
 .store-shortcut:hover {
   transform: scale(1.03);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
 }
 .store-icon {
   width: 34px;
@@ -258,15 +279,16 @@ function closeCart() {
 }
 .store-text {
   font-weight: 700;
-  color: #1d4320;
+  color: #6b7280;
   white-space: nowrap;
+  font-size: 0.9rem;
 }
 /* קיצור דרך לדאש משלוחנים */
 .courier-shortcut {
   width: 140px;
-  height: 90px; /* שיהיה סימטרי עם יתר האלמנטים */
-  background: var(--gradient-primary);
-  border-radius: 16px;
+  height: 90px;
+  background-color: white;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -274,41 +296,49 @@ function closeCart() {
   cursor: pointer;
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
   flex-shrink: 0;
-  box-shadow: 0 3px 8px rgba(99, 102, 241, 0.25);
-  margin-left: 12px; /* מרווח נוח מהאלמנטים הסמוכים */
-  margin-right: 12px; /* מרווח נוח משני הצדדים */
-  border: 2px solid var(--primary-light);
+  box-shadow: var(--shadow);
+  margin-left: 0.5rem;
+  border: 2px solid var(--border);
 }
 
 .courier-shortcut:hover {
   transform: scale(1.03);
   box-shadow: var(--shadow-lg);
-  filter: brightness(1.1);
-}
-
-.courier-shortcut.active {
-  box-shadow:
-    0 8px 20px rgba(99, 102, 241, 0.35),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.25);
-  transform: scale(1.02); /* פחות קפיצה כדי לשמור על קו אחיד */
   border-color: var(--primary);
 }
 
+.courier-shortcut.active {
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
 .courier-icon {
-  font-size: 2.5rem;
+  width: 34px;
+  height: 34px;
+  color: var(--primary);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.courier-shortcut:hover .courier-icon {
+  color: var(--primary-dark);
+  transform: scale(1.05);
 }
 
 .courier-text {
   font-weight: 700;
-  color: white;
-  font-size: 0.82rem; /* מעט קטן יותר לסימטריה */
-  line-height: 1; /* מרכז אנכי מדויק יותר */
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 /* עיצוב לסל */
 .cart-summary {
-  width: 240px;
+  width: 180px;
   height: 90px;
   background: white;
   border-radius: 12px;
@@ -321,8 +351,8 @@ function closeCart() {
   transition: all 0.2s ease;
   flex-shrink: 0;
   box-shadow: var(--shadow);
-  margin-left: 5px;
-  margin-right: 20px;
+  margin-left: 0.5rem;
+  margin-right: 1rem;
   border: 2px solid var(--border);
 }
 
@@ -356,7 +386,7 @@ function closeCart() {
 .cart-summary .cart-badge {
   position: absolute;
   top: 8px;
-  right: 75px;
+  right: 8px;
   background-color: red;
   color: white;
   border-radius: 50%;

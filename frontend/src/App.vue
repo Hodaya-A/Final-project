@@ -131,7 +131,6 @@ onBeforeUnmount(() => {
   grid-template-columns: 1fr; /* סל צר + תוכן */
   flex: 1;
   min-height: calc(100vh - 160px); /* סך הכל פחות topbar + navbar + footer */
-  overflow: hidden;
 }
 
 /* 🛒 צד שמאל - סל קבוע */
@@ -151,7 +150,7 @@ onBeforeUnmount(() => {
   padding: 1.5rem;
   width: 100%;
   min-height: calc(100vh - 250px);
-  margin-top: 180px; /* TopBar (70px) + NavbarA (110px) = 180px */
+  margin-top: 170px; /* TopBar (60px) + NavbarA (110px) = 170px */
 }
 
 /* 🔻 תחתית הדף */

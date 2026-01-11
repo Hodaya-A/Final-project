@@ -172,7 +172,6 @@ function addToCart() {
     price: props.product.salePrice || props.product.price,
     imageUrl,
     shopId: props.product.shopId, // ✅ מזהה החנות
-    sellerId: props.product.sellerId, // ✅ מזהה המוכר
   })
 }
 </script>

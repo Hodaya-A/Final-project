@@ -357,7 +357,7 @@ const submitSearch = () => {
   justify-content: space-between;
   align-items: center;
   background: var(--bg-secondary);
-  padding: 0.75rem 2rem;
+  padding: 0.5rem 2rem;
   gap: 1.5rem;
   position: fixed;
   top: 0;
@@ -368,8 +368,7 @@ const submitSearch = () => {
   max-width: 100vw;
   overflow-x: hidden;
   box-sizing: border-box;
-  height: auto;
-  min-height: 70px;
+  height: 60px;
 }
 .logo {
   transition: transform 0.3s ease;
@@ -393,8 +392,8 @@ const submitSearch = () => {
   align-items: center;
   background: white;
   border-radius: 50px;
-  padding: 0.5rem;
-  gap: 0.5rem;
+  padding: 0.25rem;
+  gap: 0.3rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   width: 100%;
   max-width: 800px;
@@ -402,10 +401,10 @@ const submitSearch = () => {
 
 .search-input {
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   border: none;
   outline: none;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   background: transparent;
   text-align: right;
   direction: rtl;
@@ -423,13 +422,13 @@ const submitSearch = () => {
 .filter-toggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
+  gap: 0.3rem;
+  padding: 0.5rem 1rem;
   background: white;
   border: 1px solid #e0e0e0;
   border-radius: 50px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: #333;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -532,12 +531,12 @@ const submitSearch = () => {
 }
 
 .search-button {
-  padding: 0.75rem 2rem;
+  padding: 0.5rem 1.5rem;
   background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
   color: white;
   border: none;
   border-radius: 50px;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -552,9 +551,9 @@ const submitSearch = () => {
 
 /* לוגו */
 .logo-img {
-  height: 50px;
+  height: 40px;
   width: auto;
-  max-width: 200px;
+  max-width: 150px;
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
@@ -621,10 +620,10 @@ const submitSearch = () => {
 }
 
 .user-icon {
-  width: 28px;
-  height: 28px;
-  max-width: 28px;
-  max-height: 28px;
+  width: 26px;
+  height: 26px;
+  max-width: 26px;
+  max-height: 26px;
   border-radius: 50%;
   transition: all 0.2s ease;
   object-fit: contain;
@@ -643,8 +642,8 @@ const submitSearch = () => {
 }
 
 .icon-button {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -663,8 +662,8 @@ const submitSearch = () => {
 }
 
 .icon-button svg {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   color: var(--primary);
   fill: currentColor;
   transition: all 0.2s ease;
@@ -672,8 +671,8 @@ const submitSearch = () => {
 }
 
 .icon-button img {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
   transition: all 0.2s ease;
   flex-shrink: 0;

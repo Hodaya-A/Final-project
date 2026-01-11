@@ -202,11 +202,14 @@ body {
 .page-wrapper {
   transition: all 0.3s ease;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .page-wrapper.cart-open {
   margin-left: 380px; /* רוחב הסל */
   width: calc(100% - 380px); /* מקטין את הרוחב כדי לפנות מקום לסל */
+  max-width: calc(100% - 380px);
+  box-sizing: border-box;
 }
 
 .homepage {
@@ -215,7 +218,7 @@ body {
   display: flex;
   justify-content: flex-start;
   width: 100%;
-  overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .content {
