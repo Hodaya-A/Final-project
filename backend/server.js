@@ -4,6 +4,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import emailjs from "@emailjs/nodejs";
+import checkout from "@paypal/checkout-server-sdk";
 
 // models
 import Inventory from "./models/Inventory.js";
@@ -16,6 +17,7 @@ import productRoutes from "./routes/products.js";
 import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
+import paymentsRoutes from "./routes/payments.js";
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
@@ -25,6 +27,7 @@ import notificationsRoutes from "./routes/notifications.js";
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
 import { createExpiringProductNotifications } from "./utils/notificationService.js";
+import { getPaypalClient, getCurrency } from "./utils/paypalClient.js";
 
 const app = express();
 
@@ -63,6 +66,7 @@ app.use("/api", imagesRoutes);
 
 // ⭐ זה מה שהיה חסר — חיבור מודול ההזמנות
 app.use("/api/orders", ordersRouter);
+app.use("/api/payments", paymentsRoutes);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -95,6 +99,25 @@ async function sendExpiringNotifications() {
     await createExpiringProductNotifications();
   } catch (error) {
     console.error("❌ שגיאה ביצירת התראות:", error);
+  }
+}
+
+/* ======================= החזר משלוח אם בוטל ======================= */
+async function refundShippingIfNeeded(captureId, amount) {
+  if (!captureId || !amount || amount <= 0) return;
+  try {
+    const client = getPaypalClient();
+    const req = new checkout.payments.CapturesRefundRequest(captureId);
+    req.requestBody({
+      amount: {
+        currency_code: getCurrency(),
+        value: Number(amount).toFixed(2),
+      },
+      note_to_payer: "Shipping refunded after converting to pickup",
+    });
+    await client.execute(req);
+  } catch (error) {
+    console.error("❌ שגיאה בזיכוי משלוח:", error);
   }
 }
 
@@ -131,9 +154,16 @@ async function checkExpiredOrders() {
       // המר ל-איסוף עצמי
       order.deliveryMethod = "pickup";
       order.readyForPickupExpiresAt = null; // נקה את הפקיעה
-      await order.save();
+      // החזר משלוח אם שולם
+      if (order.shippingAmount > 0 && order.paypalCaptureId) {
+        await refundShippingIfNeeded(
+          order.paypalCaptureId,
+          order.shippingAmount
+        );
+        order.paymentStatus = "partially_refunded";
+      }
 
-      // שקט — אין לוגים להמרה לאיסוף עצמי
+      await order.save();
 
       // שלח מייל ללקוח
       try {

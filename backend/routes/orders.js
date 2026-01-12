@@ -63,7 +63,30 @@ router.get("/pending/store", async (req, res) => {
     };
 
     const finalFilter = { ...baseFilter, ...notReadyFilter };
+
+    // DEBUG: לראות מה מחפשים
+    console.log("🔍 Searching for pending orders with filter:", finalFilter);
+
     const pendingOrders = await Order.find(finalFilter).sort({ createdAt: -1 });
+
+    // DEBUG: לראות מה מצאנו
+    console.log(`📦 Found ${pendingOrders.length} orders`);
+    if (pendingOrders.length > 0) {
+      console.log("First order shopId:", pendingOrders[0].shopId);
+    }
+
+    // לראות את כל ההזמנות בDB (ללא פילטר) - רק shopId
+    const allOrders = await Order.find({})
+      .select("shopId sellerId readyForPickup")
+      .limit(5);
+    console.log(
+      "📋 Last 5 orders in DB:",
+      allOrders.map((o) => ({
+        shopId: o.shopId,
+        sellerId: o.sellerId,
+        ready: o.readyForPickup,
+      }))
+    );
 
     // שקט — אין סיכומי לוגים
 

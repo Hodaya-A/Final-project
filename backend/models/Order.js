@@ -30,6 +30,14 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  itemsTotal: {
+    type: Number, // סכום הפריטים בלי משלוח
+    default: 0,
+  },
+  shippingAmount: {
+    type: Number,
+    default: 0,
+  },
   deliveryMethod: {
     type: String,
     enum: ["delivery", "pickup"],
@@ -57,6 +65,32 @@ const orderSchema = new mongoose.Schema({
   },
   deliveredAt: {
     type: Date, // תאריך סיום המשלוח
+  },
+  shippingAddress: {
+    fullName: String,
+    phone: String,
+    street: String,
+    city: String,
+    zip: String,
+    notes: String,
+  },
+  paymentStatus: {
+    type: String,
+    enum: [
+      "pending",
+      "authorized",
+      "captured",
+      "partially_refunded",
+      "refunded",
+      "failed",
+    ],
+    default: "captured",
+  },
+  paypalOrderId: {
+    type: String,
+  },
+  paypalCaptureId: {
+    type: String,
   },
   createdAt: {
     type: Date,

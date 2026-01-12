@@ -632,4 +632,37 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+// תיקון חד-פעמי: עדכון מוצרים ישנים ללא sellerId
+router.post("/fix-missing-seller", async (req, res) => {
+  try {
+    const { shopId, sellerId } = req.body;
+    if (!shopId || !sellerId) {
+      return res
+        .status(400)
+        .json({ error: "shopId and sellerId are required" });
+    }
+
+    // מצא מוצרים שאין להם sellerId או שהוא undefined
+    const result = await Inventory.updateMany(
+      {
+        shopId,
+        $or: [
+          { sellerId: { $exists: false } },
+          { sellerId: null },
+          { sellerId: undefined },
+        ],
+      },
+      { $set: { sellerId } }
+    );
+
+    console.log(
+      `🔧 Fixed ${result.modifiedCount} products with missing sellerId for shopId: ${shopId}`
+    );
+    res.json({ ok: true, fixed: result.modifiedCount });
+  } catch (error) {
+    console.error("Error fixing products:", error);
+    res.status(500).json({ error: "Failed to fix products" });
+  }
+});
+
 export default router;
