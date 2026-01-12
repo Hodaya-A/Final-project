@@ -344,7 +344,40 @@ const handleLogin = async () => {
 
     if (userSnap.exists()) {
       const data = userSnap.data()
-      userStore.setUser(uid, data.email, data.role, data.name, data.storeId || '')
+
+      // טעינת פרטי חנות אם זה מנהל חנות
+      let sName = data.storeName || ''
+      let sCity = data.city || ''
+      let sStreet = data.street || ''
+      let sNumber = data.houseNumber || data.number || ''
+
+      if (data.role === 'storeManager' && data.storeId && (!sName || !sCity || !sStreet)) {
+        try {
+          const storeDoc = await getDoc(doc(db, 'stores', data.storeId))
+          if (storeDoc.exists()) {
+            const storeData = storeDoc.data()
+            sName = storeData?.name || sName
+            sCity = storeData?.city || sCity
+            sStreet = storeData?.street || sStreet
+            sNumber = storeData?.houseNumber || sNumber
+          }
+        } catch (err) {
+          console.error('Failed to load store details:', err)
+        }
+      }
+
+      userStore.setUser(
+        uid,
+        data.email,
+        data.role,
+        data.name || '',
+        data.storeId || '',
+        data.courierOptIn || false,
+        sName,
+        sCity,
+        sStreet,
+        sNumber,
+      )
       // load user's saved cart after login
       try {
         const m = await import('@/stores/cart')
@@ -390,12 +423,39 @@ const handleGoogle = async () => {
     const finalSnap = await getDoc(userRef)
     if (finalSnap.exists()) {
       const data = finalSnap.data()
+
+      // טעינת פרטי חנות אם זה מנהל חנות
+      let sName = data.storeName || ''
+      let sCity = data.city || ''
+      let sStreet = data.street || ''
+      let sNumber = data.houseNumber || data.number || ''
+
+      if (data.role === 'storeManager' && data.storeId && (!sName || !sCity || !sStreet)) {
+        try {
+          const storeDoc = await getDoc(doc(db, 'stores', data.storeId))
+          if (storeDoc.exists()) {
+            const storeData = storeDoc.data()
+            sName = storeData?.name || sName
+            sCity = storeData?.city || sCity
+            sStreet = storeData?.street || sStreet
+            sNumber = storeData?.houseNumber || sNumber
+          }
+        } catch (err) {
+          console.error('Failed to load store details:', err)
+        }
+      }
+
       userStore.setUser(
         user.uid,
         data.email,
         data.role,
         data.name || user.displayName || '',
         data.storeId || '',
+        data.courierOptIn || false,
+        sName,
+        sCity,
+        sStreet,
+        sNumber,
       )
       // load user's saved cart after login
       try {
