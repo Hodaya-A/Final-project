@@ -71,7 +71,9 @@ app.use("/api/notifications", notificationsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
 
 /* ======================= הסרה אוטומטית של מוצרים שפג תוקפם ======================= */
 async function removeExpiredProducts() {

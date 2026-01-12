@@ -15,7 +15,7 @@
           v-model="searchTerm"
           ref="searchInput"
           @keydown.enter="submitSearch"
-          placeholder="איזור, עיר שכונה או רחוב..."
+          placeholder="חיפוש מוצר או קטגוריה..."
           class="search-input"
         />
 

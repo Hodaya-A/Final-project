@@ -80,8 +80,16 @@ router.get("/", async (req, res) => {
       console.log("🔍 מחזיר את כל המוצרים (אין sellerId)");
     }
 
-    if (category) filter.category = category;
-    if (q) filter.name = { $regex: q, $options: "i" };
+    // סינון לפי קטגוריה או חיפוש
+    if (category && !q) {
+      filter.category = category;
+    } else if (q) {
+      // חיפוש גם בשם המוצר וגם בקטגוריה
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } },
+      ];
+    }
 
     // סינון לפי טווח מחירים
     if (minPrice || maxPrice) {
