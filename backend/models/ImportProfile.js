@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 const ImportProfileSchema = new mongoose.Schema({
   shopId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     index: true,
     required: true,
     unique: true,
