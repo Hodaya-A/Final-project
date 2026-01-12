@@ -17,11 +17,25 @@ interface CartState {
   isCartOpen: boolean
 }
 
+const CART_STORAGE_KEY = 'fresh_end_cart'
+
 export const useCartStore = defineStore('cart', {
-  state: (): CartState => ({
-    items: [],
-    isCartOpen: false,
-  }),
+  state: (): CartState => {
+    // טען מ-localStorage בעת אתחול
+    let items: CartItem[] = []
+    try {
+      const stored = localStorage.getItem(CART_STORAGE_KEY)
+      if (stored) {
+        items = JSON.parse(stored) as CartItem[]
+      }
+    } catch {
+      /* ignore parse/storage errors */
+    }
+    return {
+      items,
+      isCartOpen: false,
+    }
+  },
 
   getters: {
     totalItems: (state): number => state.items.reduce((sum, item) => sum + item.quantity, 0),
@@ -31,6 +45,14 @@ export const useCartStore = defineStore('cart', {
   },
 
   actions: {
+    // שמור לוקאלי ב-localStorage
+    persistToLocal() {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(this.items))
+      } catch {
+        /* ignore storage quota errors */
+      }
+    },
     // בקשה להוספה לסל — בלי quantity חובה
     addToCart(payload: {
       id: string
@@ -59,7 +81,8 @@ export const useCartStore = defineStore('cart', {
           quantity: qty,
         })
       }
-      // try to persist change for logged-in user
+      // שמור לוקאלי + spoon in server save
+      this.persistToLocal()
       try {
         this.autoSave?.()
       } catch {
@@ -69,6 +92,7 @@ export const useCartStore = defineStore('cart', {
 
     removeFromCart(id: string) {
       this.items = this.items.filter((item) => item.id !== id)
+      this.persistToLocal()
       try {
         this.autoSave?.()
       } catch {
@@ -79,6 +103,7 @@ export const useCartStore = defineStore('cart', {
     increaseQuantity(id: string) {
       const item = this.items.find((item) => item.id === id)
       if (item) item.quantity++
+      this.persistToLocal()
       try {
         this.autoSave?.()
       } catch {
@@ -90,6 +115,7 @@ export const useCartStore = defineStore('cart', {
       const item = this.items.find((item) => item.id === id)
       if (item && item.quantity > 1) item.quantity--
       else this.removeFromCart(id)
+      this.persistToLocal()
       try {
         this.autoSave?.()
       } catch {
@@ -99,6 +125,7 @@ export const useCartStore = defineStore('cart', {
 
     clearCart() {
       this.items = []
+      this.persistToLocal()
       try {
         this.autoSave?.()
       } catch {
@@ -124,7 +151,12 @@ export const useCartStore = defineStore('cart', {
           if (data && typeof data === 'object') {
             const d = data as { cart?: unknown }
             if (Array.isArray(d.cart)) {
-              this.items = d.cart as CartItem[]
+              const serverCart = d.cart as CartItem[]
+              // מזג עם localStorage: שמור items מהserver + שמור locally חדשים
+              const localIds = new Set(this.items.map((i) => i.id))
+              const newItems = serverCart.filter((item) => !localIds.has(item.id))
+              this.items = [...this.items, ...newItems]
+              this.persistToLocal()
             }
           }
         }
