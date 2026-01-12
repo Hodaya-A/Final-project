@@ -65,6 +65,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Full-screen modal for new orders -->
+    <StoreOrderModal />
   </div>
 </template>
 
@@ -73,6 +76,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { sendOrderConfirmation } from '@/services/email'
+import StoreOrderModal from '@/components/StoreOrderModal.vue'
 
 interface Order {
   _id: string
@@ -94,7 +98,7 @@ const loading = ref(true)
 const error = ref('')
 const approvingId = ref<string | null>(null)
 const readyingId = ref<string | null>(null)
-let pollInterval: ReturnType<typeof setInterval> | null = null
+const pollInterval = ref<ReturnType<typeof setInterval> | null>(null)
 
 async function fetchPendingOrders() {
   try {
@@ -102,7 +106,6 @@ async function fetchPendingOrders() {
     error.value = ''
 
     const shopId = userStore.storeId || '' // מזהה החנות (storeId)
-    console.log('[PendingOrders] Manager storeId:', shopId)
 
     if (!shopId) {
       error.value = 'אין מזהה חנות (storeId)'
@@ -114,7 +117,6 @@ async function fetchPendingOrders() {
     })
 
     pendingOrders.value = response.data.orders || []
-    console.log(`Fetched ${pendingOrders.value.length} pending orders for shopId: ${shopId}`)
   } catch (err: unknown) {
     console.error('Error fetching orders:', err)
     error.value = 'שגיאה בטעינת הזמנות'
@@ -215,13 +217,13 @@ onMounted(() => {
   fetchPendingOrders()
 
   // פולינג כל 10 שניות
-  pollInterval = setInterval(() => {
+  pollInterval.value = setInterval(() => {
     fetchPendingOrders()
   }, 10000)
 })
 
 onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval)
+  if (pollInterval.value) clearInterval(pollInterval.value)
 })
 </script>
 

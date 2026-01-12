@@ -3,12 +3,39 @@
     <h1>דוחות לחנות שלך</h1>
 
     <div class="buttons">
+      <button @click="loadReport('pending')">הזמנות ממתינות לאישור</button>
       <button @click="loadReport('sales')">דוח מכירות</button>
       <button @click="loadReport('expiring')">מוצרים בתוקף קרוב</button>
       <button @click="loadReport('unsold')">מוצרים שלא נמכרו</button>
     </div>
 
     <div v-if="loading">⏳ טוען...</div>
+
+    <!-- דוח הזמנות ממתינות -->
+    <div v-if="reportType === 'pending' && reportData" class="report-section">
+      <h2>📋 הזמנות ממתינות לאישור</h2>
+      <p v-if="reportData.count === 0" class="empty-message">אין הזמנות ממתינות</p>
+      <table v-else>
+        <thead>
+          <tr>
+            <th>מספר הזמנה</th>
+            <th>לקוח</th>
+            <th>סכום</th>
+            <th>תאריך</th>
+            <th>פעולות</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="order in reportData.orders" :key="order._id">
+            <td>{{ order._id.substring(0, 8) }}</td>
+            <td>{{ order.userEmail }}</td>
+            <td>₪{{ order.totalPrice.toFixed(2) }}</td>
+            <td>{{ formatDate(order.createdAt) }}</td>
+            <td><button @click="approveOrder(order._id)">אישור</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <!-- דוח מכירות -->
     <div v-if="reportType === 'sales' && reportData" class="report-section">
@@ -85,7 +112,7 @@ import axios from 'axios'
 
 const userStore = useUserStore()
 const isStoreManager = computed(() => userStore.role === 'storeManager')
-const sellerId = userStore.email
+const sellerId = userStore.uid // שתמש ב-uid של מנהל החנות, לא ב-email
 
 const reportType = ref('')
 const loading = ref(false)
@@ -102,6 +129,16 @@ async function loadReport(type: string) {
     console.error('שגיאה בטעינת דוח', err)
   } finally {
     loading.value = false
+  }
+}
+
+async function approveOrder(orderId: string) {
+  try {
+    await axios.post(`/api/orders/${orderId}/approve`, {})
+    // טען מחדש את הדוח
+    loadReport('pending')
+  } catch (err) {
+    console.error('שגיאה באישור הזמנה', err)
   }
 }
 

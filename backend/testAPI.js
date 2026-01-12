@@ -1,24 +1,36 @@
-// Quick API test
-import fetch from "node-fetch";
+import axios from "axios";
 
-async function testAPI() {
+(async () => {
   try {
-    const response = await fetch("http://localhost:3000/api/inventory");
-    const data = await response.json();
+    console.log("🔍 Testing API /products...\n");
+    const response = await axios.get("http://localhost:3000/api/products");
 
-    console.log(`✅ Total products: ${data.length}\n`);
+    console.log(`📦 Got ${response.data.length} products\n`);
 
-    if (data.length > 0) {
-      console.log("First 2 products:");
-      data.slice(0, 2).forEach((p, i) => {
-        console.log(`\n${i + 1}. ${p.name}`);
-        console.log(`   Price: ₪${p.price}`);
-        console.log(`   Image: ${p.imageUrl || "NO IMAGE"}`);
+    // Check first 3 products
+    response.data.slice(0, 3).forEach((p, i) => {
+      console.log(`Product ${i + 1}:`);
+      console.log({
+        id: p._id,
+        name: p.name,
+        shopId: p.shopId,
+        shopIdType: typeof p.shopId,
+        price: p.price,
+        sellerId: p.sellerId,
       });
-    }
-  } catch (error) {
-    console.error("❌ Error:", error.message);
-  }
-}
+      console.log("");
+    });
 
-testAPI();
+    // Check if ALL products have shopId
+    const withoutShopId = response.data.filter((p) => !p.shopId);
+    console.log(
+      `✅ Products WITH shopId: ${response.data.length - withoutShopId.length}`
+    );
+    console.log(`❌ Products WITHOUT shopId: ${withoutShopId.length}`);
+
+    process.exit(0);
+  } catch (e) {
+    console.error("❌ Error:", e.message);
+    process.exit(1);
+  }
+})();

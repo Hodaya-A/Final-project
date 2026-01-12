@@ -19,6 +19,7 @@
 
     <!-- ⭐ התראות קופצות -->
     <NotificationToast ref="toastRef" />
+    <CartShopConflictModal />
   </div>
 </template>
 
@@ -27,6 +28,7 @@ import { onMounted, ref, onBeforeUnmount } from 'vue'
 import TopBar from '@/components/TopBar.vue'
 import Navbar from '@/components/NavbarA.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
+import CartShopConflictModal from '@/components/CartShopConflictModal.vue'
 import { useUserStore } from '@/stores/user'
 import { fetchNotifications, markAsRead } from '@/services/notifications'
 import type { NotificationData } from '@/services/notifications'

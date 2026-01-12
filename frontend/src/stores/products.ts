@@ -12,6 +12,8 @@ export interface Product {
   expiryDate?: string
   imageUrl?: string
   shopId?: string
+  shopName?: string
+  sellerId?: string
   updatedAt?: string
 }
 

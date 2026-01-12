@@ -5,7 +5,8 @@
     "express": "^5.1.0",
     "firebase": "^11.8.0",
     "framer-motion": "^12.23.24",
-    "mongoose": "^8.14.2"
+    "mongoose": "^8.14.2",
+    "socket.io": "^4.8.3"
   },
   "name": "fresh-end",
   "version": "1.0.0",

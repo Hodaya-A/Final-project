@@ -5,6 +5,8 @@ import mongoose from "mongoose";
 import cors from "cors";
 import emailjs from "@emailjs/nodejs";
 import checkout from "@paypal/checkout-server-sdk";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 // models
 import Inventory from "./models/Inventory.js";
@@ -30,6 +32,49 @@ import { createExpiringProductNotifications } from "./utils/notificationService.
 import { getPaypalClient, getCurrency } from "./utils/paypalClient.js";
 
 const app = express();
+const httpServer = createServer(app);
+
+// Socket.io setup with CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5174",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Make io available to routes
+app.set("io", io);
+app.set("db", db); // ✅ הוסף גם את Firestore DB
+
+// Socket.io connection handler
+io.on("connection", (socket) => {
+  console.log("🔌 Client connected:", socket.id);
+
+  socket.on("join-shop", (shopId) => {
+    socket.join(`shop-${shopId}`);
+    console.log(`📦 Socket ${socket.id} joined shop-${shopId}`);
+  });
+
+  socket.on("join-customer", (userId) => {
+    socket.join(`customer-${userId}`);
+    console.log(`👤 Socket ${socket.id} joined customer-${userId}`);
+  });
+
+  socket.on("join-courier", (courierId) => {
+    socket.join(`courier-${courierId}`);
+    console.log(`🚚 Socket ${socket.id} joined courier-${courierId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔌 Client disconnected:", socket.id);
+  });
+});
 
 /* ======================= Middleware ======================= */
 app.use(
@@ -75,8 +120,9 @@ app.use("/api/notifications", notificationsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🔌 Socket.io is ready for connections`);
 });
 
 /* ======================= הסרה אוטומטית של מוצרים שפג תוקפם ======================= */
@@ -155,6 +201,7 @@ async function checkExpiredOrders() {
     for (const order of expiredOrders) {
       // המר ל-איסוף עצמי
       order.deliveryMethod = "pickup";
+      order.status = "READY_FOR_PICKUP";
       order.readyForPickupExpiresAt = null; // נקה את הפקיעה
       // החזר משלוח אם שולם
       if (order.shippingAmount > 0 && order.paypalCaptureId) {
@@ -166,6 +213,13 @@ async function checkExpiredOrders() {
       }
 
       await order.save();
+
+      // Emit event to customer about pickup conversion
+      io.to(`customer-${order.userId}`).emit("order-converted-to-pickup", {
+        orderId: order._id,
+        status: order.status,
+        deliveryMethod: order.deliveryMethod,
+      });
 
       // שלח מייל ללקוח
       try {

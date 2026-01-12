@@ -89,6 +89,8 @@ async function handleSubmit() {
     price: price.value,
     expiryDate: expiryDate.value,
     imageUrl: imageUrl.value,
+    shopId: userStore.storeId || userStore.uid, // ✅ הוסף shopId
+    sellerId: userStore.uid, // ✅ הוסף sellerId
     location: {
       type: 'Point',
       coordinates: [lng.value, lat.value],

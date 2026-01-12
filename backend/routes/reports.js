@@ -2,10 +2,52 @@
 import express from "express";
 import { db } from "../config/firebaseAdmin.js";
 import Product from "../models/Product.js";
+import Order from "../models/Order.js";
 
 const router = express.Router();
 
-// 📈 דוח מכירות כולל
+// � דוח הזמנות ממתינות לאישור
+router.get("/pending", async (req, res) => {
+  try {
+    const { sellerId } = req.query;
+
+    if (!sellerId) {
+      return res.status(400).json({ error: "sellerId is required" });
+    }
+
+    // חפש הזמנות ממתינות (לא מאושרות + לא מוכנות לאיסוף)
+    // חפש גם עם sellerId וגם עם DEFAULT (compatibility)
+    const filter = {
+      $and: [
+        { $or: [{ sellerId }, { sellerId: "DEFAULT" }] },
+        {
+          $or: [
+            { readyForPickup: { $exists: false } },
+            { readyForPickup: false },
+          ],
+        },
+      ],
+    };
+
+    console.log("🔍 [Reports] Searching pending orders with filter:", filter);
+
+    const pendingOrders = await Order.find(filter).sort({ createdAt: -1 });
+
+    console.log(
+      `📦 [Reports] Found ${pendingOrders.length} pending orders for sellerId: ${sellerId}`
+    );
+
+    res.json({
+      orders: pendingOrders,
+      count: pendingOrders.length,
+    });
+  } catch (err) {
+    console.error("❌ שגיאה בדוח הזמנות ממתינות:", err);
+    res.status(500).json({ error: "Failed to fetch pending orders" });
+  }
+});
+
+// �📈 דוח מכירות כולל
 router.get("/sales", async (req, res) => {
   try {
     const snapshot = await db.collection("orders").get();

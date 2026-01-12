@@ -165,13 +165,31 @@ async function handleFileUpload(event: Event) {
 
 function addToCart() {
   const imageUrl = props.product.imageUrl?.trim() || FALLBACK
+  const shopId = props.product.shopId
+  const shopName = (props.product as { shopName?: string }).shopName
+  const sellerId = props.product.sellerId
+
+  console.log('🛒 [ProductCard] addToCart called:')
+  console.log({
+    productId: props.product._id,
+    productName: props.product.name,
+    shopId: shopId,
+    shopIdType: typeof shopId,
+    shopName: shopName,
+    sellerId: sellerId,
+    sellerIdType: typeof sellerId,
+    fullProduct: props.product,
+  })
+
   // אין צורך להוסיף localhost - ה-proxy מטפל בזה
   cartStore.addToCart({
     id: props.product._id,
     name: props.product.name,
     price: props.product.salePrice || props.product.price,
     imageUrl,
-    shopId: props.product.shopId, // ✅ מזהה החנות
+    shopId: shopId, // ✅ מזהה החנות
+    shopName: shopName, // ✅ שם החנות
+    sellerId: sellerId, // ✅ מזהה המוכר
   })
 }
 </script>

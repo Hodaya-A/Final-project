@@ -217,6 +217,7 @@ function closeModal() {
   showModal.value = false
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function openEditModal(product: Record<string, any>) {
   editedProduct.value = {
     ...product,
@@ -262,7 +263,8 @@ async function handleUpload(mode: 'update' | 'renew') {
     formData.append('file', file.value)
     formData.append('mode', mode)
 
-    // צרפי גם מזהה המוכר כדי שפריטים ייקלטו עם owner נכון
+    // ✅ צרפי את shopId ו-sellerId
+    formData.append('shopId', userStore.storeId || userStore.uid || '')
     formData.append('sellerId', sellerId)
 
     // שלוף פרטי החנות מ-user store ושלח אותם
@@ -350,6 +352,7 @@ async function handleSubmit() {
     expiryDate: expiryDate.value,
     category: category.value,
     imageUrl: imageUrl.value,
+    shopId: userStore.storeId || userStore.uid,
     sellerId,
   }
 
@@ -358,7 +361,7 @@ async function handleSubmit() {
       await axios.put(`/api/inventory/${editingId.value}`, product)
       alert('✅ המוצר עודכן בהצלחה!')
     } else {
-      await axios.post('/api/inventory', product)
+      await axios.post('/api/products', product)
       alert('✅ המוצר נוסף בהצלחה!')
     }
     clearForm()
@@ -367,17 +370,6 @@ async function handleSubmit() {
     console.error('שגיאה:', err)
     alert('❌ שגיאה בשמירת המוצר')
   }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fillForm(p: Record<string, any>) {
-  editingId.value = p._id
-  name.value = p.name
-  priceOriginal.value = p.priceOriginal
-  priceDiscounted.value = p.priceDiscounted
-  expiryDate.value = p.expiryDate.slice(0, 10)
-  category.value = p.category
-  imageUrl.value = p.imageUrl
 }
 
 function clearForm() {

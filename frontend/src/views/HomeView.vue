@@ -156,7 +156,6 @@ async function fetchProducts(reset = false) {
     const res = await api.get('/inventory', { params })
 
     const data = res.data
-    console.log('Products loaded:', data)
 
     if (reset) {
       products.value = data

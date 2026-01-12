@@ -102,6 +102,12 @@ router.post("/create", async (req, res) => {
 
 router.post("/capture", async (req, res) => {
   try {
+    console.log(
+      "💳 [Backend] /capture called with req.body keys:",
+      Object.keys(req.body)
+    );
+    console.log("💳 [Backend] Items from request:", req.body.items);
+
     const {
       paypalOrderId,
       userId,
@@ -114,14 +120,29 @@ router.post("/capture", async (req, res) => {
       shippingAmount = 0,
     } = req.body;
 
+    console.log("💳 [Backend] Destructured values:", {
+      paypalOrderId: !!paypalOrderId,
+      userId,
+      userEmail,
+      shopId,
+      sellerId,
+      itemsCount: items.length,
+      firstItemShopId: items[0]?.shopId,
+      firstItemFull: items[0],
+      deliveryMethod,
+      shippingAmount,
+    });
+
     if (!paypalOrderId) {
       return res.status(400).json({ error: "paypalOrderId is required" });
     }
     if (!userId) {
       return res.status(400).json({ error: "userId is required" });
     }
-    if (!shopId) {
-      return res.status(400).json({ error: "shopId is required" });
+    if (!shopId && !items?.[0]?.shopId) {
+      return res
+        .status(400)
+        .json({ error: "shopId is required (missing in request/items)" });
     }
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "items are required" });
@@ -154,11 +175,30 @@ router.post("/capture", async (req, res) => {
       paymentStatus = "pending";
     }
 
+    const productShopId = items[0]?.shopId || shopId || "DEFAULT";
+    const productSellerId = items[0]?.sellerId || sellerId || "DEFAULT";
+
+    // ✅ וודא שזה תמיד string ולא ObjectId
+    const finalShopId = String(productShopId);
+    const finalSellerId = String(productSellerId);
+
+    console.log("💾 [Payment] Creating order with:", {
+      userId,
+      userEmail,
+      shopId: finalShopId,
+      sellerId: finalSellerId,
+      itemsCount: items.length,
+      firstItemShopId: items[0]?.shopId,
+      firstItemSellerId: items[0]?.sellerId,
+      requestShopId: shopId,
+      requestSellerId: sellerId,
+    });
+
     const newOrder = new Order({
       userId,
       userEmail,
-      shopId,
-      sellerId,
+      shopId: finalShopId,
+      sellerId: finalSellerId,
       items,
       totalPrice: total,
       deliveryMethod,

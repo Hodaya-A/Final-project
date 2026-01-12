@@ -106,10 +106,27 @@ router.get("/", async (req, res) => {
     const items = await Inventory.find(filter)
       .skip(skip)
       .limit(limit)
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .lean();
 
-    console.log(`📦 נמצאו ${items.length} מוצרים`);
-    res.json(items);
+    // המרת ObjectId ל-string ודיוק של shopId
+    const itemsWithStringIds = items.map((item) => ({
+      ...item,
+      _id: String(item._id),
+      shopId: item.shopId ? String(item.shopId) : undefined,
+      sellerId: item.sellerId ? String(item.sellerId) : undefined,
+      salePrice: item.priceDiscounted, // ✅ Inventory uses priceDiscounted, Frontend expects salePrice
+    }));
+
+    console.log(`📦 נמצאו ${itemsWithStringIds.length} מוצרים`);
+    if (itemsWithStringIds.length > 0) {
+      console.log(
+        `📦 First item - shopId: ${
+          itemsWithStringIds[0].shopId
+        }, type: ${typeof itemsWithStringIds[0].shopId}`
+      );
+    }
+    res.json(itemsWithStringIds);
   } catch (err) {
     console.error("❌ שגיאה בשליפת מלאי:", err);
     res.status(500).json({ ok: false, error: err.message || "Server error" });
@@ -311,7 +328,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
   const mode = req.body.mode || "update";
   const sellerId = req.body.sellerId || req.query.sellerId;
 
@@ -320,13 +336,17 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "Missing sellerId" });
   }
 
+  // ✅ קבל את shopId מה-request (זה ה-storeId האמיתי מ-Firestore)
+  const shopId = req.body.shopId || DEFAULT_SHOP_ID;
+
   // פרטי החנות מהפרונט-אנד
   const shopName = req.body.shopName || "לא ידוע";
   const shopCity = req.body.shopCity || "";
   const shopStreet = req.body.shopStreet || "";
   const shopNumber = req.body.shopNumber || "";
 
-  console.log("🏪 shopId:", shopId);
+  console.log("🏪 Received shopId from request:", req.body.shopId);
+  console.log("🏪 Final shopId:", shopId);
   console.log("📧 sellerId:", sellerId);
   console.log("🔄 mode:", mode);
   console.log("🏪 פרטי חנות:", { shopName, shopCity, shopStreet, shopNumber });

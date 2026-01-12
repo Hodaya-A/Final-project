@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const Inventory = require("./models/Inventory");
+import mongoose from "mongoose";
+import Inventory from "./models/Inventory.js";
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/shop-inventory")

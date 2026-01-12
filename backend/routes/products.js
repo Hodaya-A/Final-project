@@ -10,15 +10,10 @@ const router = express.Router();
 // ✅ הוספת מוצר יחיד (מנהל חנות) - ימפה שדות מה‑frontend ויציב `storeId` מהמזהה ב־req.user
 router.post("/", async (req, res) => {
   try {
-    const userStoreIdRaw = req.user?.storeId || req.user?.shopId || null;
-    let userStoreId = null;
-    try {
-      userStoreId = userStoreIdRaw
-        ? new mongoose.Types.ObjectId(String(userStoreIdRaw))
-        : null;
-    } catch {
-      userStoreId = null;
-    }
+    // ✅ shopId should be a string (Firestore store ID), not ObjectId
+    // קודם כל ננסה לקבל מה-body, ואם אין - מ-req.user (אם יש authentication)
+    const userStoreId =
+      req.body.shopId || req.user?.storeId || req.user?.shopId || null;
 
     const {
       name,
@@ -31,6 +26,14 @@ router.post("/", async (req, res) => {
     } = req.body;
 
     if (!name) return res.status(400).json({ error: "Missing product name" });
+    if (!userStoreId) return res.status(400).json({ error: "Missing shopId" });
+
+    console.log(
+      "📦 [POST /products] Creating product with shopId:",
+      userStoreId,
+      "sellerId:",
+      sellerId
+    );
 
     // Get store location from Firestore if storeId exists
     let location = null;
@@ -38,7 +41,7 @@ router.post("/", async (req, res) => {
       try {
         const storeDoc = await db
           .collection("stores")
-          .doc(String(userStoreIdRaw))
+          .doc(String(userStoreId))
           .get();
         if (storeDoc.exists) {
           const storeData = storeDoc.data();
@@ -88,8 +91,14 @@ router.post("/", async (req, res) => {
       console.warn("reverse geocode failed:", e.message || e);
     }
 
+    // ✅ אם אין ברקוד, צור ייחודי
+    const barcode =
+      req.body.barcode ||
+      `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const item = await Inventory.create({
       shopId: userStoreId,
+      barcode,
       name,
       price: priceDiscounted ?? priceOriginal ?? 0,
       priceOriginal: priceOriginal ?? null,
@@ -147,8 +156,16 @@ router.get("/", async (req, res) => {
     }
 
     // ✅ שליפה ממלאי (Inventory)
-    const products = await Inventory.find(query).limit(1000);
-    res.json(products);
+    const products = await Inventory.find(query).limit(1000).lean();
+
+    // המרת ObjectId ל-string עבור shopId
+    const productsWithStringIds = products.map((product) => ({
+      ...product,
+      shopId: product.shopId ? String(product.shopId) : undefined,
+      _id: String(product._id),
+    }));
+
+    res.json(productsWithStringIds);
   } catch (err) {
     console.error("❌ שגיאה בשליפת מוצרים:", err);
     res.status(500).json({ message: err.message });
@@ -172,9 +189,17 @@ router.delete("/", async (req, res) => {
 // ✅ שליפת מוצר לפי ID
 router.get("/:id", async (req, res) => {
   try {
-    const product = await Inventory.findById(req.params.id);
+    const product = await Inventory.findById(req.params.id).lean();
     if (!product) return res.status(404).json({ error: "Product not found" });
-    res.json(product);
+
+    // המרת ObjectId ל-string
+    const productWithStringIds = {
+      ...product,
+      shopId: product.shopId ? String(product.shopId) : undefined,
+      _id: String(product._id),
+    };
+
+    res.json(productWithStringIds);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

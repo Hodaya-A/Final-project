@@ -43,6 +43,22 @@ const orderSchema = new mongoose.Schema({
     enum: ["delivery", "pickup"],
     default: "delivery",
   },
+  status: {
+    type: String,
+    enum: [
+      "PENDING",
+      "APPROVED",
+      "PREPARING",
+      "READY_FOR_PICKUP",
+      "COURIER_ASSIGNED",
+      "IN_DELIVERY",
+      "DELIVERED",
+      "REJECTED",
+      "CANCELLED",
+    ],
+    default: "PENDING",
+    index: true,
+  },
   approvedAt: {
     type: Date, // ✅ תאריך אישור על ידי מנהל
   },

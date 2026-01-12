@@ -20,6 +20,8 @@ interface Product {
   name: string
   price: number
   imageUrl: string
+  shopId?: string
+  shopName?: string
 }
 
 const cartStore = useCartStore()
@@ -41,6 +43,8 @@ function add(product: Product) {
     name: product.name,
     price: product.price,
     imageUrl: product.imageUrl,
+    shopId: product.shopId,
+    shopName: product.shopName,
   })
 }
 </script>

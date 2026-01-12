@@ -29,6 +29,12 @@
 
         <transition name="fade">
           <div v-if="expandedOrder === i" class="order-details">
+            <!-- Real-time status display for active orders -->
+            <CustomerOrderStatus
+              v-if="!order.deliveredAt && order._id"
+              :order="convertToStatusOrder(order)"
+            />
+
             <ul class="item-list">
               <li v-for="(item, j) in order.items" :key="j" class="item-row">
                 <img
@@ -83,6 +89,8 @@ import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
+import CustomerOrderStatus from '@/components/CustomerOrderStatus.vue'
+import { connectSocket, disconnectSocket, joinCustomer } from '@/services/socket'
 
 interface OrderItem {
   id: string
@@ -90,6 +98,8 @@ interface OrderItem {
   price: number
   quantity: number
   imageUrl?: string
+  shopId?: string
+  shopName?: string
 }
 
 interface Order {
@@ -103,6 +113,8 @@ interface Order {
   deliveryMethod?: 'delivery' | 'pickup'
   courierId?: string | null
   deliveredAt?: Date | null
+  status?: string
+  shopId?: string
 }
 
 interface BackendOrderItem {
@@ -124,6 +136,8 @@ interface BackendOrder {
   readyForPickup?: boolean
   deliveryMethod?: 'delivery' | 'pickup'
   courierId?: string | null
+  status?: string
+  shopId?: string
 }
 
 const userStore = useUserStore()
@@ -138,6 +152,17 @@ const previousStatuses = ref<Map<string, string>>(new Map())
 const mutedOrders = ref<Set<string>>(new Set())
 let pollingInterval: number | null = null
 
+function convertToStatusOrder(order: Order) {
+  return {
+    _id: order._id || '',
+    status: order.status || 'PENDING',
+    totalPrice: order.total,
+    deliveryMethod: order.deliveryMethod || 'delivery',
+    createdAt: order.date,
+    shopId: order.shopId,
+  }
+}
+
 async function fetchOrders(uid?: string, silent = false) {
   if (!uid) {
     orders.value = []
@@ -150,10 +175,8 @@ async function fetchOrders(uid?: string, silent = false) {
     if (!silent) loading.value = true
     error.value = ''
 
-    console.log('MyOrdersView: fetching orders for uid=', uid)
     // first try by UID
     let resp = await axios.get(`http://localhost:3000/api/orders/${encodeURIComponent(uid)}`)
-    console.log('MyOrdersView: received response', resp.status, resp.data)
 
     const newOrders = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
       _id: o._id,
@@ -191,11 +214,9 @@ async function fetchOrders(uid?: string, silent = false) {
     // fallback: if no orders found for uid, try fetching by email (some orders may have been saved using email)
     if (orders.value.length === 0 && userStore.email) {
       try {
-        console.log('MyOrdersView: no orders for uid, retrying with email=', userStore.email)
         resp = await axios.get(
           `http://localhost:3000/api/orders/${encodeURIComponent(userStore.email)}`,
         )
-        console.log('MyOrdersView: received response for email', resp.status, resp.data)
         const byEmail = (resp.data as BackendOrder[]).map((o: BackendOrder) => ({
           _id: o._id,
           date: o.createdAt ? new Date(o.createdAt) : new Date(),
@@ -289,6 +310,12 @@ watch(
 
 // Polling אוטומטי כל 10 שניות
 onMounted(() => {
+  // Connect to Socket.io for real-time updates
+  if (userStore.uid) {
+    connectSocket()
+    joinCustomer(userStore.uid)
+  }
+
   pollingInterval = window.setInterval(() => {
     if (userStore.uid) {
       fetchOrders(userStore.uid as string, true) // silent=true כדי לא להציג spinner
@@ -300,6 +327,7 @@ onBeforeUnmount(() => {
   if (pollingInterval) {
     clearInterval(pollingInterval)
   }
+  disconnectSocket()
 })
 
 function formatDate(dt: Date): string {
@@ -327,6 +355,8 @@ function repeatOrder(items: OrderItem[]) {
       price: item.price,
       quantity: item.quantity,
       imageUrl: item.imageUrl,
+      shopId: item.shopId,
+      shopName: item.shopName,
     })
   }
 }
@@ -338,6 +368,8 @@ function addItemToCart(item: OrderItem) {
     price: item.price,
     quantity: 1,
     imageUrl: item.imageUrl,
+    shopId: item.shopId,
+    shopName: item.shopName,
   })
 }
 

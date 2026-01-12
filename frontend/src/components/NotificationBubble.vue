@@ -77,6 +77,8 @@ interface ProductFromApi {
   name: string
   priceDiscounted: number
   imageUrl?: string | null
+  shopId?: string
+  shopName?: string
 }
 
 interface ProductForCart {
@@ -84,6 +86,8 @@ interface ProductForCart {
   name: string
   price: number
   imageUrl: string
+  shopId?: string
+  shopName?: string
 }
 
 // expose safe global
@@ -233,6 +237,8 @@ const getNearbyProducts = () => {
                   name: p.name,
                   price: p.priceDiscounted,
                   imageUrl: p.imageUrl ?? '',
+                  shopId: (p as { shopId?: string }).shopId,
+                  shopName: (p as { shopName?: string }).shopName,
                 } as ProductForCart)}">הוסף לסל</button>
               </div>
             `,
@@ -265,6 +271,8 @@ window.addToCart = (product: ProductForCart) => {
     name: product.name,
     price: product.price,
     imageUrl: product.imageUrl,
+    shopId: product.shopId,
+    shopName: product.shopName,
     quantity: 1,
   })
 

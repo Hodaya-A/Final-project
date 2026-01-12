@@ -226,8 +226,10 @@ async function renderButtons() {
           error.value = 'נדרש להתחבר לפני תשלום'
           return
         }
+
         const shopId = cartStore.items[0]?.shopId || ''
         const sellerId = cartStore.items[0]?.sellerId || ''
+
         if (!shopId) {
           error.value = 'לא נמצא מזהה חנות עבור הסל'
           return
@@ -256,9 +258,6 @@ async function renderButtons() {
             shippingAddress,
             shippingAmount: shippingAmount.value,
           })
-
-          cartStore.clearCart()
-          router.push('/thank-you')
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: unknown } }
           const resp = axiosErr.response?.data as

@@ -14,6 +14,21 @@
               <span>₪{{ o.totalPrice }}</span>
               <span class="badge">סטטוס: {{ labelStatus(o) }}</span>
             </div>
+            <div class="order-addresses" v-if="o.shippingAddress || o.shopAddress">
+              <div class="address-box pickup" v-if="o.shopAddress">
+                <strong>איסוף מ:</strong>
+                <p>{{ o.shopName || 'החנות' }}</p>
+                <p class="small">{{ o.shopAddress }}</p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="address-box delivery" v-if="o.shippingAddress">
+                <strong>משלוח ל:</strong>
+                <p>{{ o.shippingAddress.fullName }}</p>
+                <p class="small">{{ o.shippingAddress.street }}, {{ o.shippingAddress.city }}</p>
+                <p class="small">טלפון: {{ o.shippingAddress.phone }}</p>
+                <p class="notes" v-if="o.shippingAddress.notes">{{ o.shippingAddress.notes }}</p>
+              </div>
+            </div>
             <div class="order-actions">
               <button @click="accept(o._id)" :disabled="actionBusy">קבל משלוח</button>
             </div>
@@ -31,6 +46,21 @@
               <strong>#{{ o._id.slice(-6) }}</strong>
               <span>₪{{ o.totalPrice }}</span>
               <span class="badge">סטטוס: {{ labelStatus(o) }}</span>
+            </div>
+            <div class="order-addresses" v-if="o.shippingAddress || o.shopAddress">
+              <div class="address-box pickup" v-if="o.shopAddress">
+                <strong>איסוף מ:</strong>
+                <p>{{ o.shopName || 'החנות' }}</p>
+                <p class="small">{{ o.shopAddress }}</p>
+              </div>
+              <div class="arrow">→</div>
+              <div class="address-box delivery" v-if="o.shippingAddress">
+                <strong>משלוח ל:</strong>
+                <p>{{ o.shippingAddress.fullName }}</p>
+                <p class="small">{{ o.shippingAddress.street }}, {{ o.shippingAddress.city }}</p>
+                <p class="small">טלפון: {{ o.shippingAddress.phone }}</p>
+                <p class="notes" v-if="o.shippingAddress.notes">{{ o.shippingAddress.notes }}</p>
+              </div>
             </div>
             <div class="order-actions">
               <button
@@ -66,6 +96,15 @@ interface OrderItem {
   price: number
 }
 
+interface ShippingAddress {
+  fullName: string
+  phone: string
+  street: string
+  city: string
+  zip: string
+  notes?: string
+}
+
 interface OrderDto {
   _id: string
   totalPrice: number
@@ -76,6 +115,10 @@ interface OrderDto {
   readyForPickup: boolean
   courierAssignedAt?: string
   deliveredAt?: string
+  shippingAddress?: ShippingAddress
+  shopId?: string
+  shopName?: string
+  shopAddress?: string
 }
 
 const userStore = useUserStore()
@@ -100,11 +143,8 @@ function labelStatus(order: OrderDto): string {
 async function fetchAvailable() {
   loadingAvailable.value = true
   try {
-    console.log('📦 Fetching available deliveries...')
     const result = await getAvailableDeliveries()
-    console.log('📦 Result:', result)
     availableOrders.value = result.orders || []
-    console.log('📦 Available orders:', availableOrders.value.length)
   } catch (e) {
     console.error('❌ Error fetching available:', e)
   } finally {
@@ -221,8 +261,7 @@ h1 {
 
 .order-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   border: 2px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
@@ -240,8 +279,10 @@ h1 {
 .order-main {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  flex: 1;
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .order-main strong {
@@ -254,6 +295,65 @@ h1 {
   color: var(--success);
   font-weight: 600;
   min-width: 80px;
+}
+
+.order-addresses {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+}
+
+.address-box {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid var(--border);
+}
+
+.address-box.pickup {
+  border-color: var(--primary-light);
+}
+
+.address-box.delivery {
+  border-color: var(--success);
+}
+
+.address-box strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+}
+
+.address-box p {
+  margin: 0.25rem 0;
+  color: var(--neutral-dark);
+}
+
+.address-box .small {
+  font-size: 0.85rem;
+  color: var(--neutral);
+}
+
+.address-box .notes {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fff3cd;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #856404;
+}
+
+.arrow {
+  font-size: 1.5rem;
+  color: var(--primary);
+  font-weight: bold;
 }
 
 .badge {
