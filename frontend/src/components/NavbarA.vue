@@ -15,12 +15,7 @@
       </div>
     </div>
     <!-- ✅ קיצור דרך למנהל חנות -->
-    <div
-      class="store-shortcut"
-      v-if="userStore.role === 'storeManager'"
-      @click="goToStore"
-      title="לוח מנהל החנות"
-    >
+    <div class="store-shortcut" v-if="showStoreButton" @click="goToStore" title="לוח מנהל החנות">
       <img src="@/assets/icon_store.png" alt="החנות שלי" class="store-icon" />
       <div class="store-text">החנות שלי</div>
     </div>
@@ -28,7 +23,7 @@
     <!-- קיצור דרך לדאש משלוחנים -->
     <div
       :class="['courier-shortcut', { active: route.path === '/courier' }]"
-      v-if="userStore.isCourier"
+      v-if="showCourierButton"
       @click="goToCourier"
       title="דאש משלוחנים"
     >
@@ -78,7 +73,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import CartSidebar from '@/components/CartSidebar.vue'
@@ -90,6 +85,10 @@ const cartStore = useCartStore()
 const { isCartOpen, totalItems, totalPrice } = storeToRefs(cartStore)
 
 const userStore = useUserStore()
+
+// השתמש ב-computed כדי להבטיח reactivity
+const showStoreButton = computed(() => userStore.role === 'storeManager')
+const showCourierButton = computed(() => userStore.isCourier)
 
 const categories = [
   { name: 'לחם ומאפים טריים', icon: 'icon_bread.png' },
