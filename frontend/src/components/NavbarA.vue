@@ -73,7 +73,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import { useRouter, useRoute } from 'vue-router'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { storeToRefs } from 'pinia'
 import CartSidebar from '@/components/CartSidebar.vue'
