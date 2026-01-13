@@ -1,16 +1,12 @@
 import mongoose from "mongoose";
 import Order from "./models/Order.js";
 
-const mongoUri =
-  process.env.MONGO_URI ||
-  "mongodb+srv://freshAdmin:fgahHh9jllEPtDUM@freshend.dliqj04.mongodb.net/freshend?retryWrites=true&w=majority&appName=freshend";
-
+const mongoUri = process.env.MONGO_URI;
 mongoose
   .connect(mongoUri)
   .then(async () => {
     console.log("✅ Connected to MongoDB");
 
-    // קח order אחד בעדוואן הכי חדש
     const order = await Order.findOne({}).sort({ createdAt: -1 });
 
     if (!order) {
