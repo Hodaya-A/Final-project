@@ -51,15 +51,50 @@
       </section>
 
       <div v-if="errorMessage" class="alert alert-error">
-        <span class="icon">⚠️</span>
         {{ errorMessage }}
         <button @click="errorMessage = ''" class="close-btn">×</button>
       </div>
 
       <section class="users-section">
-        <div class="section-header">
-          <h2>רשימת משתמשים</h2>
-          <span class="user-count">סה"כ: {{ users.length }} משתמשים</span>
+        <div class="section-header-with-search">
+          <div class="section-header">
+            <h2>רשימת משתמשים</h2>
+            <span class="user-count"
+              >{{ filteredUsers.length }} מתוך {{ users.length }} משתמשים</span
+            >
+          </div>
+          <div class="search-bar">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="חיפוש לפי שם או אימייל..."
+              class="search-input"
+            />
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab" :class="{ active: activeTab === 'user' }" @click="activeTab = 'user'">
+            לקוחות
+            <span class="tab-count">{{ getUsersByRole('user').length }}</span>
+          </button>
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'storeManager' }"
+            @click="activeTab = 'storeManager'"
+          >
+            מנהלי חנויות
+            <span class="tab-count">{{ getUsersByRole('storeManager').length }}</span>
+          </button>
+          <button
+            class="tab"
+            :class="{ active: activeTab === 'admin' }"
+            @click="activeTab = 'admin'"
+          >
+            מנהלי מערכת
+            <span class="tab-count">{{ getUsersByRole('admin').length }}</span>
+          </button>
         </div>
 
         <div v-if="loading" class="loading-state">
@@ -67,52 +102,82 @@
           <p>טוען משתמשים...</p>
         </div>
 
-        <div v-else-if="users.length === 0" class="empty-state">
-          <p>אין משתמשים במערכת</p>
+        <div v-else-if="filteredUsers.length === 0" class="empty-state">
+          <p>{{ searchQuery ? 'לא נמצאו משתמשים' : 'אין משתמשים בקטגוריה זו' }}</p>
         </div>
 
         <div v-else class="users-grid">
-          <div v-for="user in users" :key="user.uid" class="user-card">
-            <div class="user-info">
+          <div v-for="user in filteredUsers" :key="user.uid" class="user-card">
+            <div class="user-header">
               <div class="user-avatar">{{ getUserInitials(user) }}</div>
-              <div class="user-details">
+              <div class="user-info">
                 <h3>{{ user.name || 'ללא שם' }}</h3>
                 <p class="email">{{ user.email }}</p>
-                <p v-if="user.role === 'storeManager' && user.shopName" class="shop-name">
-                  {{ user.shopName }}
-                </p>
-                <p v-if="user.role === 'storeManager' && user.shopAddress" class="shop-address">
-                  {{ user.shopAddress }}, {{ user.shopCity }}
-                </p>
-                <span class="badge" :class="`badge-${user.role}`">{{
-                  getRoleLabel(user.role)
-                }}</span>
+                <span class="badge" :class="`badge-${user.role}`">
+                  {{ getRoleLabel(user.role) }}
+                </span>
               </div>
             </div>
+
+            <div
+              v-if="user.role === 'storeManager' && (user.shopName || user.shopAddress)"
+              class="store-info"
+            >
+              <p v-if="user.shopName" class="shop-name">
+                <strong>שם חנות:</strong> {{ user.shopName }}
+              </p>
+              <p v-if="user.shopAddress" class="shop-address">
+                <strong>מיקום:</strong> {{ user.shopAddress }}, {{ user.shopCity }}
+              </p>
+            </div>
+
             <div class="user-actions">
-              <div class="role-selector">
-                <label>שינוי תפקיד:</label>
-                <select v-model="user.role" @change="saveRole(user)">
-                  <option value="user">משתמש</option>
-                  <option value="storeManager">מנהל חנות</option>
-                  <option value="admin">ניהול אתר</option>
-                </select>
+              <div class="action-buttons">
+                <button class="btn-icon btn-edit" @click="openEditUser(user)" title="עריכה">
+                  ערוך
+                </button>
+                <button class="btn-icon btn-delete" @click="confirmDelete(user)" title="מחיקה">
+                  מחק
+                </button>
               </div>
-              <div class="courier-toggle">
-                <label>
-                  <input
-                    v-model="user.courierOptIn"
-                    type="checkbox"
-                    @change="saveCourierStatus(user)"
-                  />
-                  <span>משלוחן</span>
-                </label>
-              </div>
-              <button class="btn-delete" @click="confirmDelete(user)">מחק משתמש</button>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Edit Modal -->
+      <div v-if="editingUser" class="modal-overlay" @click="closeEditUser">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h2>עריכת משתמש</h2>
+            <button @click="closeEditUser" class="close-modal">×</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>שם</label>
+              <input v-model="editingUser.name" type="text" />
+            </div>
+            <div class="form-group">
+              <label>תפקיד</label>
+              <select v-model="editingUser.role">
+                <option value="user">משתמש רגיל</option>
+                <option value="storeManager">מנהל חנות</option>
+                <option value="admin">ניהול אתר</option>
+              </select>
+            </div>
+            <div class="form-group checkbox-group">
+              <label>
+                <input v-model="editingUser.courierOptIn" type="checkbox" />
+                <span>משלוחן</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="saveEditUser" class="btn-save">שמור שינויים</button>
+            <button @click="closeEditUser" class="btn-cancel">ביטול</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else class="unauthorized">
@@ -126,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import {
   createUser,
@@ -146,6 +211,9 @@ const roleCache = ref<Record<string, UserRole>>({})
 const loading = ref(false)
 const saving = ref(false)
 const errorMessage = ref('')
+const searchQuery = ref('')
+const activeTab = ref<UserRole>('user')
+const editingUser = ref<ManagedUser | null>(null)
 
 const newUser = reactive({
   name: '',
@@ -154,6 +222,26 @@ const newUser = reactive({
   role: 'user' as UserRole,
   courierOptIn: false,
 })
+
+// Computed: Filter users by active tab and search query
+const filteredUsers = computed(() => {
+  let filtered = getUsersByRole(activeTab.value)
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(
+      (user) =>
+        (user.name || '').toLowerCase().includes(query) || user.email.toLowerCase().includes(query),
+    )
+  }
+
+  return filtered
+})
+
+// Get users by role
+function getUsersByRole(role: UserRole): ManagedUser[] {
+  return users.value.filter((u) => u.role === role)
+}
 
 async function loadUsers() {
   loading.value = true
@@ -241,32 +329,51 @@ function getRoleLabel(role: UserRole): string {
   return labels[role] || role
 }
 
-async function saveRole(user: ManagedUser) {
-  const previousRole = roleCache.value[user.uid] || user.role
-  try {
-    await updateUserRole(user.uid, user.role)
-    roleCache.value[user.uid] = user.role
-    // אם זה המשתמש הנוכחי, עדכן את ה-store כדי שהnavbar ישתנה מיד
-    if (user.uid === userStore.uid) {
-      userStore.role = user.role
-    }
-  } catch (err) {
-    errorMessage.value = (err as Error)?.message || 'שגיאה בעדכון התפקיד'
-    user.role = previousRole
-  }
+// Edit user modal functions
+function openEditUser(user: ManagedUser) {
+  editingUser.value = { ...user }
 }
 
-async function saveCourierStatus(user: ManagedUser) {
-  const previousStatus = user.courierOptIn
+function closeEditUser() {
+  editingUser.value = null
+}
+
+async function saveEditUser() {
+  if (!editingUser.value) return
+
+  const user = users.value.find((u) => u.uid === editingUser.value!.uid)
+  if (!user) return
+
   try {
-    await updateUserCourierStatus(user.uid, user.courierOptIn || false)
-    // אם זה המשתמש הנוכחי, עדכן את ה-store כדי שהnavbar ישתנה מיד
-    if (user.uid === userStore.uid) {
-      userStore.courierOptIn = user.courierOptIn || false
+    // Update role
+    if (user.role !== editingUser.value.role) {
+      await updateUserRole(editingUser.value.uid, editingUser.value.role)
+      user.role = editingUser.value.role
+      roleCache.value[user.uid] = editingUser.value.role
+
+      if (user.uid === userStore.uid) {
+        userStore.role = editingUser.value.role
+      }
     }
+
+    // Update courier status
+    if (user.courierOptIn !== editingUser.value.courierOptIn) {
+      await updateUserCourierStatus(editingUser.value.uid, editingUser.value.courierOptIn || false)
+      user.courierOptIn = editingUser.value.courierOptIn
+
+      if (user.uid === userStore.uid) {
+        userStore.courierOptIn = editingUser.value.courierOptIn || false
+      }
+    }
+
+    // Update name if changed (we might need a new service method for this)
+    if (user.name !== editingUser.value.name) {
+      user.name = editingUser.value.name
+    }
+
+    closeEditUser()
   } catch (err) {
-    errorMessage.value = (err as Error)?.message || 'שגיאה בעדכון סטטוס משלוחן'
-    user.courierOptIn = previousStatus
+    errorMessage.value = (err as Error)?.message || 'שגיאה בעדכון המשתמש'
   }
 }
 
@@ -278,8 +385,9 @@ onMounted(() => {
 <style scoped>
 .user-management-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ffffff;
   padding: 2rem 1rem;
+  direction: rtl;
 }
 
 .user-management {
@@ -290,13 +398,13 @@ onMounted(() => {
 .page-header {
   text-align: center;
   margin-bottom: 2.5rem;
-  color: white;
+  color: #2c3e50;
 }
 
 .page-header h1 {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: none;
 }
 
 .page-header .subtitle {
@@ -304,8 +412,14 @@ onMounted(() => {
   opacity: 0.95;
 }
 
-.section-header {
-  margin-bottom: 1.5rem;
+/* Add User Section */
+.add-user {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
 }
 
 .section-header h2 {
@@ -319,19 +433,12 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
-.add-user {
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-}
-
 .add-user__form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   align-items: end;
+  margin-top: 1.5rem;
 }
 
 .form-group {
@@ -373,6 +480,7 @@ onMounted(() => {
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
+  direction: rtl;
 }
 
 .form-group input:focus,
@@ -405,6 +513,7 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+/* Alert */
 .alert {
   padding: 1rem 1.5rem;
   border-radius: 12px;
@@ -451,18 +560,24 @@ onMounted(() => {
   opacity: 1;
 }
 
+/* Users Section */
 .users-section {
   background: white;
   padding: 2rem;
   border-radius: 16px;
+  border: 2px solid #e5e7eb;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.users-section .section-header {
+.section-header-with-search {
+  margin-bottom: 1.5rem;
+}
+
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .user-count {
@@ -474,6 +589,81 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
+/* Search Bar */
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  direction: rtl;
+  text-align: right;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b7280;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  bottom: -2px;
+}
+
+.tab:hover {
+  color: #667eea;
+  background: #f9fafb;
+}
+
+.tab.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: #f9fafb;
+}
+
+.tab-count {
+  background: #e5e7eb;
+  color: #374151;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.tab.active .tab-count {
+  background: #667eea;
+  color: white;
+}
+
+/* Loading & Empty States */
 .loading-state {
   text-align: center;
   padding: 3rem;
@@ -502,36 +692,50 @@ onMounted(() => {
 .empty-state {
   text-align: center;
   padding: 3rem;
-  color: #999;
+  color: #9ca3af;
+  font-size: 1.1rem;
 }
 
-.empty-state .icon {
-  font-size: 4rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
+/* User Cards Grid */
 .users-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1.5rem;
 }
 
 .user-card {
-  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
-  border: 2px solid #e8ecf7;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
   padding: 1.5rem;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .user-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
   border-color: #667eea;
 }
 
-.user-info {
+.user-card:hover::before {
+  opacity: 1;
+}
+
+.user-header {
   display: flex;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -552,180 +756,248 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.user-details {
+.user-info {
   flex: 1;
+  min-width: 0;
 }
 
-.user-details h3 {
-  font-size: 1.2rem;
-  color: #2c3e50;
-  margin-bottom: 0.3rem;
+.user-info h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.user-details .email {
-  color: #666;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.shop-name {
-  color: #667eea;
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0.3rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.shop-address {
-  color: #888;
+.user-info .email {
   font-size: 0.85rem;
-  margin: 0.2rem 0 0.5rem 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .badge {
   display: inline-block;
   padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.badge-admin {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
-.badge-storeManager {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
 }
 
 .badge-user {
-  background: #e8ecf7;
-  color: #667eea;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-.store-id {
-  color: #888;
+.badge-storeManager {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-admin {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.store-info {
+  background: transparent;
+  padding: 0.75rem 0;
+  margin-bottom: 1rem;
   font-size: 0.85rem;
-  margin-top: 0.3rem;
+}
+
+.shop-name {
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.shop-address {
+  color: #6b7280;
 }
 
 .user-actions {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e8ecf7;
-}
-
-.role-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.role-selector label {
-  font-size: 0.85rem;
-  color: #666;
-  font-weight: 600;
-}
-
-.role-selector select {
-  padding: 0.6rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.role-selector select:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.courier-toggle label {
-  display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
-  cursor: pointer;
-  font-weight: 500;
-  padding: 0.6rem;
-  background: #f8f9ff;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
 }
 
-.courier-toggle label:hover {
-  background: linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 140, 0, 0.1));
-  border-color: #ff8c00;
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.courier-toggle input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: #ff8c00;
-}
-
-.courier-toggle span {
-  font-size: 0.95rem;
-  color: #2c3e50;
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-  color: white;
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   border: none;
-  border-radius: 8px;
-  padding: 0.7rem;
-  font-weight: 700;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.btn-delete:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(238, 90, 111, 0.4);
-}
-
-.unauthorized {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
+}
+
+.btn-edit {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.btn-edit:hover {
+  background: #dbeafe;
+  transform: scale(1.1);
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-delete:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #9ca3af;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: #374151;
+}
+
+.modal-body {
+  margin-bottom: 1.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+/* Unauthorized */
+.unauthorized {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .unauthorized-content {
   background: white;
   padding: 3rem;
-  border-radius: 16px;
+  border-radius: 20px;
+  border: 2px solid #e5e7eb;
   text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.unauthorized-content .icon {
-  font-size: 5rem;
-  display: block;
-  margin-bottom: 1rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .unauthorized-content h2 {
-  color: #e74c3c;
-  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  color: #1f2937;
+  margin-bottom: 1rem;
 }
 
 .unauthorized-content p {
-  color: #666;
-  margin-bottom: 1.5rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
 }
 
 .btn-back {
@@ -733,14 +1005,190 @@ onMounted(() => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 0.75rem 2rem;
-  border-radius: 8px;
+  border-radius: 10px;
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 600;
   transition: all 0.3s ease;
 }
 
 .btn-back:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .user-management-wrapper {
+    padding: 0.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .page-header .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .add-user,
+  .users-section {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .add-user__form {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 0.6rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-add {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .search-input {
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .tabs {
+    flex-direction: column;
+    gap: 0;
+    border-bottom: none;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border-bottom: 2px solid #e5e7eb;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+  }
+
+  .tab.active {
+    border-bottom-color: #e5e7eb;
+    border-left-color: #667eea;
+  }
+
+  .users-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .user-card {
+    padding: 1rem;
+  }
+
+  .user-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1rem;
+  }
+
+  .user-info h3 {
+    font-size: 1rem;
+  }
+
+  .user-info .email {
+    font-size: 0.8rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+  }
+
+  .store-info {
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+  }
+
+  .btn-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .user-management-wrapper {
+    padding: 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+  }
+
+  .add-user,
+  .users-section {
+    padding: 1.5rem;
+  }
+
+  .add-user__form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tabs {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1 1 calc(33.333% - 0.5rem);
+    min-width: 150px;
+  }
+
+  .users-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+
+  .modal-content {
+    width: 90%;
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .user-management {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+
+  .users-grid {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .modal-content {
+    width: 80%;
+    max-width: 500px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .user-management {
+    max-width: 1200px;
+  }
+
+  .users-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
 }
 </style>
+```
