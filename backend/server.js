@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 // backend/server.js
 import "dotenv/config";
 import express from "express";
