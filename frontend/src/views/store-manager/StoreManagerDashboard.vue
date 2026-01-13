@@ -51,71 +51,53 @@ h1 {
 
 .actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
   margin-top: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .actions button {
-  padding: 2.5rem;
+  padding: 1.5rem 2.5rem;
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 600;
   border-radius: 16px;
-  background: linear-gradient(135deg, #ffffff 0%, #f3e8ff 100%);
-  color: #1f2937;
-  border: none;
+  background: white;
+  color: #8b5cf6;
+  border: 3px solid #8b5cf6;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border-right: 4px solid transparent;
-  position: relative;
-  overflow: hidden;
-}
-
-.actions button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(180deg, #a78bfa 0%, #8b5cf6 100%);
-  transition: width 0.4s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
 }
 
 .actions button:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.25);
-  color: #667eea;
+  background: #f3e8ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
-.actions button:hover::before {
-  width: 8px;
-}
+/* Responsive */
+@media (max-width: 768px) {
+  .store-manager-dashboard {
+    padding: 2rem 1rem;
+  }
 
-.actions button.urgent {
-  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);
-}
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
 
-.actions button.urgent::before {
-  background: linear-gradient(180deg, #fb923c 0%, #f59e0b 100%);
-}
+  .actions {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+  }
 
-.actions button.urgent:hover {
-  box-shadow: 0 12px 28px rgba(251, 146, 60, 0.25);
-  color: #fb923c;
-}
-
-.financial-btn {
-  background: linear-gradient(135deg, #ffffff 0%, #f3e8ff 100%) !important;
-}
-
-.financial-btn::before {
-  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%) !important;
-}
-
-.financial-btn:hover {
-  box-shadow: 0 12px 28px rgba(102, 126, 234, 0.25) !important;
-  color: #667eea !important;
+  .actions button {
+    padding: 1.2rem 1.5rem;
+    font-size: 1rem;
+  }
 }
 </style>
