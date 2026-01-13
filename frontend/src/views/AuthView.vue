@@ -302,6 +302,7 @@ const handleRegister = async () => {
           email: email.value,
           name: name.value,
           role: 'storeManager',
+          courierOptIn: isCourier.value,
           storeId,
           createdAt: Date.now(),
         },
@@ -315,6 +316,7 @@ const handleRegister = async () => {
         email: email.value,
         name: name.value || '',
         role: role,
+        courierOptIn: isCourier.value, // ✅ שמור גם את courierOptIn
         createdAt: Date.now(),
       })
     }
@@ -372,7 +374,7 @@ const handleLogin = async () => {
         data.role,
         data.name || '',
         data.storeId || '',
-        data.role === 'courier', // ✅ בדוק אם role הוא courier
+        data.courierOptIn || data.role === 'courier',
         sName,
         sCity,
         sStreet,
