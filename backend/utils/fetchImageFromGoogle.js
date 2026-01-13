@@ -264,6 +264,13 @@ export async function fetchImageFromGoogle(name, barcode = "") {
         }
       }
     } catch (e) {
+      // לוג שגיאות כדי לזהות בעיות
+      console.error(`❌ Google CSE Error for "${q}" (site: ${site}):`, {
+        status: e?.response?.status,
+        message: e?.response?.data?.error?.message || e.message,
+        code: e?.response?.data?.error?.code,
+      });
+
       if (String(e?.response?.status) === "429") {
         await sleep(QPS_DELAY_MS * 4);
         continue;

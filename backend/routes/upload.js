@@ -94,4 +94,71 @@ router.post("/product-image", upload.single("image"), async (req, res) => {
   }
 });
 
+// POST /api/upload/image - העלאת תמונה חופשית (ללא productId)
+const uploadGeneral = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(__dirname, "../uploads/images");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}${path.extname(file.originalname)}`;
+      cb(null, uniqueName);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error("רק קבצי תמונה מותרים"));
+    }
+  },
+});
+
+router.post("/image", uploadGeneral.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "לא הועלתה תמונה" });
+    }
+
+    // עיבוד התמונה עם sharp
+    const outputPath = path.join(
+      __dirname,
+      "../uploads/images",
+      req.file.filename
+    );
+
+    await sharp(req.file.path)
+      .resize(400, 400, { fit: "cover" })
+      .jpeg({ quality: 85 })
+      .toFile(outputPath + ".tmp");
+
+    // החלפת הקובץ המקורי
+    fs.renameSync(outputPath + ".tmp", outputPath);
+
+    const imageUrl = `/uploads/images/${req.file.filename}`;
+
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      message: "התמונה הועלתה בהצלחה",
+    });
+  } catch (error) {
+    console.error("שגיאה בהעלאת תמונה:", error);
+    res.status(500).json({ error: "שגיאה בהעלאת התמונה" });
+  }
+});
+
 export default router;

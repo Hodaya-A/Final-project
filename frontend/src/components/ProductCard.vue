@@ -91,7 +91,7 @@ const isExpiringSoon = computed(() => {
   return daysUntilExpiry.value <= 3 && daysUntilExpiry.value > 0
 })
 
-const FALLBACK = 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image'
+const FALLBACK = 'https://placehold.co/300x300/e0e0e0/666666?text=No+Image'
 
 const getDefaultImage = () => {
   console.log('Product:', props.product.name, 'ImageURL:', props.product.imageUrl)

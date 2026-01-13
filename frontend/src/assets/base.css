@@ -33,6 +33,14 @@
   --color-heading: var(--vt-c-text-light-1);
   --color-text: var(--vt-c-text-light-1);
 
+  /* צבעים סגולים אחידים לכל הפרויקט */
+  --color-purple-primary: #8b5cf6;
+  --color-purple-dark: #7c3aed;
+  --color-purple-light: #a78bfa;
+  --color-purple-lighter: #c4b5fd;
+  --color-purple-bg: #f3e8ff;
+  --color-purple-bg-light: #faf5ff;
+
   --section-gap: 160px;
 }
 

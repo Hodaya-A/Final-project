@@ -92,4 +92,75 @@ router.post("/images/backfill", async (req, res) => {
   }
 });
 
+/**
+ * POST /api/images/search-images
+ * body: { productName: string }
+ */
+router.post("/search-images", async (req, res) => {
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(400).json({ ok: false, error: "missing productName" });
+    }
+
+    // חיפוש תמונה אחת בגוגל
+    const imageUrl = await fetchImageFromGoogle(productName, "");
+
+    if (imageUrl) {
+      return res.json({
+        ok: true,
+        images: [
+          {
+            url: imageUrl,
+            thumbnail: imageUrl,
+            title: productName,
+            source: "Google Images",
+          },
+        ],
+      });
+    } else {
+      return res.json({ ok: false, images: [] });
+    }
+  } catch (e) {
+    console.error("search-images error:", e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+/**
+ * POST /api/images/generate-ai
+ * body: { productName: string, category?: string }
+ * פונקציה להפניה ל-search-images (אותו דבר)
+ */
+router.post("/generate-ai", async (req, res) => {
+  try {
+    const { productName } = req.body;
+
+    if (!productName) {
+      return res.status(400).json({ ok: false, error: "missing productName" });
+    }
+
+    // חיפוש תמונה בגוגל
+    const imageUrl = await fetchImageFromGoogle(productName, "");
+
+    if (imageUrl) {
+      return res.json({
+        ok: true,
+        imageUrl: imageUrl,
+        method: "google",
+      });
+    } else {
+      return res.json({
+        ok: false,
+        imageUrl: null,
+        method: "none",
+      });
+    }
+  } catch (e) {
+    console.error("generate-ai error:", e);
+    return res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 export default router;

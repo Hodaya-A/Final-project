@@ -15,11 +15,14 @@
   "license": "ISC",
   "dependencies": {
     "@emailjs/nodejs": "^5.0.2",
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.2",
     "body-parser": "^2.2.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
     "dotenv": "^16.5.0",
+    "duck-duck-scrape": "^2.2.7",
     "emailjs-com": "^3.2.0",
     "express": "^5.1.0",
     "firebase-admin": "^13.4.0",
@@ -31,6 +34,7 @@
     "nodemailer": "^7.0.11",
     "openai": "^6.6.0",
     "papaparse": "^5.5.3",
+    "pexels": "^1.4.0",
     "sharp": "^0.34.5",
     "vue-slider-component": "^3.2.24",
     "xlsx": "^0.18.5"

@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import ImportProfile from "../models/ImportProfile.js";
 import Inventory from "../models/Inventory.js";
 import { fetchImageFromGoogle } from "../utils/fetchImageFromGoogle.js";
+import { generateImageWithDALLE } from "../utils/generateImageWithGemini.js";
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
@@ -69,6 +70,16 @@ router.get("/", async (req, res) => {
       maxPrice,
     } = req.query;
 
+    console.log("📥 בקשה חדשה:", {
+      category,
+      q,
+      _page,
+      _limit,
+      sellerId,
+      minPrice,
+      maxPrice,
+    });
+
     const filter = {};
 
     // סינון לפי sellerId - חובה! כל חנות רואה רק את המוצרים שלה
@@ -89,6 +100,7 @@ router.get("/", async (req, res) => {
         { name: { $regex: q, $options: "i" } },
         { category: { $regex: q, $options: "i" } },
       ];
+      console.log("🔎 חיפוש עבור:", q);
     }
 
     // סינון לפי טווח מחירים
@@ -99,6 +111,8 @@ router.get("/", async (req, res) => {
       console.log(`💰 סינון מחירים: ${minPrice || 0} - ${maxPrice || "∞"} ₪`);
     }
 
+    console.log("🔍 Filter:", JSON.stringify(filter));
+
     const page = parseInt(_page);
     const limit = Math.min(parseInt(_limit), 2000);
     const skip = (page - 1) * limit;
@@ -108,10 +122,25 @@ router.get("/", async (req, res) => {
       .limit(limit)
       .sort({ name: 1 });
 
-    console.log(`📦 נמצאו ${items.length} מוצרים`);
-    res.json(items);
+    // נקה URLs לא תקינים של תמונות
+    const cleanedItems = items.map((item) => {
+      const obj = item.toObject();
+      // אם התמונה לא תקינה, תמחק אותה
+      if (
+        obj.imageUrl &&
+        !obj.imageUrl.startsWith("http://") &&
+        !obj.imageUrl.startsWith("https://")
+      ) {
+        obj.imageUrl = null;
+      }
+      return obj;
+    });
+
+    console.log(`📦 נמצאו ${cleanedItems.length} מוצרים`);
+    res.json(cleanedItems);
   } catch (err) {
     console.error("❌ שגיאה בשליפת מלאי:", err);
+    console.error("❌ Stack trace:", err.stack);
     res.status(500).json({ ok: false, error: err.message || "Server error" });
   }
 });
@@ -195,7 +224,9 @@ router.post("/", async (req, res) => {
 
     const item = await Inventory.create({
       shopId,
-      barcode: barcode || "",
+      barcode:
+        barcode ||
+        `MANUAL-${Date.now()}-${Math.random().toString(36).substring(7)}`,
       name,
       category: category || "",
       price: salePrice ?? price ?? 0,
@@ -314,6 +345,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
   const mode = req.body.mode || "update";
   const sellerId = req.body.sellerId || req.query.sellerId;
+  const useAI = req.body.useAI === "true" || req.body.useAI === true; // האם להשתמש ב-AI ליצירת תמונות
 
   if (!sellerId) {
     console.error("❌ חסר sellerId!");
@@ -327,6 +359,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   const shopNumber = req.body.shopNumber || "";
 
   console.log("🏪 shopId:", shopId);
+  console.log("🤖 useAI:", useAI);
   console.log("📧 sellerId:", sellerId);
   console.log("🔄 mode:", mode);
   console.log("🏪 פרטי חנות:", { shopName, shopCity, shopStreet, shopNumber });
@@ -479,6 +512,7 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       const rawName = (pick("name") ?? "").toString().trim();
       const rawPrice = pick("price");
       const rawQty = pick("quantity");
+      const rawCategory = (pick("category") ?? "").toString().trim();
 
       if (!rawName) {
         errors.push({ row: idx + 1, reason: "Missing name" });
@@ -530,15 +564,39 @@ router.post("/upload", upload.single("file"), async (req, res) => {
         }
       }
 
-      // אם אין תמונה בקובץ, ננסה לחפש בגוגל
+      // אם אין תמונה בקובץ, ננסה לחפש או ליצור תמונה
       if (!finalImageUrl) {
         try {
-          console.log(
-            `🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`
-          );
-          finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
-          if (finalImageUrl) {
-            console.log(`✅ נמצאה תמונה: ${finalImageUrl}`);
+          if (useAI) {
+            // יצירת תמונה באמצעות AI
+            console.log(`🎨 מייצר תמונה באמצעות AI עבור: "${rawName}"`);
+            try {
+              finalImageUrl = await generateImageWithDALLE(
+                rawName,
+                rawCategory
+              );
+              if (finalImageUrl) {
+                console.log(`✅ תמונה נוצרה באמצעות AI: ${finalImageUrl}`);
+              }
+            } catch (aiError) {
+              console.warn(
+                `⚠️ יצירת תמונה באמצעות AI נכשלה, מנסה חיפוש בגוגל...`
+              );
+              // אם AI נכשל, נסה חיפוש בגוגל
+              finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
+              if (finalImageUrl) {
+                console.log(`✅ נמצאה תמונה בגוגל: ${finalImageUrl}`);
+              }
+            }
+          } else {
+            // חיפוש רגיל בגוגל
+            console.log(
+              `🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`
+            );
+            finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
+            if (finalImageUrl) {
+              console.log(`✅ נמצאה תמונה: ${finalImageUrl}`);
+            }
           }
         } catch (e) {
           console.warn("⚠️ שגיאה בשליפת תמונה למוצר:", rawName, e.message);

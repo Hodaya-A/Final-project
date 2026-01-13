@@ -1,13 +1,11 @@
 <template>
   <div class="store-manager-dashboard">
-    <h1>📦 לוח ניהול חנות</h1>
+    <h1>לוח ניהול חנות</h1>
 
     <div class="actions">
-      <button class="urgent" @click="goTo('/store/pending-orders')">
-        🔔 הזמנות ממתינות לאישור
-      </button>
-      <button @click="goTo('/store/products')">📋 ניהול מוצרים</button>
-      <button @click="goTo('/store/reports')">📊 דוחות אישיים</button>
+      <button class="urgent" @click="goTo('/store/pending-orders')">הזמנות ממתינות לאישור</button>
+      <button @click="goTo('/store/products')">ניהול מוצרים</button>
+      <button @click="goTo('/store/reports')">דוחות אישיים</button>
     </div>
   </div>
 </template>
