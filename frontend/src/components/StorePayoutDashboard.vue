@@ -1,6 +1,6 @@
 <template>
   <div class="store-payout-dashboard">
-    <h1>💳 הכנסה שלי החודש</h1>
+    <h1>הכנסה שלי החודש</h1>
     <p class="subtitle">כמה כסף אקבל בסוף החודש</p>
 
     <!-- Date Range Filter -->
@@ -52,34 +52,45 @@
 
       <!-- Orders Table -->
       <div class="table-section" v-if="orders.length > 0">
-        <h2>📋 פירוט הזמנות</h2>
-        <div class="table-wrapper">
-          <table class="orders-table">
-            <thead>
-              <tr>
-                <th>מספר הזמנה</th>
-                <th>תאריך</th>
-                <th>סה"כ מחיר</th>
-                <th>עמלת פלטפורמה</th>
-                <th>הכנסה שלי</th>
-                <th>מצב</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="order in orders" :key="order.orderId">
-                <td class="order-id">{{ order.orderId }}</td>
-                <td>{{ formatDate(order.date) }}</td>
-                <td class="amount">₪{{ formatCurrency(order.totalPrice) }}</td>
-                <td class="fee">-₪{{ formatCurrency(order.platformFee) }}</td>
-                <td class="payout-amount">₪{{ formatCurrency(order.storePayout) }}</td>
-                <td>
-                  <span class="status" :class="getStatusClass(order.status)">
-                    {{ getStatusLabel(order.status) }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="section-header">
+          <h2>פירוט הזמנות</h2>
+          <div class="status-info">
+            <span class="info-icon">ℹ</span>
+            <span class="info-text">מוצגות רק הזמנות שאושרו (אושר, בדרך, הגיע)</span>
+          </div>
+        </div>
+        <div class="orders-grid">
+          <div v-for="order in orders" :key="order.orderId" class="order-card">
+            <div class="order-card-header">
+              <div class="order-header-left">
+                <span class="order-label-small">הזמנה מספר:</span>
+                <div class="order-id-badge">{{ order.orderId }}</div>
+              </div>
+              <span class="status" :class="getStatusClass(order.status)">
+                {{ getStatusLabel(order.status) }}
+              </span>
+            </div>
+            <div class="order-card-body">
+              <div class="order-row">
+                <span class="order-label">תאריך:</span>
+                <span class="order-value">{{ formatDate(order.date) }}</span>
+              </div>
+              <div class="order-row">
+                <span class="order-label">סה"כ מחיר:</span>
+                <span class="order-value amount">₪{{ formatCurrency(order.totalPrice) }}</span>
+              </div>
+              <div class="order-row">
+                <span class="order-label">עמלת פלטפורמה:</span>
+                <span class="order-value fee">-₪{{ formatCurrency(order.platformFee) }}</span>
+              </div>
+              <div class="order-row order-row-highlight">
+                <span class="order-label">הכנסה שלי:</span>
+                <span class="order-value payout-amount"
+                  >₪{{ formatCurrency(order.storePayout) }}</span
+                >
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Pagination -->
@@ -100,7 +111,7 @@
 
       <!-- No Orders Message -->
       <div v-else class="no-data">
-        <p>📭 אין הזמנות בתקופה זו</p>
+        <p>אין הזמנות בתקופה זו</p>
       </div>
     </div>
   </div>
@@ -109,6 +120,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import axios from 'axios'
 
 interface Order {
   orderId: string
@@ -181,27 +193,37 @@ const loadPayouts = async () => {
   error.value = ''
 
   try {
-    const params = new URLSearchParams()
-    if (filters.value.startDate) params.append('startDate', filters.value.startDate)
-    if (filters.value.endDate) params.append('endDate', filters.value.endDate)
+    // Check if storeId exists
+    if (!userStore.storeId) {
+      throw new Error('Store ID not found. Please log in again.')
+    }
 
-    // Fetch payout summary
-    const response = await fetch(`/api/analytics/store/${userStore.storeId}/payout?${params}`)
-    if (!response.ok) throw new Error('Failed to fetch payout')
-    const data = await response.json()
-    payout.value = data.payout
+    const params = {
+      startDate: filters.value.startDate,
+      endDate: filters.value.endDate,
+    }
+
+    // Fetch payout summary with axios
+    const response = await axios.get(`/api/analytics/store/${userStore.storeId}/payout`, {
+      params,
+      withCredentials: true,
+    })
+    payout.value = response.data.payout
 
     // Fetch orders with pagination
-    params.append('page', pagination.value.page.toString())
-    params.append('limit', pagination.value.limit.toString())
-
-    const ordersResponse = await fetch(
-      `/api/analytics/store/${userStore.storeId}/payout/orders?${params}`,
+    const ordersResponse = await axios.get(
+      `/api/analytics/store/${userStore.storeId}/payout/orders`,
+      {
+        params: {
+          ...params,
+          page: pagination.value.page,
+          limit: pagination.value.limit,
+        },
+        withCredentials: true,
+      },
     )
-    if (!ordersResponse.ok) throw new Error('Failed to fetch orders')
-    const ordersData = await ordersResponse.json()
-    orders.value = ordersData.orders
-    pagination.value = ordersData.pagination
+    orders.value = ordersResponse.data.orders
+    pagination.value = ordersResponse.data.pagination
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Unknown error'
     console.error('Error loading payouts:', err)
@@ -272,26 +294,35 @@ onMounted(() => {
   border-radius: 10px;
   direction: rtl;
   text-align: right;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 h1 {
   color: #2c3e50;
   margin-bottom: 0.5rem;
   font-size: 2rem;
+  text-align: right;
 }
 
 .subtitle {
   color: #7f8c8d;
   margin-bottom: 2rem;
   font-size: 1rem;
+  text-align: right;
 }
 
 .filter-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+  padding: 2rem;
+  border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+  border-right: 4px solid #a78bfa;
+  transition: all 0.3s ease;
+}
+
+.filter-section:hover {
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
 }
 
 .date-inputs {
@@ -299,53 +330,91 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   align-items: flex-end;
+  direction: rtl;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  text-align: right;
 }
 
 .form-group label {
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.9rem;
+  text-align: right;
 }
 
 .form-group input {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  text-align: right;
+  direction: rtl;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
 }
 
 .btn-primary,
 .btn-secondary {
-  padding: 0.6rem 1.2rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
-  transition: background-color 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before,
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-primary:hover::before,
+.btn-secondary:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-  background-color: #95a5a6;
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
   color: white;
 }
 
 .btn-secondary:hover {
-  background-color: #7f8c8d;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
 }
 
 .btn-secondary:disabled {
@@ -374,11 +443,37 @@ h1 {
 }
 
 .payout-card {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #f3e8ff 100%);
+  color: #1f2937;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+  direction: rtl;
+  text-align: right;
+  position: relative;
+  overflow: hidden;
+  border-right: 6px solid transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.payout-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.4s ease;
+}
+
+.payout-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 32px rgba(102, 126, 234, 0.3);
+}
+
+.payout-card:hover::before {
+  width: 10px;
 }
 
 .payout-value {
@@ -387,28 +482,42 @@ h1 {
   justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 1rem;
+  flex-direction: row-reverse;
+  position: relative;
+  z-index: 1;
 }
 
 .currency {
-  font-size: 1.5rem;
-  opacity: 0.9;
+  font-size: 1.2rem;
+  color: #667eea;
+  font-weight: 600;
 }
 
 .amount {
   font-size: 2.5rem;
   font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .label {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  font-size: 0.95rem;
+  color: #6b7280;
+  font-weight: 500;
   margin-bottom: 1.5rem;
+  text-align: right;
+  position: relative;
+  z-index: 1;
 }
 
 .stats-row {
   display: flex;
   gap: 2rem;
   justify-content: flex-end;
+  position: relative;
+  z-index: 1;
 }
 
 .stat {
@@ -416,78 +525,205 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  text-align: center;
 }
 
 .stat-value {
   font-size: 1.3rem;
   font-weight: bold;
+  color: #667eea;
 }
 
 .stat-label {
-  font-size: 0.85rem;
-  opacity: 0.8;
+  font-size: 0.8rem;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .table-section {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #fefcff 100%);
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  direction: rtl;
+  border-right: 4px solid #a78bfa;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .table-section h2 {
-  margin-bottom: 1.5rem;
+  margin: 0;
   color: #2c3e50;
+  text-align: right;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f3e8ff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  direction: rtl;
+  flex-direction: row-reverse;
+}
+
+.info-icon {
+  font-size: 1rem;
+}
+
+.info-text {
+  font-weight: 500;
+  text-align: right;
 }
 
 .table-wrapper {
   overflow-x: auto;
 }
 
-.orders-table {
-  width: 100%;
-  border-collapse: collapse;
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.orders-table thead {
-  background-color: #f0f0f0;
+.order-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+  border: none;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-right: 4px solid transparent;
+  position: relative;
 }
 
-.orders-table th {
+.order-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #a78bfa 0%, #8b5cf6 100%);
+  transition: width 0.4s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.25);
+}
+
+.order-card:hover::before {
+  width: 8px;
+}
+
+.order-card-header {
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
   padding: 1rem;
-  text-align: right;
-  font-weight: 600;
-  color: #2c3e50;
-  border-bottom: 2px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  direction: rtl;
+  position: relative;
+  z-index: 1;
+}
+
+.order-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.order-label-small {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.order-id-badge {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.order-card:hover .order-id-badge {
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+  transform: scale(1.05);
+}
+
+.order-card-body {
+  padding: 1rem;
+  direction: rtl;
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, #ffffff 0%, #fefcff 100%);
+}
+
+.order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.order-row:last-child {
+  border-bottom: none;
+}
+
+.order-row-highlight {
+  background: #f3e8ff;
+  padding: 0.8rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  border: none;
+}
+
+.order-label {
+  color: #6b7280;
+  font-weight: 500;
   font-size: 0.9rem;
 }
 
-.orders-table td {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid #ddd;
-}
-
-.orders-table tr:hover {
-  background-color: #f9f9f9;
-}
-
-.order-id {
-  color: #3498db;
-  font-weight: 600;
-}
-
-.amount {
+.order-value {
   color: #2c3e50;
   font-weight: 600;
+  text-align: left;
 }
 
-.fee {
-  color: #e74c3c;
+.order-value.amount {
+  color: #2c3e50;
+  font-weight: 700;
 }
 
-.payout-amount {
-  color: #27ae60;
-  font-weight: bold;
+.order-value.fee {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.order-value.payout-amount {
+  color: #8b5cf6;
+  font-weight: 700;
+  font-size: 1.05rem;
 }
 
 .status {
@@ -531,6 +767,35 @@ h1 {
   margin-top: 2rem;
   padding-top: 2rem;
   border-top: 1px solid #ddd;
+  direction: rtl;
+}
+
+.pagination button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+.pagination button:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pagination span {
+  text-align: center;
+  min-width: 120px;
 }
 
 .no-data {
