@@ -161,6 +161,9 @@
             <template v-if="userStore.isLoggedIn">
               <p class="username">שלום, {{ userStore.email }}</p>
               <hr class="divider" />
+              <router-link to="/profile" class="profile-link" @click="showMenu = false">
+                הפרופיל שלי
+              </router-link>
               <button @click="logout">התנתקות</button>
             </template>
             <template v-else>
@@ -798,6 +801,7 @@ const submitSearch = () => {
 }
 
 .login-link,
+.profile-link,
 .user-dropdown button {
   display: block;
   width: 100%;
@@ -815,7 +819,12 @@ const submitSearch = () => {
   font-family: 'Courier New', Courier, monospace;
 }
 
+.profile-link {
+  margin-bottom: 0.75rem;
+}
+
 .login-link:hover,
+.profile-link:hover,
 .user-dropdown button:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.15));

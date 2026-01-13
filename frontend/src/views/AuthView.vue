@@ -251,7 +251,8 @@ const handleRegister = async () => {
     // 1) יצירת משתמש והבטחת טוקן חתום טרי
     const cred = await createUserWithEmailAndPassword(auth, email.value, password.value)
     const uid = cred.user.uid
-    await cred.user.getIdToken(true) // 👈 מבטיח שהבקשות לפיירסטור יישאו auth
+    const idToken = await cred.user.getIdToken(true) // 👈 מבטיח שהבקשות לפיירסטור יישאו auth
+    localStorage.setItem('token', idToken)
 
     // 2) אם מנהל חנות – ולידציה לכתובת
     let storeId = ''
@@ -340,6 +341,8 @@ const handleLogin = async () => {
   try {
     const login = await signInWithEmailAndPassword(auth, email.value, password.value)
     const uid = login.user.uid
+    const token = await login.user.getIdToken(true)
+    localStorage.setItem('token', token)
 
     const userRef = doc(db, 'users', uid)
     const userSnap = await getDoc(userRef)
@@ -409,6 +412,8 @@ const handleGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, provider)
     const user = result.user
+    const token = await user.getIdToken(true)
+    localStorage.setItem('token', token)
 
     const userRef = doc(db, 'users', user.uid)
     const userSnap = await getDoc(userRef)

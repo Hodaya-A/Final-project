@@ -121,3 +121,34 @@ export async function updateUserCourierStatus(uid: string, courierOptIn: boolean
     throw new Error(errorData.message || 'עדכון סטטוס משלוחן נכשל')
   }
 }
+
+/**
+ * עדכון פרופיל המשתמש המחובר
+ */
+export interface UpdateProfileData {
+  name?: string
+  phone?: string
+  currentPassword?: string
+  newPassword?: string
+}
+
+export async function updateUserProfile(data: UpdateProfileData): Promise<void> {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('אינך מחובר למערכת')
+  }
+
+  const res = await fetch(`${BASE_URL}/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}))
+    throw new Error(errorData.message || 'עדכון הפרופיל נכשל')
+  }
+}

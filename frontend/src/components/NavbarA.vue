@@ -337,6 +337,7 @@ function closeCart() {
   line-height: 1;
   white-space: nowrap;
 }
+
 /* עיצוב לסל */
 .cart-summary {
   width: 180px;

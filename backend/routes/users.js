@@ -139,6 +139,98 @@ router.delete("/:uid", async (req, res) => {
   }
 });
 
+// ✅ עדכון פרופיל המשתמש המחובר (PUT /api/users/me) — חייב להיות לפני /:uid
+router.put("/me", async (req, res) => {
+  try {
+    // קבלת ה-token מה-header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ success: false, message: "אינך מחובר למערכת" });
+    }
+
+    const token = authHeader.split("Bearer ")[1];
+
+    // אימות ה-token וקבלת ה-UID של המשתמש
+    let decodedToken;
+    try {
+      decodedToken = await auth.verifyIdToken(token);
+    } catch (error) {
+      return res.status(401).json({ success: false, message: "Token לא תקין" });
+    }
+
+    const uid = decodedToken.uid;
+    const { name, phone, currentPassword, newPassword } = req.body;
+
+    // בדיקות אבטחה: אסור לשנות role או courierOptIn דרך endpoint זה
+    if (req.body.role || req.body.courierOptIn !== undefined) {
+      return res.status(403).json({
+        success: false,
+        message: "אין לך הרשאה לשנות הרשאות או תפקיד",
+      });
+    }
+
+    const userRef = db.collection("users").doc(uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ success: false, message: "משתמש לא נמצא" });
+    }
+
+    // עדכון שם וטלפון
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+
+    // אם המשתמש רוצה לשנות סיסמה
+    if (currentPassword && newPassword) {
+      // בדיקת אורך סיסמה חדשה
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "הסיסמה החדשה חייבת להכיל לפחות 6 תווים",
+        });
+      }
+
+      try {
+        // עדכון סיסמה באמצעות Firebase Admin SDK
+        // הערה: בסביבת ייצור מומלץ לדרוש אימות נוסף
+        await auth.updateUser(uid, {
+          password: newPassword,
+        });
+      } catch (error) {
+        console.error("Error updating password:", error);
+        return res.status(400).json({
+          success: false,
+          message: "שגיאה בעדכון הסיסמה",
+        });
+      }
+    }
+
+    // עדכון בפיירבייס
+    if (Object.keys(updateData).length > 0) {
+      await userRef.update(updateData);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "הפרופיל עודכן בהצלחה",
+      user: {
+        uid,
+        ...updateData,
+      },
+    });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    return res.status(500).json({
+      success: false,
+      message: "שגיאה בעדכון הפרופיל",
+      error: err.message,
+    });
+  }
+});
+
 // ✅ עדכון תפקיד משתמש
 router.put("/:uid/role", async (req, res) => {
   const uid = req.params.uid;

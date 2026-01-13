@@ -42,6 +42,7 @@ router.post("/:storeId", async (req, res) => {
       email,
       bankAccount,
       isActive,
+      logoUrl,
     } = req.body;
 
     // Validate commission rate
@@ -73,6 +74,7 @@ router.post("/:storeId", async (req, res) => {
     if (description !== undefined) store.description = description;
     if (phone !== undefined) store.phone = phone;
     if (email !== undefined) store.email = email;
+    if (logoUrl !== undefined) store.logoUrl = logoUrl;
     if (bankAccount !== undefined) store.bankAccount = bankAccount;
     if (isActive !== undefined) store.isActive = isActive;
 
