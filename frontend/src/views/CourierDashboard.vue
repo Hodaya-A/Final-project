@@ -1,6 +1,9 @@
 <template>
   <div class="courier-page">
-    <h1>מרכז שליחים</h1>
+    <div class="header-section">
+      <h1>מרכז שליחים</h1>
+      <button @click="goToWallet" class="financial-btn">הארנק שלי</button>
+    </div>
 
     <div class="cards">
       <section class="card">
@@ -83,13 +86,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import axios from 'axios'
+
 import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
 import {
   getAvailableDeliveries,
   acceptDelivery as acceptDeliveryAPI,
   getMyDeliveries,
 } from '@/services/courier'
-
+const router = useRouter()
 interface OrderItem {
   name: string
   quantity: number
@@ -197,6 +202,11 @@ async function completeDelivery(orderId: string) {
   }
 }
 
+function goToWallet() {
+  // ✅ Navigate to financial wallet dashboard
+  router.push('/courier/wallet')
+}
+
 onMounted(async () => {
   await Promise.all([fetchAvailable(), fetchMine()])
   // רענן כל 30 שניות
@@ -224,6 +234,36 @@ h1 {
   margin-bottom: 2rem;
   font-size: 2.5rem;
   font-weight: 700;
+}
+
+.header-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+}
+
+.financial-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.financial-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  filter: brightness(1.05);
 }
 
 .cards {

@@ -108,6 +108,19 @@ const orderSchema = new mongoose.Schema({
   paypalCaptureId: {
     type: String,
   },
+  // 💰 Payment Splitting Fields
+  platformFee: {
+    type: Number,
+    default: 0, // Commission taken by the app (calculated as totalPrice * commissionRate)
+  },
+  storePayout: {
+    type: Number,
+    default: 0, // Amount the store receives
+  },
+  courierPayout: {
+    type: Number,
+    default: 0, // Amount the courier receives (delivery fee + tip)
+  },
   createdAt: {
     type: Date,
     default: Date.now,

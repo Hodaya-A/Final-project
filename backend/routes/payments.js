@@ -1,7 +1,9 @@
 import express from "express";
 import checkout from "@paypal/checkout-server-sdk";
 import Order from "../models/Order.js";
+import Store from "../models/Store.js";
 import { getPaypalClient, getCurrency } from "../utils/paypalClient.js";
+import { calculatePaymentSplit } from "../utils/paymentSplit.js";
 
 const router = express.Router();
 
@@ -201,6 +203,28 @@ router.post("/capture", async (req, res) => {
       requestSellerId: sellerId,
     });
 
+    // 💰 Fetch store commission rate
+    let commissionRate = 0.15; // Default 15%
+    try {
+      const store = await Store.findOne({ storeId: finalShopId });
+      if (store && store.commissionRate) {
+        commissionRate = store.commissionRate;
+      }
+    } catch (err) {
+      console.warn(
+        "⚠️ Could not fetch store commission rate, using default 15%"
+      );
+    }
+
+    // 💰 Calculate payment split
+    // New function signature: calculatePaymentSplit(productsTotal, deliveryFee, tipAmount, storeCommissionRate)
+    const paymentSplit = calculatePaymentSplit(
+      itemsTotal, // productsTotal (items only, no delivery)
+      shipping, // deliveryFee
+      0, // tipAmount (no tip from PayPal)
+      commissionRate // storeCommissionRate
+    );
+
     const newOrder = new Order({
       userId,
       userEmail,
@@ -222,6 +246,10 @@ router.post("/capture", async (req, res) => {
       paymentStatus,
       paypalOrderId,
       paypalCaptureId: captureId,
+      // 💰 Add payment split values
+      platformFee: paymentSplit.platformFee,
+      storePayout: paymentSplit.storePayout,
+      courierPayout: paymentSplit.courierPayout,
     });
 
     await newOrder.save();

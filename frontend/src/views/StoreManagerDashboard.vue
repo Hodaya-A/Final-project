@@ -1,6 +1,6 @@
 <template>
   <div class="store-manager-dashboard">
-    <h1>לוח ניהול חנות</h1>
+    <h1>בדיקה בדיקה</h1>
 
     <div class="actions">
       <button @click="goTo('/store-products')">ניהול מוצרים</button>
@@ -56,5 +56,20 @@ if (userStore.role !== 'storeManager') {
 
 .actions button:hover {
   background-color: #34495e;
+}
+
+.divider {
+  border: none;
+  border-top: 2px solid #ddd;
+  margin: 1.5rem 0;
+}
+
+.financial-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white !important;
+}
+
+.financial-btn:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 </style>

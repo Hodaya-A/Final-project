@@ -20,11 +20,13 @@ import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
 import paymentsRoutes from "./routes/payments.js";
+import storesRoutes from "./routes/stores.js";
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
 import usersRoutes from "./routes/users.js";
 import notificationsRoutes from "./routes/notifications.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
@@ -117,11 +119,13 @@ import { setSocketIO } from "./routes/payments.js";
 setSocketIO(io);
 
 app.use("/api/payments", paymentsRoutes);
+app.use("/api/stores", storesRoutes);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
