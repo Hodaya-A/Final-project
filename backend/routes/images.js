@@ -1,7 +1,6 @@
-// backend/routes/images.js
 import express from "express";
 import Inventory from "../models/Inventory.js";
-import { fetchImageFromGoogle } from "../utils/fetchImageFromGoogle.js";
+import { fetchImagesFromGoogle } from "../utils/fetchImageFromGoogle.js";
 
 const router = express.Router();
 
@@ -96,28 +95,23 @@ router.post("/images/backfill", async (req, res) => {
  * POST /api/images/search-images
  * body: { productName: string }
  */
-router.post("/search-images", async (req, res) => {
+router.post("/images/search-images", async (req, res) => {
   try {
     const { productName } = req.body;
-
     if (!productName) {
       return res.status(400).json({ ok: false, error: "missing productName" });
     }
-
-    // חיפוש תמונה אחת בגוגל
-    const imageUrl = await fetchImageFromGoogle(productName, "");
-
-    if (imageUrl) {
+    // חיפוש עד 10 תמונות בגוגל
+    const images = await fetchImagesFromGoogle(productName, "", 10);
+    if (images && images.length > 0) {
       return res.json({
         ok: true,
-        images: [
-          {
-            url: imageUrl,
-            thumbnail: imageUrl,
-            title: productName,
-            source: "Google Images",
-          },
-        ],
+        images: images.map((url) => ({
+          url,
+          thumbnail: url,
+          title: productName,
+          source: "Google Images",
+        })),
       });
     } else {
       return res.json({ ok: false, images: [] });
@@ -131,9 +125,8 @@ router.post("/search-images", async (req, res) => {
 /**
  * POST /api/images/generate-ai
  * body: { productName: string, category?: string }
- * פונקציה להפניה ל-search-images (אותו דבר)
  */
-router.post("/generate-ai", async (req, res) => {
+router.post("/images/generate-ai", async (req, res) => {
   try {
     const { productName } = req.body;
 

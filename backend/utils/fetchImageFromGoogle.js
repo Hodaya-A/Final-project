@@ -200,19 +200,19 @@ async function fetchFromOpenFoodFacts(barcode) {
 }
 
 /** Main */
-export async function fetchImageFromGoogle(name, barcode = "") {
+export async function fetchImagesFromGoogle(
+  name,
+  barcode = "",
+  maxResults = 10
+) {
   // קאש
-  const key = `${(name || "").trim()}|${(barcode || "").trim()}`;
+  const key = `${(name || "").trim()}|${(barcode || "").trim()}|${maxResults}`;
   const now = Date.now();
   const hit = cache.get(key);
-  if (hit && now - hit.ts <= CACHE_TTL_MS) return hit.url;
+  if (hit && now - hit.ts <= CACHE_TTL_MS) return hit.urls;
 
-  // ריסון קצב מול CSE
   await sleep(QPS_DELAY_MS);
-
-  // אם הברקוד נראה פלייסהולדר – לא נבזבז עליו חיפושים
   const useBarcode = barcode && !isPlaceholderBarcode(barcode);
-
   const domains = [
     "img.rami-levy.co.il",
     "res.cloudinary.com",
@@ -222,21 +222,15 @@ export async function fetchImageFromGoogle(name, barcode = "") {
     "ynet.co.il",
     "mako.co.il",
   ];
-
-  // אסטרטגיות חיפוש משופרות
   const enhancedQueries = [
     `${name} מוצר`,
     `${name} סופרמרקט`,
     `${name} תמונה`,
     name,
   ];
-
   const queries = [
-    // חיפושים מורחבים
     ...enhancedQueries.map((q) => ({ q, site: null })),
-    // חיפושים ספציפיים לדומיינים
     ...domains.map((d) => ({ q: name, site: d })),
-    // חיפושי ברקוד אם קיים
     ...(useBarcode
       ? [
           { q: barcode, site: null },
@@ -244,8 +238,7 @@ export async function fetchImageFromGoogle(name, barcode = "") {
         ]
       : []),
   ];
-
-  // 1) גוגל CSE
+  const found = [];
   for (const { q, site } of queries) {
     try {
       const items = await googleImageQuery(q, site);
@@ -259,32 +252,30 @@ export async function fetchImageFromGoogle(name, barcode = "") {
         if (!normalized || !isAllowedHost(normalized)) continue;
         await sleep(60);
         if (await isReachableImage(normalized)) {
-          cache.set(key, { url: normalized, ts: now });
-          return normalized;
+          if (!found.includes(normalized)) found.push(normalized);
+          if (found.length >= maxResults) {
+            cache.set(key, { urls: found.slice(0, maxResults), ts: now });
+            return found.slice(0, maxResults);
+          }
         }
       }
     } catch (e) {
-      // לוג שגיאות כדי לזהות בעיות
       console.error(`❌ Google CSE Error for "${q}" (site: ${site}):`, {
         status: e?.response?.status,
         message: e?.response?.data?.error?.message || e.message,
         code: e?.response?.data?.error?.code,
       });
-
       if (String(e?.response?.status) === "429") {
         await sleep(QPS_DELAY_MS * 4);
         continue;
       }
     }
   }
-
   // 2) Fallback: OpenFoodFacts לפי ברקוד (אם אמיתי)
-  if (useBarcode) {
+  if (useBarcode && found.length < maxResults) {
     const offUrl = await fetchFromOpenFoodFacts(barcode);
-    cache.set(key, { url: offUrl || null, ts: now });
-    return offUrl || null;
+    if (offUrl && !found.includes(offUrl)) found.push(offUrl);
   }
-
-  cache.set(key, { url: null, ts: now });
-  return null;
+  cache.set(key, { urls: found.slice(0, maxResults), ts: now });
+  return found.slice(0, maxResults);
 }
