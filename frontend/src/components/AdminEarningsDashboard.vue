@@ -1,6 +1,6 @@
 <template>
   <div class="admin-earnings-dashboard">
-    <h1>📊 הרווחים שלנו החודש</h1>
+    <h1>הרווחים שלנו החודש</h1>
     <p class="subtitle">כמה הרווחנו החודש</p>
 
     <!-- Date Range Filter -->
@@ -21,12 +21,12 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="loading">
-      <p>⏳ טוען נתונים...</p>
+      <p>טוען נתונים...</p>
     </div>
 
     <!-- Error State -->
     <div v-else-if="error" class="error-message">
-      <p>❌ {{ error }}</p>
+      <p>{{ error }}</p>
       <button @click="loadEarnings" class="btn-primary">נסה שוב</button>
     </div>
 
@@ -37,7 +37,7 @@
           <span class="currency">₪</span>
           <span class="amount">{{ formatCurrency(earnings.total) }}</span>
         </div>
-        <p class="label">סה"כ רווחים מפלטפורמה</p>
+        <p class="label">סה"כ רווחים</p>
         <div class="stats-row">
           <div class="stat">
             <span class="stat-value">{{ earnings.ordersCount }}</span>
@@ -52,7 +52,7 @@
 
       <!-- Daily Chart -->
       <div class="chart-section" v-if="dailyEarnings.length > 0">
-        <h2>📈 התפלגות יומית</h2>
+        <h2>התפלגות יומית</h2>
         <div class="chart-container">
           <canvas ref="chartCanvas"></canvas>
         </div>
@@ -60,7 +60,7 @@
 
       <!-- Daily Breakdown Table -->
       <div class="table-section" v-if="dailyEarnings.length > 0">
-        <h2>📋 פירוט יומי</h2>
+        <h2>פירוט יומי</h2>
         <table class="earnings-table">
           <thead>
             <tr>
@@ -234,31 +234,43 @@ onMounted(() => {
 
 <style scoped>
 .admin-earnings-dashboard {
-  padding: 2rem;
-  background-color: #f9f9f9;
+  padding: 3rem 2rem;
+  background-color: #f9fafb;
   border-radius: 10px;
   direction: rtl;
   text-align: right;
+  min-height: 100vh;
 }
 
 h1 {
-  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 700;
   margin-bottom: 0.5rem;
-  font-size: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
-  color: #7f8c8d;
+  color: #6b7280;
   margin-bottom: 2rem;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .filter-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+  padding: 2rem;
+  border-radius: 16px;
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.1);
+  border-right: 4px solid #a78bfa;
+  transition: all 0.3s ease;
+}
+
+.filter-section:hover {
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.15);
 }
 
 .date-inputs {
@@ -266,53 +278,93 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
   align-items: flex-end;
+  direction: rtl;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  text-align: right;
 }
 
 .form-group label {
   font-weight: 600;
   color: #2c3e50;
   font-size: 0.9rem;
+  text-align: right;
 }
 
 .form-group input {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  text-align: right;
+  direction: rtl;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
 }
 
 .btn-primary,
 .btn-secondary {
-  padding: 0.6rem 1.2rem;
+  padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
-  transition: background-color 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before,
+.btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.6s,
+    height 0.6s;
+}
+
+.btn-primary:hover::before,
+.btn-secondary:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .btn-primary {
-  background-color: #3498db;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #2980b9;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
-  background-color: #95a5a6;
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
   color: white;
 }
 
 .btn-secondary:hover {
-  background-color: #7f8c8d;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
 }
 
 .loading {
@@ -340,11 +392,35 @@ h1 {
 }
 
 .earnings-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #ffffff 0%, #f3e8ff 100%);
+  color: #1f2937;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+  border-right: 6px solid transparent;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.earnings-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.4s ease;
+}
+
+.earnings-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 32px rgba(102, 126, 234, 0.3);
+}
+
+.earnings-card:hover::before {
+  width: 10px;
 }
 
 .earnings-value {
@@ -353,28 +429,41 @@ h1 {
   justify-content: flex-end;
   gap: 1rem;
   margin-bottom: 1rem;
+  flex-direction: row-reverse;
+  position: relative;
+  z-index: 1;
 }
 
 .currency {
   font-size: 1.5rem;
-  opacity: 0.9;
+  color: #667eea;
+  font-weight: 600;
 }
 
 .amount {
   font-size: 2.5rem;
   font-weight: bold;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .label {
   font-size: 1.1rem;
-  opacity: 0.9;
+  color: #6b7280;
+  font-weight: 500;
   margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .stats-row {
   display: flex;
   gap: 2rem;
   justify-content: flex-end;
+  position: relative;
+  z-index: 1;
 }
 
 .stat {
@@ -387,25 +476,29 @@ h1 {
 .stat-value {
   font-size: 1.5rem;
   font-weight: bold;
+  color: #667eea;
 }
 
 .stat-label {
   font-size: 0.85rem;
-  opacity: 0.8;
+  color: #6b7280;
+  font-weight: 500;
 }
 
 .chart-section,
 .table-section {
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #fefcff 100%);
   padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-right: 4px solid #a78bfa;
 }
 
 .chart-section h2,
 .table-section h2 {
   margin-bottom: 1.5rem;
-  color: #2c3e50;
+  color: #1f2937;
+  font-weight: 700;
 }
 
 .chart-container {
@@ -420,28 +513,30 @@ h1 {
 }
 
 .earnings-table thead {
-  background-color: #f0f0f0;
+  background: linear-gradient(135deg, #f3e8ff 0%, #faf5ff 100%);
 }
 
 .earnings-table th {
   padding: 1rem;
   text-align: right;
-  font-weight: 600;
-  color: #2c3e50;
-  border-bottom: 2px solid #ddd;
+  font-weight: 700;
+  color: #1f2937;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .earnings-table td {
-  padding: 0.8rem 1rem;
-  border-bottom: 1px solid #ddd;
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
 }
 
 .earnings-table tr:hover {
-  background-color: #f9f9f9;
+  background-color: #faf5ff;
 }
 
-.amount {
-  color: #27ae60;
-  font-weight: 600;
+.earnings-table .amount {
+  color: #667eea;
+  font-weight: 700;
+  font-size: 1.05rem;
 }
 </style>
