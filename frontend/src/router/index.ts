@@ -28,6 +28,11 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/debug-user',
+    name: 'debug-user',
+    component: () => import('@/views/UserStatusDebug.vue'),
+  },
+  {
     path: '/notifications',
     name: 'notifications',
     component: () => import('@/views/NotificationsView.vue'),

@@ -42,11 +42,16 @@ export function disconnectSocket() {
 
 export function joinShop(shopId: string) {
   const s = getSocket()
+  console.log('🚀 joinShop called with:', shopId)
+  console.log('🔌 Socket connected?', s.connected)
+
   if (s.connected) {
     s.emit('join-shop', shopId)
     console.log('📤 Emitted join-shop:', shopId)
   } else {
+    console.log('⏳ Socket not connected, waiting...')
     s.once('connect', () => {
+      console.log('🔌 Socket connected! Now emitting join-shop')
       s.emit('join-shop', shopId)
       console.log('📤 Emitted join-shop after connect:', shopId)
     })

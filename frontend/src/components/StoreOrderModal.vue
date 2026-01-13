@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <transition name="modal-fade">
-      <div v-if="isOpen" class="order-modal-overlay" @click.self="playSound">
+      <div v-if="isOpen" class="order-modal-overlay">
         <div class="order-modal">
           <div class="order-header">
             <h1 class="order-title">הזמנה חדשה התקבלה</h1>
@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { getSocket } from '@/services/socket'
+import { useUserStore } from '@/stores/user'
 import axios from 'axios'
 
 interface OrderItem {
@@ -86,25 +87,65 @@ const deliveryMethodText = computed(() => {
   return order.value.deliveryMethod === 'delivery' ? 'משלוח' : 'איסוף עצמי'
 })
 
-function playSound() {
-  if (!audioElement) {
-    audioElement = new Audio('/notification.mp3')
-    audioElement.loop = true
+/**
+ * Start alert sound with fail-safe HTML5 audio
+ * - Uses standard file path: /sounds/notification.mp3
+ * - Handles autoplay policy gracefully
+ * - Does not crash on audio failure
+ */
+function startAlertSound() {
+  // Stop any existing sound first
+  stopAlertSound()
+
+  try {
+    // Create new audio element
+    audioElement = new Audio('/sounds/notification.mp3')
+    audioElement.volume = 0.5 // Not too loud
+    audioElement.loop = true // Repeat until stopped
+
+    // Attempt to play with Promise handling
+    const playPromise = audioElement.play()
+
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        // Autoplay policy or other audio failure - log warning but don't crash
+        console.warn('⚠️ Audio playback failed (likely autoplay policy):', error)
+      })
+    }
+  } catch (error) {
+    // Catch any synchronous errors
+    console.warn('⚠️ Failed to create audio element:', error)
   }
-  audioElement.play().catch((e) => console.warn('Cannot play sound:', e))
 }
 
-function stopSound() {
+/**
+ * Stop alert sound safely
+ */
+function stopAlertSound() {
   if (audioElement) {
-    audioElement.pause()
-    audioElement.currentTime = 0
+    try {
+      audioElement.pause()
+      audioElement.currentTime = 0
+      audioElement = null
+    } catch (error) {
+      console.warn('⚠️ Error stopping audio:', error)
+    }
   }
 }
 
+/**
+ * Handle new order event from Socket.IO
+ * VISUAL FIRST: Always show modal before attempting audio
+ */
 function handleNewOrder(data: { orderId: string; order: Order }) {
+  console.log('🔔 NEW ORDER RECEIVED!', data)
+
+  // Set order data and open modal
   order.value = data.order
   isOpen.value = true
-  playSound()
+
+  // Try to play sound (fails gracefully if blocked)
+  startAlertSound()
 }
 
 async function handleApprove() {
@@ -113,7 +154,7 @@ async function handleApprove() {
   isProcessing.value = true
   try {
     await axios.post(`/api/orders/approve/${order.value._id}`)
-    stopSound()
+    stopAlertSound()
     isOpen.value = false
     order.value = null
   } catch (error) {
@@ -130,7 +171,7 @@ async function handleReject() {
   isProcessing.value = true
   try {
     await axios.post(`/api/orders/reject/${order.value._id}`)
-    stopSound()
+    stopAlertSound()
     isOpen.value = false
     order.value = null
   } catch (error) {
@@ -142,6 +183,13 @@ async function handleReject() {
 }
 
 onMounted(() => {
+  const userStore = useUserStore()
+
+  if (!userStore.storeId) {
+    console.error('❌ No storeId found! Modal will not work.')
+    return
+  }
+
   const socket = getSocket()
 
   // Ensure socket is connected
@@ -149,14 +197,15 @@ onMounted(() => {
     socket.connect()
   }
 
-  // Set up listener
+  // Join shop room and listen for new orders
+  socket.emit('join-shop', userStore.storeId)
   socket.on('new-order', handleNewOrder)
 })
 
 onBeforeUnmount(() => {
   const socket = getSocket()
   socket.off('new-order', handleNewOrder)
-  stopSound()
+  stopAlertSound()
 })
 </script>
 

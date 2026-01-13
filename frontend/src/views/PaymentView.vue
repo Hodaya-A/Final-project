@@ -247,7 +247,7 @@ async function renderButtons() {
         if (!requireAddress()) return
 
         try {
-          await axios.post('http://localhost:3000/api/payments/capture', {
+          const captureResponse = await axios.post('http://localhost:3000/api/payments/capture', {
             paypalOrderId: data.orderID,
             userId,
             userEmail,
@@ -258,6 +258,18 @@ async function renderButtons() {
             shippingAddress,
             shippingAmount: shippingAmount.value,
           })
+
+          // ✅ התשלום בוצע בהצלחה!
+          if (captureResponse.data.success || captureResponse.data.order) {
+            // נקה את הסל
+            cartStore.clearCart()
+
+            // נווט לעמוד תודה
+            router.push({
+              name: 'thank-you',
+              query: { orderId: captureResponse.data.order?._id || data.orderID },
+            })
+          }
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: unknown } }
           const resp = axiosErr.response?.data as

@@ -20,6 +20,9 @@
     <!-- ⭐ התראות קופצות -->
     <NotificationToast ref="toastRef" />
     <CartShopConflictModal />
+
+    <!-- 🔔 מודאל התראות הזמנות למנהלי חנויות בלבד -->
+    <StoreOrderModal v-if="userStore.role === 'storeManager' && userStore.storeId" />
   </div>
 </template>
 
@@ -29,6 +32,7 @@ import TopBar from '@/components/TopBar.vue'
 import Navbar from '@/components/NavbarA.vue'
 import NotificationToast from '@/components/NotificationToast.vue'
 import CartShopConflictModal from '@/components/CartShopConflictModal.vue'
+import StoreOrderModal from '@/components/StoreOrderModal.vue'
 import { useUserStore } from '@/stores/user'
 import { fetchNotifications, markAsRead } from '@/services/notifications'
 import type { NotificationData } from '@/services/notifications'

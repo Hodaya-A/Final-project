@@ -65,9 +65,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Full-screen modal for new orders -->
-    <StoreOrderModal />
   </div>
 </template>
 
@@ -76,7 +73,6 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { useUserStore } from '@/stores/user'
 import { sendOrderConfirmation } from '@/services/email'
-import StoreOrderModal from '@/components/StoreOrderModal.vue'
 
 interface Order {
   _id: string
@@ -213,8 +209,13 @@ function formatTime(createdAt: string) {
 }
 
 onMounted(() => {
+  console.log('📦 PendingOrdersView mounted')
+  console.log('🏪 Store ID:', userStore.storeId)
+
   // טען בעת כניסה
   fetchPendingOrders()
+
+  // התחל polling אוטומטי כל 10 שניות (כבר מטופל ב-StoreOrderModal ב-App.vue)
 
   // פולינג כל 10 שניות
   pollInterval.value = setInterval(() => {

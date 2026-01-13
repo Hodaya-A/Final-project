@@ -5,6 +5,13 @@ import { getPaypalClient, getCurrency } from "../utils/paypalClient.js";
 
 const router = express.Router();
 
+// We'll need to get the io instance from the server
+let io = null;
+
+export function setSocketIO(ioInstance) {
+  io = ioInstance;
+}
+
 function formatPaypalError(error) {
   const status = error?.statusCode || error?.status || 500;
   const name = error?.name || error?.message || "PayPal error";
@@ -218,6 +225,24 @@ router.post("/capture", async (req, res) => {
     });
 
     await newOrder.save();
+
+    // 📡 Emit to all store managers connected to this store
+    if (io) {
+      // Check how many sockets are in the room
+      const roomSockets = io.sockets.adapter.rooms.get(`shop-${finalShopId}`);
+      const socketCount = roomSockets ? roomSockets.size : 0;
+
+      io.to(`shop-${finalShopId}`).emit("new-order", {
+        orderId: newOrder._id,
+        order: newOrder.toObject(),
+      });
+
+      console.log(
+        `✅ Sent new-order to shop-${finalShopId} (${socketCount} listeners)`
+      );
+    } else {
+      console.error(`❌ Socket.IO is NOT available! Cannot emit event.`);
+    }
 
     // DEBUG: לוג זמני כדי לבדוק מה נשמר
     console.log("✅ PayPal order saved:", {

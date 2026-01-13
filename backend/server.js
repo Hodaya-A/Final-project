@@ -111,6 +111,11 @@ app.use("/api", imagesRoutes);
 
 // ⭐ זה מה שהיה חסר — חיבור מודול ההזמנות
 app.use("/api/orders", ordersRouter);
+
+// Initialize Socket.IO for payments
+import { setSocketIO } from "./routes/payments.js";
+setSocketIO(io);
+
 app.use("/api/payments", paymentsRoutes);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
