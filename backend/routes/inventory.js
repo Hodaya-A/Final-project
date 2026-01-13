@@ -10,7 +10,7 @@ import mongoose from "mongoose";
 
 import ImportProfile from "../models/ImportProfile.js";
 import Inventory from "../models/Inventory.js";
-import { fetchImageFromGoogle } from "../utils/fetchImageFromGoogle.js";
+import { fetchImagesFromGoogle } from "../utils/fetchImageFromGoogle.js";
 import { generateImageWithDALLE } from "../utils/generateImageWithGemini.js";
 
 const router = express.Router();
@@ -147,7 +147,9 @@ router.get("/", async (req, res) => {
     console.log(`📦 נמצאו ${cleanedItems.length} מוצרים`);
     if (cleanedItems.length > 0) {
       console.log(
-        `📦 First item - shopId: ${cleanedItems[0].shopId}, type: ${typeof cleanedItems[0].shopId}`
+        `📦 First item - shopId: ${
+          cleanedItems[0].shopId
+        }, type: ${typeof cleanedItems[0].shopId}`
       );
     }
 
@@ -207,7 +209,8 @@ router.post("/", async (req, res) => {
     // נחפש תמונה רק אם אין כבר imageUrl
     if (!finalImageUrl) {
       try {
-        finalImageUrl = await fetchImageFromGoogle(name, barcode || "");
+        const imgs = await fetchImagesFromGoogle(name, barcode || "");
+        finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
       } catch (err) {
         console.warn(`⚠️ שגיאה בשליפת תמונה עבור "${name}":`, err.message);
       }
@@ -599,7 +602,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
                 `⚠️ יצירת תמונה באמצעות AI נכשלה, מנסה חיפוש בגוגל...`
               );
               // אם AI נכשל, נסה חיפוש בגוגל
-              finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
+              const imgs = await fetchImagesFromGoogle(rawName, rawBarcode);
+              finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
               if (finalImageUrl) {
                 console.log(`✅ נמצאה תמונה בגוגל: ${finalImageUrl}`);
               }
@@ -609,7 +613,8 @@ router.post("/upload", upload.single("file"), async (req, res) => {
             console.log(
               `🔍 מחפש תמונה ב-Google עבור: "${rawName}" (ברקוד: ${rawBarcode})`
             );
-            finalImageUrl = await fetchImageFromGoogle(rawName, rawBarcode);
+            const imgs = await fetchImagesFromGoogle(rawName, rawBarcode);
+            finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
             if (finalImageUrl) {
               console.log(`✅ נמצאה תמונה: ${finalImageUrl}`);
             }
