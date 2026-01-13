@@ -372,7 +372,7 @@ const handleLogin = async () => {
         data.role,
         data.name || '',
         data.storeId || '',
-        data.courierOptIn || false,
+        data.role === 'courier', // ✅ בדוק אם role הוא courier
         sName,
         sCity,
         sStreet,
