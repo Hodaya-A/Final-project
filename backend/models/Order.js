@@ -30,10 +30,34 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  itemsTotal: {
+    type: Number, // סכום הפריטים בלי משלוח
+    default: 0,
+  },
+  shippingAmount: {
+    type: Number,
+    default: 0,
+  },
   deliveryMethod: {
     type: String,
     enum: ["delivery", "pickup"],
     default: "delivery",
+  },
+  status: {
+    type: String,
+    enum: [
+      "PENDING",
+      "APPROVED",
+      "PREPARING",
+      "READY_FOR_PICKUP",
+      "COURIER_ASSIGNED",
+      "IN_DELIVERY",
+      "DELIVERED",
+      "REJECTED",
+      "CANCELLED",
+    ],
+    default: "PENDING",
+    index: true,
   },
   approvedAt: {
     type: Date, // ✅ תאריך אישור על ידי מנהל
@@ -57,6 +81,45 @@ const orderSchema = new mongoose.Schema({
   },
   deliveredAt: {
     type: Date, // תאריך סיום המשלוח
+  },
+  shippingAddress: {
+    fullName: String,
+    phone: String,
+    street: String,
+    city: String,
+    zip: String,
+    notes: String,
+  },
+  paymentStatus: {
+    type: String,
+    enum: [
+      "pending",
+      "authorized",
+      "captured",
+      "partially_refunded",
+      "refunded",
+      "failed",
+    ],
+    default: "captured",
+  },
+  paypalOrderId: {
+    type: String,
+  },
+  paypalCaptureId: {
+    type: String,
+  },
+  // 💰 Payment Splitting Fields
+  platformFee: {
+    type: Number,
+    default: 0, // Commission taken by the app (calculated as totalPrice * commissionRate)
+  },
+  storePayout: {
+    type: Number,
+    default: 0, // Amount the store receives
+  },
+  courierPayout: {
+    type: Number,
+    default: 0, // Amount the courier receives (delivery fee + tip)
   },
   createdAt: {
     type: Date,

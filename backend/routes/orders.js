@@ -31,9 +31,35 @@ router.post("/", async (req, res) => {
       items,
       totalPrice,
       deliveryMethod: deliveryMethod || "delivery",
+      status: "PENDING",
     });
 
     await newOrder.save();
+
+    // Emit real-time event to store manager
+    const io = req.app.get("io");
+    if (io && shopId) {
+      const roomName = `shop-${shopId}`;
+      console.log(`📤 Attempting to emit new-order to room: ${roomName}`);
+      console.log(`📤 Order ID: ${newOrder._id}`);
+      console.log(`📤 Socket.io instance exists: ${!!io}`);
+
+      io.to(roomName).emit("new-order", {
+        orderId: newOrder._id,
+        order: newOrder,
+      });
+
+      // Check how many clients are in the room
+      io.in(roomName)
+        .allSockets()
+        .then((sockets) => {
+          console.log(`✅ New order event emitted to shop-${shopId}`);
+          console.log(`👥 Number of clients in room: ${sockets.size}`);
+          console.log(`👥 Client IDs: ${Array.from(sockets).join(", ")}`);
+        });
+    } else {
+      console.warn("⚠️ Socket.io not available or shopId missing");
+    }
 
     res.status(201).json({
       message: "ההזמנה נשמרה בהצלחה",
@@ -63,7 +89,30 @@ router.get("/pending/store", async (req, res) => {
     };
 
     const finalFilter = { ...baseFilter, ...notReadyFilter };
+
+    // DEBUG: לראות מה מחפשים
+    console.log("🔍 Searching for pending orders with filter:", finalFilter);
+
     const pendingOrders = await Order.find(finalFilter).sort({ createdAt: -1 });
+
+    // DEBUG: לראות מה מצאנו
+    console.log(`📦 Found ${pendingOrders.length} orders`);
+    if (pendingOrders.length > 0) {
+      console.log("First order shopId:", pendingOrders[0].shopId);
+    }
+
+    // לראות את כל ההזמנות בDB (ללא פילטר) - רק shopId
+    const allOrders = await Order.find({})
+      .select("shopId sellerId readyForPickup")
+      .limit(5);
+    console.log(
+      "📋 Last 5 orders in DB:",
+      allOrders.map((o) => ({
+        shopId: o.shopId,
+        sellerId: o.sellerId,
+        ready: o.readyForPickup,
+      }))
+    );
 
     // שקט — אין סיכומי לוגים
 
@@ -88,7 +137,17 @@ router.post("/approve/:orderId", async (req, res) => {
 
     // 2. סמן כמאושרת
     order.approvedAt = new Date();
+    order.status = "APPROVED";
     await order.save();
+
+    // Emit event to customer
+    const io = req.app.get("io");
+    if (io && order.userId) {
+      io.to(`customer-${order.userId}`).emit("order-approved", {
+        orderId: order._id,
+        status: order.status,
+      });
+    }
 
     // 3. החזר את פרטי ההזמנה כדי שהפרונטאנד ישלח מייל
     res.json({
@@ -108,6 +167,41 @@ router.post("/approve/:orderId", async (req, res) => {
   }
 });
 
+router.post("/reject/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    order.status = "REJECTED";
+    await order.save();
+
+    // Emit event to customer
+    const io = req.app.get("io");
+    if (io && order.userId) {
+      io.to(`customer-${order.userId}`).emit("order-rejected", {
+        orderId: order._id,
+        status: order.status,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Order rejected",
+      order: {
+        id: order._id,
+        status: order.status,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error rejecting order:", error);
+    res.status(500).json({ error: "Failed to reject order" });
+  }
+});
+
 router.post("/ready/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -121,6 +215,7 @@ router.post("/ready/:orderId", async (req, res) => {
     // סמן כמוכן לאיסוף
     order.readyForPickup = true;
     order.readyAt = new Date();
+    order.status = "READY_FOR_PICKUP";
 
     // אם זה משלוח - תן 30 דקות למשלוחנים לקחת
     if (order.deliveryMethod === "delivery") {
@@ -131,6 +226,24 @@ router.post("/ready/:orderId", async (req, res) => {
     }
 
     await order.save();
+
+    // Emit event to couriers and customer
+    const io = req.app.get("io");
+    if (io) {
+      if (order.deliveryMethod === "delivery") {
+        io.emit("delivery-available", {
+          orderId: order._id,
+          order,
+        });
+      }
+      if (order.userId) {
+        io.to(`customer-${order.userId}`).emit("order-ready", {
+          orderId: order._id,
+          status: order.status,
+          deliveryMethod: order.deliveryMethod,
+        });
+      }
+    }
 
     res.json({
       success: true,
@@ -161,7 +274,17 @@ router.post("/complete-delivery/:orderId", async (req, res) => {
     }
 
     order.deliveredAt = new Date();
+    order.status = "DELIVERED";
     await order.save();
+
+    // Emit event to customer
+    const io = req.app.get("io");
+    if (io && order.userId) {
+      io.to(`customer-${order.userId}`).emit("order-delivered", {
+        orderId: order._id,
+        status: order.status,
+      });
+    }
 
     res.json({
       success: true,
@@ -190,13 +313,44 @@ router.get("/available-deliveries/list", async (req, res) => {
         { courierId: null },
         { courierId: "" },
       ],
-    }).sort({ readyAt: -1 });
+    })
+      .sort({ readyAt: -1 })
+      .lean();
 
-    // שקט — אין סיכומי לוגים
+    // הוסף פרטי חנות מ-Firestore
+    const ordersWithShopInfo = await Promise.all(
+      availableOrders.map(async (order) => {
+        let shopName = null;
+        let shopAddress = null;
+
+        if (order.shopId) {
+          try {
+            const storeDoc = await req.app
+              .get("db")
+              .collection("stores")
+              .doc(order.shopId)
+              .get();
+            if (storeDoc.exists) {
+              const storeData = storeDoc.data();
+              shopName = storeData.name;
+              shopAddress = storeData.address;
+            }
+          } catch (e) {
+            console.warn("Failed to fetch shop info:", e.message);
+          }
+        }
+
+        return {
+          ...order,
+          shopName,
+          shopAddress,
+        };
+      })
+    );
 
     res.json({
-      orders: availableOrders,
-      count: availableOrders.length,
+      orders: ordersWithShopInfo,
+      count: ordersWithShopInfo.length,
     });
   } catch (error) {
     console.error("❌ Error fetching available deliveries:", error);
@@ -225,7 +379,17 @@ router.post("/accept-delivery/:orderId", async (req, res) => {
 
     order.courierId = courierId;
     order.courierAssignedAt = new Date();
+    order.status = "COURIER_ASSIGNED";
     await order.save();
+
+    // Emit event to customer
+    const io = req.app.get("io");
+    if (io && order.userId) {
+      io.to(`customer-${order.userId}`).emit("courier-assigned", {
+        orderId: order._id,
+        status: order.status,
+      });
+    }
 
     res.json({
       success: true,
@@ -246,13 +410,44 @@ router.get("/my-deliveries/:courierId", async (req, res) => {
     const myDeliveries = await Order.find({
       courierId,
       deliveryMethod: "delivery",
-    }).sort({ courierAssignedAt: -1 });
+    })
+      .sort({ courierAssignedAt: -1 })
+      .lean();
 
-    // שקט — אין סיכומי לוגים
+    // הוסף פרטי חנות מ-Firestore
+    const ordersWithShopInfo = await Promise.all(
+      myDeliveries.map(async (order) => {
+        let shopName = null;
+        let shopAddress = null;
+
+        if (order.shopId) {
+          try {
+            const storeDoc = await req.app
+              .get("db")
+              .collection("stores")
+              .doc(order.shopId)
+              .get();
+            if (storeDoc.exists) {
+              const storeData = storeDoc.data();
+              shopName = storeData.name;
+              shopAddress = storeData.address;
+            }
+          } catch (e) {
+            console.warn("Failed to fetch shop info:", e.message);
+          }
+        }
+
+        return {
+          ...order,
+          shopName,
+          shopAddress,
+        };
+      })
+    );
 
     res.json({
-      orders: myDeliveries,
-      count: myDeliveries.length,
+      orders: ordersWithShopInfo,
+      count: ordersWithShopInfo.length,
     });
   } catch (error) {
     console.error("❌ Error fetching my deliveries:", error);

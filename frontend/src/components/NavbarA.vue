@@ -116,10 +116,12 @@ function toggleCategory(name: string) {
 }
 
 function goToStore() {
+  //Navigate to main store dashboard
   router.push('/store')
 }
 
 function goToCourier() {
+  //Navigate to main courier dashboard
   router.push('/courier')
 }
 

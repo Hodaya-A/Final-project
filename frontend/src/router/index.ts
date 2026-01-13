@@ -1,10 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
 import CartView from '../views/CartView.vue'
 // import LoginView from '../views/LoginView.vue'
 // import RegisterView from '../views/RegisterView.vue'
-import ProductCard from '../components/ProductCard.vue'
+// import ProductCard from '../components/ProductCard.vue'
 import AdminDashboardView from '../views/AdminDashboard.vue'
 import AddProductView from '../views/AddProductView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
@@ -13,7 +13,7 @@ import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
 // import AdminReportsView from '@/views/AdminReportsView.vue'
 
 import { useUserStore } from '@/stores/user'
-import { auth } from '@/services/firebase'
+// import { auth } from '@/services/firebase'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
     name: 'my-orders',
     component: MyOrdersView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/debug-user',
+    name: 'debug-user',
+    component: () => import('@/views/UserStatusDebug.vue'),
   },
   {
     path: '/notifications',
@@ -54,7 +59,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/checkout',
     name: 'checkout',
-    component: () => import('@/views/ThankYouView.vue'),
+    component: () => import('@/views/PaymentView.vue'),
   },
   {
     path: '/',
@@ -86,6 +91,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAdmin: true, requiresAuth: true },
   },
   {
+    path: '/admin/earnings',
+    name: 'admin-earnings',
+    component: () => import('@/components/AdminEarningsDashboard.vue'),
+    meta: { requiresAdmin: true, requiresAuth: true },
+  },
+  {
     path: '/admin/add-product',
     name: 'add-product',
     component: AddProductView,
@@ -109,6 +120,12 @@ const routes: RouteRecordRaw[] = [
     path: '/store',
     name: 'store-dashboard',
     component: () => import('@/views/store-manager/StoreManagerDashboard.vue'),
+    meta: { requiresAuth: true, roles: ['storeManager'] },
+  },
+  {
+    path: '/store/payouts',
+    name: 'store-payouts',
+    component: () => import('@/components/StorePayoutDashboard.vue'),
     meta: { requiresAuth: true, roles: ['storeManager'] },
   },
   {
@@ -136,6 +153,12 @@ const routes: RouteRecordRaw[] = [
     name: 'courier-dashboard',
     component: () => import('@/views/CourierDashboard.vue'),
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/courier/wallet',
+    name: 'courier-wallet',
+    component: () => import('@/components/CourierWallet.vue'),
+    meta: { requiresAuth: true, roles: ['courier'] },
   },
   // {
   // path: '/store-products',

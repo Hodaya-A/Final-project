@@ -3,10 +3,13 @@
     <h1>עמוד ניהול</h1>
 
     <div class="actions">
+      <button @click="goToEarnings" class="financial-btn">רווחים והכנסות</button>
+
       <button @click="deleteAllProducts">מחק את כל המוצרים</button>
       <button @click="goToUserManagement">ניהול משתמשים</button>
       <button @click="goToReports">הנפקת דוחות</button>
       <button @click="goToInventory">ניהול מלאי</button>
+      <hr class="divider" />
     </div>
 
     <div class="category-selection">
@@ -74,6 +77,11 @@ function goToUserManagement() {
 function goToInventory() {
   router.push('/shop/inventory')
 }
+
+function goToEarnings() {
+  // ✅ Navigate to financial earnings dashboard
+  router.push('/admin/earnings')
+}
 </script>
 
 <style scoped>
@@ -134,6 +142,22 @@ button {
 button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+}
+
+.divider {
+  border: none;
+  border-top: 2px solid var(--border);
+  margin: 1.5rem 0;
+}
+
+.financial-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  font-size: 1.15rem;
+  margin-top: 0.5rem;
+}
+
+.financial-btn:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .unauthorized {

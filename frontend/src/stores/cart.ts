@@ -9,6 +9,7 @@ export interface CartItem {
   quantity: number
   imageUrl?: string
   shopId?: string // ✅ מזהה החנות
+  shopName?: string // ✅ שם החנות
   sellerId?: string // ✅ מזהה המוכר (Firebase UID)
 }
 
@@ -18,6 +19,42 @@ interface CartState {
 }
 
 const CART_STORAGE_KEY = 'fresh_end_cart'
+
+type ShopConflictDetail = {
+  resolve: (accept: boolean) => void
+  existingShopId?: string
+  incomingShopId?: string
+  existingShopName?: string
+  incomingShopName?: string
+}
+
+function requestSingleShopApproval(
+  existingShopId?: string,
+  incomingShopId?: string,
+  existingShopName?: string,
+  incomingShopName?: string,
+) {
+  return new Promise<boolean>((resolve) => {
+    const timeoutId = window.setTimeout(() => resolve(false), 20000)
+
+    const guardedResolve = (value: boolean) => {
+      window.clearTimeout(timeoutId)
+      resolve(value)
+    }
+
+    window.dispatchEvent(
+      new CustomEvent<ShopConflictDetail>('single-shop-cart-conflict', {
+        detail: {
+          resolve: guardedResolve,
+          existingShopId,
+          incomingShopId,
+          existingShopName,
+          incomingShopName,
+        },
+      }),
+    )
+  })
+}
 
 export const useCartStore = defineStore('cart', {
   state: (): CartState => {
@@ -54,15 +91,48 @@ export const useCartStore = defineStore('cart', {
       }
     },
     // בקשה להוספה לסל — בלי quantity חובה
-    addToCart(payload: {
+    async addToCart(payload: {
       id: string
       name: string
       price: number
       imageUrl?: string
       shopId?: string // ✅ מזהה החנות
+      shopName?: string // ✅ שם החנות
       sellerId?: string // ✅ מזהה המוכר
       quantity?: number
     }) {
+      console.log('🛒 [Cart] addToCart called with:', payload)
+
+      const existingShopId = this.items[0]?.shopId
+      const existingShopName = this.items[0]?.shopName
+      const incomingShopId = payload.shopId
+      const incomingShopName = payload.shopName
+
+      console.log('🛒 [Cart] Shop validation:', {
+        existingShopId,
+        incomingShopId,
+        itemsInCart: this.items.length,
+        match: existingShopId === incomingShopId,
+      })
+
+      // חנות אחת בכל פעם: אם יש סל קיים מחנויות אחרת, הצג אישור לפני מחיקה
+      if (
+        this.items.length > 0 &&
+        existingShopId &&
+        incomingShopId &&
+        existingShopId !== incomingShopId
+      ) {
+        const shouldReset = await requestSingleShopApproval(
+          existingShopId,
+          incomingShopId,
+          existingShopName,
+          incomingShopName,
+        )
+        if (!shouldReset) return
+
+        this.clearCart()
+      }
+
       const qty = payload.quantity ?? 1
       const image = payload.imageUrl ?? ''
 
@@ -71,18 +141,24 @@ export const useCartStore = defineStore('cart', {
       if (existing) {
         existing.quantity += qty
       } else {
-        this.items.push({
+        const newItem = {
           id: payload.id,
           name: payload.name,
           price: payload.price,
           imageUrl: image,
           shopId: payload.shopId, // ✅
+          shopName: payload.shopName, // ✅
           sellerId: payload.sellerId, // ✅
           quantity: qty,
-        })
+        }
+        console.log('🛒 [Cart] Created new item:', newItem)
+        this.items.push(newItem)
       }
+
       // שמור לוקאלי + spoon in server save
       this.persistToLocal()
+      console.log('🛒 [Cart] After persist, items in localStorage:', this.items)
+
       try {
         this.autoSave?.()
       } catch {

@@ -730,10 +730,8 @@ async function selectSearchedImage(selectedImageUrl: string) {
 }
 
 function openEditModal(product: Product) {
-  editedProduct.value = {
-    ...product,
-    expiryDate: product.expiryDate ? product.expiryDate.slice(0, 10) : '',
-  }
+  editedProduct.value = { ...product }
+  editingId.value = product._id
   showEditModal.value = true
 }
 
@@ -777,7 +775,8 @@ async function handleUpload(mode: 'update' | 'renew') {
     formData.append('mode', mode)
     formData.append('useAI', useAIForImages.value.toString()) // הוספת פרמטר AI
 
-    // צרפי גם מזהה המוכר כדי שפריטים ייקלטו עם owner נכון
+    // ✅ צרפי את shopId ו-sellerId
+    formData.append('shopId', userStore.storeId || userStore.uid || '')
     formData.append('sellerId', sellerId)
 
     // שלוף פרטי החנות מ-user store ושלח אותם
@@ -868,6 +867,7 @@ async function handleSubmit() {
     expiryDate: expiryDate.value,
     category: category.value,
     imageUrl: imageUrl.value,
+    shopId: userStore.storeId || userStore.uid,
     sellerId,
   }
 
@@ -876,7 +876,7 @@ async function handleSubmit() {
       await axios.put(`/api/inventory/${editingId.value}`, product)
       alert('✅ המוצר עודכן בהצלחה!')
     } else {
-      await axios.post('/api/inventory', product)
+      await axios.post('/api/products', product)
       alert('✅ המוצר נוסף בהצלחה!')
     }
     clearForm()
@@ -1742,19 +1742,19 @@ tbody tr:last-child td {
 
 .checkmark-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: #10b981;
+  top: -5px;
+  right: -5px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
+  border-radius: 50%;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .btn-change-image {

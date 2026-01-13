@@ -75,7 +75,7 @@
           <p class="total-sum">
             לתשלום כולל: <strong>₪{{ finalTotal.toFixed(2) }}</strong>
           </p>
-          <button class="checkout-btn" @click="goToThankYou">לתשלום</button>
+          <button class="checkout-btn" @click="goToCheckout">לתשלום</button>
         </div>
       </div>
     </div>
@@ -86,73 +86,21 @@
 import { ref, computed } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import { useRouter } from 'vue-router'
-import { saveOrder } from '@/services/orders'
-import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const cartStore = useCartStore()
-const userStore = useUserStore()
 
 const confirmingClear = ref(false)
 const shippingPrice = 29.9
 const deliveryMethod = ref<'delivery' | 'pickup'>('delivery')
 
-async function goToThankYou() {
-  console.log('[goToThankYou] Function called!')
-  const userId = userStore.uid
-  const email = userStore.email
-  const items = cartStore.items
-
-  try {
-    if (!userId) {
-      console.error('[goToThankYou] No userId!')
-      throw new Error('No userId available for order')
-    }
-    if (!email) console.warn('[goToThankYou] No email provided')
-
-    // פיצול הזמנות לפי חנות
-    const ordersByStore = itemsByStore.value
-    const storeIds = Object.keys(ordersByStore)
-
-    console.log(
-      `[goToThankYou] Creating ${storeIds.length} separate orders for ${storeIds.length} stores`,
-    )
-
-    // יצירת הזמנה נפרדת לכל חנות
-    const orderPromises = storeIds.map(async (shopId) => {
-      const storeItems = ordersByStore[shopId]
-      const storeTotal =
-        storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0) +
-        (deliveryMethod.value === 'delivery' ? shippingPrice : 0)
-      const sellerId = storeItems[0].sellerId || ''
-
-      console.log(
-        `[goToThankYou] Saving order for store ${shopId}, items: ${storeItems.length}, total: ${storeTotal}, delivery: ${deliveryMethod.value}`,
-      )
-
-      return await saveOrder(
-        userId,
-        email,
-        shopId,
-        sellerId,
-        storeItems,
-        storeTotal,
-        deliveryMethod.value,
-      )
-    })
-
-    // המתן לכל ההזמנות
-    const results = await Promise.all(orderPromises)
-    console.log(`[goToThankYou] All ${results.length} orders saved successfully`)
-
-    console.log('[goToThankYou] Clearing cart and redirecting...')
-    cartStore.clearCart()
-    router.push('/thank-you')
-    console.log('[goToThankYou] Redirected to thank-you')
-  } catch (err) {
-    console.error('[goToThankYou] Error:', err)
-    alert('אירעה שגיאה בעת ביצוע ההזמנה או שליחת המייל.')
-  }
+function goToCheckout() {
+  router.push({
+    name: 'checkout',
+    query: {
+      method: deliveryMethod.value,
+    },
+  })
 }
 
 function clearCart() {

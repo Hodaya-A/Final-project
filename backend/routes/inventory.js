@@ -120,11 +120,19 @@ router.get("/", async (req, res) => {
     const items = await Inventory.find(filter)
       .skip(skip)
       .limit(limit)
-      .sort({ name: 1 });
+      .sort({ name: 1 })
+      .lean();
 
-    // נקה URLs לא תקינים של תמונות
+    // נקה URLs לא תקינים של תמונות והמר ObjectId ל-string
     const cleanedItems = items.map((item) => {
-      const obj = item.toObject();
+      const obj = {
+        ...item,
+        _id: String(item._id),
+        shopId: item.shopId ? String(item.shopId) : undefined,
+        sellerId: item.sellerId ? String(item.sellerId) : undefined,
+        salePrice: item.priceDiscounted, // ✅ Inventory uses priceDiscounted, Frontend expects salePrice
+      };
+
       // אם התמונה לא תקינה, תמחק אותה
       if (
         obj.imageUrl &&
@@ -137,6 +145,12 @@ router.get("/", async (req, res) => {
     });
 
     console.log(`📦 נמצאו ${cleanedItems.length} מוצרים`);
+    if (cleanedItems.length > 0) {
+      console.log(
+        `📦 First item - shopId: ${cleanedItems[0].shopId}, type: ${typeof cleanedItems[0].shopId}`
+      );
+    }
+
     res.json(cleanedItems);
   } catch (err) {
     console.error("❌ שגיאה בשליפת מלאי:", err);
@@ -342,7 +356,6 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
-  const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
   const mode = req.body.mode || "update";
   const sellerId = req.body.sellerId || req.query.sellerId;
   const useAI = req.body.useAI === "true" || req.body.useAI === true; // האם להשתמש ב-AI ליצירת תמונות
@@ -351,6 +364,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     console.error("❌ חסר sellerId!");
     return res.status(400).json({ error: "Missing sellerId" });
   }
+
+  // ✅ קבל את shopId מה-request (זה ה-storeId האמיתי מ-Firestore)
+  const shopId = req.body.shopId || DEFAULT_SHOP_ID;
 
   // פרטי החנות מהפרונט-אנד
   const shopName = req.body.shopName || "לא ידוע";
@@ -695,6 +711,39 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       details: err.message,
       errorType: err.name,
     });
+  }
+});
+
+// תיקון חד-פעמי: עדכון מוצרים ישנים ללא sellerId
+router.post("/fix-missing-seller", async (req, res) => {
+  try {
+    const { shopId, sellerId } = req.body;
+    if (!shopId || !sellerId) {
+      return res
+        .status(400)
+        .json({ error: "shopId and sellerId are required" });
+    }
+
+    // מצא מוצרים שאין להם sellerId או שהוא undefined
+    const result = await Inventory.updateMany(
+      {
+        shopId,
+        $or: [
+          { sellerId: { $exists: false } },
+          { sellerId: null },
+          { sellerId: undefined },
+        ],
+      },
+      { $set: { sellerId } }
+    );
+
+    console.log(
+      `🔧 Fixed ${result.modifiedCount} products with missing sellerId for shopId: ${shopId}`
+    );
+    res.json({ ok: true, fixed: result.modifiedCount });
+  } catch (error) {
+    console.error("Error fixing products:", error);
+    res.status(500).json({ error: "Failed to fix products" });
   }
 });
 

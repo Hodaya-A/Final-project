@@ -61,9 +61,32 @@ export async function uploadInventory(
   console.log('📁 File:', file.name, 'Size:', file.size, 'Type:', file.type)
   console.log('🔄 Mode:', mode)
 
+  // קבל sellerId ו-storeId מ-userStore
+  const { useUserStore } = await import('@/stores/user')
+  const userStore = useUserStore()
+  const sellerId = userStore.uid
+  const storeId = userStore.storeId
+
+  if (!sellerId) {
+    throw new Error('Missing sellerId - user not logged in')
+  }
+
+  console.log('🔐 [uploadInventory] userStore state:', {
+    uid: userStore.uid,
+    email: userStore.email,
+    storeId: userStore.storeId,
+    role: userStore.role,
+  })
+  console.log('📧 [uploadInventory] Using sellerId:', sellerId)
+  console.log('🏪 [uploadInventory] Using storeId:', storeId)
+
   const formData = new FormData()
   formData.append('file', file)
   formData.append('mode', mode)
+  formData.append('sellerId', sellerId)
+  if (storeId) {
+    formData.append('shopId', storeId) // שלח את ה-storeId של המנהל
+  }
 
   console.log('📦 FormData created, entries:')
   for (const [key, value] of formData.entries()) {

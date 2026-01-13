@@ -4,6 +4,9 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import emailjs from "@emailjs/nodejs";
+import checkout from "@paypal/checkout-server-sdk";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 // models
 import Inventory from "./models/Inventory.js";
@@ -16,18 +19,63 @@ import productRoutes from "./routes/products.js";
 import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js"; // ⭐ חדש
+import paymentsRoutes from "./routes/payments.js";
+import storesRoutes from "./routes/stores.js";
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
 import usersRoutes from "./routes/users.js";
 import notificationsRoutes from "./routes/notifications.js";
-import imageSearchRoutes from "./routes/imageSearch.js"; // ⭐ חיפוש תמונות
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
 import { createExpiringProductNotifications } from "./utils/notificationService.js";
+import { getPaypalClient, getCurrency } from "./utils/paypalClient.js";
 
 const app = express();
+const httpServer = createServer(app);
+
+// Socket.io setup with CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5174",
+    ],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Make io available to routes
+app.set("io", io);
+app.set("db", db); // ✅ הוסף גם את Firestore DB
+
+// Socket.io connection handler
+io.on("connection", (socket) => {
+  console.log("🔌 Client connected:", socket.id);
+
+  socket.on("join-shop", (shopId) => {
+    socket.join(`shop-${shopId}`);
+    console.log(`📦 Socket ${socket.id} joined shop-${shopId}`);
+  });
+
+  socket.on("join-customer", (userId) => {
+    socket.join(`customer-${userId}`);
+    console.log(`👤 Socket ${socket.id} joined customer-${userId}`);
+  });
+
+  socket.on("join-courier", (courierId) => {
+    socket.join(`courier-${courierId}`);
+    console.log(`🚚 Socket ${socket.id} joined courier-${courierId}`);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔌 Client disconnected:", socket.id);
+  });
+});
 
 /* ======================= Middleware ======================= */
 app.use(
@@ -65,17 +113,24 @@ app.use("/api", imagesRoutes);
 
 // ⭐ זה מה שהיה חסר — חיבור מודול ההזמנות
 app.use("/api/orders", ordersRouter);
+
+// Initialize Socket.IO for payments
+import { setSocketIO } from "./routes/payments.js";
+setSocketIO(io);
+
+app.use("/api/payments", paymentsRoutes);
+app.use("/api/stores", storesRoutes);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/notifications", notificationsRoutes);
-app.use("/api/images", imageSearchRoutes); // ⭐ חיפוש תמונות
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🔌 Socket.io is ready for connections`);
 });
 
 /* ======================= הסרה אוטומטית של מוצרים שפג תוקפם ======================= */
@@ -100,6 +155,25 @@ async function sendExpiringNotifications() {
     await createExpiringProductNotifications();
   } catch (error) {
     console.error("❌ שגיאה ביצירת התראות:", error);
+  }
+}
+
+/* ======================= החזר משלוח אם בוטל ======================= */
+async function refundShippingIfNeeded(captureId, amount) {
+  if (!captureId || !amount || amount <= 0) return;
+  try {
+    const client = getPaypalClient();
+    const req = new checkout.payments.CapturesRefundRequest(captureId);
+    req.requestBody({
+      amount: {
+        currency_code: getCurrency(),
+        value: Number(amount).toFixed(2),
+      },
+      note_to_payer: "Shipping refunded after converting to pickup",
+    });
+    await client.execute(req);
+  } catch (error) {
+    console.error("❌ שגיאה בזיכוי משלוח:", error);
   }
 }
 
@@ -135,10 +209,25 @@ async function checkExpiredOrders() {
     for (const order of expiredOrders) {
       // המר ל-איסוף עצמי
       order.deliveryMethod = "pickup";
+      order.status = "READY_FOR_PICKUP";
       order.readyForPickupExpiresAt = null; // נקה את הפקיעה
+      // החזר משלוח אם שולם
+      if (order.shippingAmount > 0 && order.paypalCaptureId) {
+        await refundShippingIfNeeded(
+          order.paypalCaptureId,
+          order.shippingAmount
+        );
+        order.paymentStatus = "partially_refunded";
+      }
+
       await order.save();
 
-      // שקט — אין לוגים להמרה לאיסוף עצמי
+      // Emit event to customer about pickup conversion
+      io.to(`customer-${order.userId}`).emit("order-converted-to-pickup", {
+        orderId: order._id,
+        status: order.status,
+        deliveryMethod: order.deliveryMethod,
+      });
 
       // שלח מייל ללקוח
       try {

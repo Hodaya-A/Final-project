@@ -104,11 +104,12 @@ async function handleSubmit() {
     expiryDate: expiryDate.value,
     category: category.value,
     imageUrl: imageUrl.value,
+    shopId: userStore.storeId || userStore.uid, // ✅ הוסף shopId
+    sellerId: userStore.uid || sellerId, // ✅ השתמש ב-uid אם קיים
     location: {
       type: 'Point',
       coordinates: [lng.value, lat.value],
     },
-    sellerId,
   }
 
   try {
