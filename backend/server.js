@@ -26,6 +26,7 @@ import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
 import usersRoutes from "./routes/users.js";
 import notificationsRoutes from "./routes/notifications.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 // Firebase Admin (אופציונלי)
 import { auth, db } from "./config/firebaseAdmin.js";
@@ -124,6 +125,7 @@ app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/notifications", notificationsRoutes);
+app.use("/api/analytics", analyticsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
