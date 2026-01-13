@@ -190,6 +190,100 @@
             </div>
           </div>
         </section>
+
+        <!-- Payment Card -->
+        <section v-if="isPaymentEligible" class="card" data-payment-section>
+          <header class="card-header">
+            <div>
+              <h2>פרטי חשבון להעברת כספים</h2>
+              <p class="card-sub">פרטי בנק, סניף וחשבון</p>
+            </div>
+            <button v-if="!isEditingPayment" class="btn-ghost" @click="togglePaymentEdit">
+              ערוך פרטי בנק
+            </button>
+          </header>
+
+          <div v-if="!paymentForm.bankCode && !isEditingPayment" class="warning-message">
+            טרם הוגדרו פרטי תשלום. לא נוכל להעביר לך כספים עד לעדכון הפרטים.
+          </div>
+
+          <form v-else-if="isEditingPayment" class="card-body" @submit.prevent="savePayment">
+            <div class="fields two-cols">
+              <div class="form-group">
+                <label>שם הבנק *</label>
+                <select v-model="paymentForm.bankCode" required>
+                  <option value="">בחר בנק</option>
+                  <option v-for="bank in banksList" :key="bank.code" :value="bank.code">
+                    {{ bank.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>מספר סניף *</label>
+                <input
+                  v-model="paymentForm.branchNumber"
+                  type="text"
+                  placeholder="3 ספרות"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="fields two-cols">
+              <div class="form-group">
+                <label>מספר חשבון *</label>
+                <input
+                  v-model="paymentForm.accountNumber"
+                  type="text"
+                  placeholder="עד 13 ספרות"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label>שם בעל החשבון *</label>
+                <input
+                  v-model="paymentForm.accountHolder"
+                  type="text"
+                  placeholder="כשם שמופיע בבנק"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" :disabled="loading">
+                {{ loading ? 'שומר...' : 'שמור' }}
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                :disabled="loading"
+                @click="cancelPayment"
+              >
+                ביטול
+              </button>
+            </div>
+          </form>
+
+          <div v-else class="card-body read-mode">
+            <div class="read-row">
+              <span class="label">שם הבנק</span>
+              <span class="value">{{ getBankName(paymentForm.bankCode) || '—' }}</span>
+            </div>
+            <div class="read-row">
+              <span class="label">מספר סניף</span>
+              <span class="value">{{ paymentForm.branchNumber || '—' }}</span>
+            </div>
+            <div class="read-row">
+              <span class="label">מספר חשבון</span>
+              <span class="value">{{ paymentForm.accountNumber || '—' }}</span>
+            </div>
+            <div class="read-row">
+              <span class="label">שם בעל החשבון</span>
+              <span class="value">{{ paymentForm.accountHolder || '—' }}</span>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div v-else class="card blocked-card">
@@ -210,6 +304,7 @@ import { useUserStore } from '@/stores/user'
 import { Field, ErrorMessage, useForm, defineRule, configure } from 'vee-validate'
 import { required, min } from '@vee-validate/rules'
 import { updateUserProfile } from '@/services/userService'
+import { banksList } from '@/constants/israeliBanks'
 import type { StoreDetails } from '../services/storeService'
 
 defineRule('required', required)
@@ -242,6 +337,7 @@ const errorMessage = ref('')
 
 const isEditingPersonal = ref(false)
 const isEditingStore = ref(false)
+const isEditingPayment = ref(false)
 
 const personalForm = ref({
   firstName: '',
@@ -258,7 +354,17 @@ const storeForm = ref<StoreDetails>({
   phone: '',
 })
 
+const paymentForm = ref({
+  bankCode: '',
+  branchNumber: '',
+  accountNumber: '',
+  accountHolder: '',
+})
+
 const initialStoreState = ref<StoreDetails | null>(null)
+const isPaymentEligible = computed(
+  () => userStore.role === 'storeManager' || userStore.courierOptIn,
+)
 
 const splitName = (fullName: string) => {
   if (!fullName) return { first: '', last: '' }
@@ -305,6 +411,7 @@ const loadStoreDetails = async () => {
 onMounted(() => {
   hydratePersonal()
   loadStoreDetails()
+  loadPaymentDetails()
 })
 
 const getUserInitials = () => {
@@ -409,10 +516,9 @@ const saveStore = async () => {
 
     successMessage.value = 'פרטי החנות נשמרו'
     isEditingStore.value = false
-  } catch (error) {
-    console.error('Save store error:', error)
-    const err = error as Error
-    errorMessage.value = err.message || 'שגיאה בשמירת פרטי החנות'
+  } catch (err) {
+    const error = err as Error
+    errorMessage.value = error.message || 'שגיאה בשמירת פרטי החנות'
   } finally {
     loading.value = false
   }
@@ -424,10 +530,84 @@ const cancelStore = () => {
   errorMessage.value = ''
 }
 
+const loadPaymentDetails = async () => {
+  try {
+    const { doc, getDoc } = await import('firebase/firestore')
+    const { db } = await import('@/services/firebase')
+
+    const userRef = doc(db, 'users', userStore.uid || '')
+    const userSnap = await getDoc(userRef)
+
+    if (userSnap.exists()) {
+      const data = userSnap.data()
+      if (data.bankCode) paymentForm.value.bankCode = data.bankCode
+      if (data.branchNumber) paymentForm.value.branchNumber = data.branchNumber
+      if (data.accountNumber) paymentForm.value.accountNumber = data.accountNumber
+      if (data.accountHolder) paymentForm.value.accountHolder = data.accountHolder
+    }
+  } catch {
+    // לא קריטי אם לא טוענו פרטי תשלום קיימים
+  }
+}
+
+const togglePaymentEdit = () => {
+  successMessage.value = ''
+  errorMessage.value = ''
+  isEditingPayment.value = true
+}
+
+const savePayment = async () => {
+  try {
+    loading.value = true
+    errorMessage.value = ''
+    successMessage.value = ''
+
+    // עדכן ישירות ב-Firestore
+    const { doc, updateDoc } = await import('firebase/firestore')
+    const { db } = await import('@/services/firebase')
+
+    const userRef = doc(db, 'users', userStore.uid || '')
+    const updates: Record<string, string> = {}
+
+    if (paymentForm.value.bankCode?.trim()) updates.bankCode = paymentForm.value.bankCode.trim()
+    if (paymentForm.value.branchNumber?.trim())
+      updates.branchNumber = paymentForm.value.branchNumber.trim()
+    if (paymentForm.value.accountNumber?.trim())
+      updates.accountNumber = paymentForm.value.accountNumber.trim()
+    if (paymentForm.value.accountHolder?.trim())
+      updates.accountHolder = paymentForm.value.accountHolder.trim()
+
+    if (Object.keys(updates).length === 0) {
+      errorMessage.value = 'אנא מלא לפחות שדה אחד'
+      return
+    }
+
+    await updateDoc(userRef, updates)
+
+    successMessage.value = 'פרטי התשלום נשמרו'
+    isEditingPayment.value = false
+  } catch (error) {
+    const err = error as Error
+    errorMessage.value = err.message || 'שגיאה בשמירת פרטי התשלום'
+  } finally {
+    loading.value = false
+  }
+}
+
+const cancelPayment = () => {
+  isEditingPayment.value = false
+  errorMessage.value = ''
+}
+
 const getStoreAddress = () => {
   const parts = [storeForm.value.street, storeForm.value.houseNumber, storeForm.value.city]
   const joined = parts.filter(Boolean).join(' ')
   return joined || '—'
+}
+
+const getBankName = (bankCode: string) => {
+  const bank = banksList.find((b) => b.code === bankCode)
+  return bank?.name || ''
 }
 
 const goToLogin = () => {
@@ -756,6 +936,65 @@ const goToLogin = () => {
 .loader {
   padding: 1rem 1.5rem 1.25rem;
   color: #6b7280;
+}
+
+.warning-card {
+  background: #fef3c7;
+  border: 1.5px solid #fbbf24;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.warning-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.warning-text {
+  flex: 1;
+}
+
+.warning-title {
+  margin: 0;
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.warning-desc {
+  margin: 0.25rem 0 0;
+  color: #b45309;
+  font-size: 0.9rem;
+}
+
+.btn-warning {
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+.btn-warning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
+}
+
+.btn-warning:active {
+  transform: translateY(0);
 }
 
 @media (max-width: 640px) {
