@@ -136,6 +136,7 @@ router.get("/store/:storeId/payout", async (req, res) => {
         $lte: end,
       },
       paymentStatus: "captured",
+      status: { $in: ["confirmed", "in_delivery", "delivered"] }, // Only approved orders
     };
 
     if (status && status !== "all") {
@@ -199,6 +200,7 @@ router.get("/store/:storeId/payout/orders", async (req, res) => {
         shopId: storeId,
         createdAt: { $gte: start, $lte: end },
         paymentStatus: "captured",
+        status: { $in: ["confirmed", "in_delivery", "delivered"] },
       },
       {
         _id: 1,
@@ -219,6 +221,7 @@ router.get("/store/:storeId/payout/orders", async (req, res) => {
       shopId: storeId,
       createdAt: { $gte: start, $lte: end },
       paymentStatus: "captured",
+      status: { $in: ["confirmed", "in_delivery", "delivered"] },
     });
 
     res.json({
