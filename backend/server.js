@@ -51,6 +51,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/uploads/images", express.static("uploads/images"));
 
 /* ======================= MongoDB ======================= */
+console.log("MONGO_URI:", process.env.MONGO_URI);
 mongoose
   .connect(process.env.MONGO_URI)
   .catch((err) => console.error("❌ שגיאה בחיבור למונגו:", err));
@@ -179,3 +180,5 @@ setInterval(checkExpiredOrders, ONE_MINUTE);
 
 // הרץ מיד בהפעלת השרת
 checkExpiredOrders();
+
+console.log("Environment Variables:", process.env);

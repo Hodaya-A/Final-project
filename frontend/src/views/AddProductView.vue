@@ -4,7 +4,7 @@
     <form @submit.prevent="handleSubmit">
       <label>
         שם מוצר:
-        <input v-model="name" required />
+        <input v-model="name" @input="updateCategory" required />
       </label>
 
       <label>
@@ -20,6 +20,15 @@
       <label>
         כתובת תמונה (URL):
         <input v-model="imageUrl" type="url" required />
+      </label>
+
+      <label>
+        קטגוריה:
+        <select v-model="category">
+          <option v-for="cat in categories" :key="cat" :value="cat">
+            {{ cat }}
+          </option>
+        </select>
       </label>
 
       <h3>בחר מיקום על גבי המפה:</h3>
@@ -42,6 +51,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { detectCategory } from '@/stores/products' // Import the category detection function
 import axios from 'axios'
 import L from 'leaflet'
 
@@ -53,9 +63,28 @@ const name = ref('')
 const price = ref(0)
 const expiryDate = ref('')
 const imageUrl = ref('')
+const category = ref('')
 const successMessage = ref('')
 const lat = ref<number | null>(null)
 const lng = ref<number | null>(null)
+
+const categories = [
+  'לחם ומאפים טריים',
+  'פארם ותינוקות',
+  'חד פעמי או מטבח',
+  'אחזקת הבית ובעלי חיים',
+  'חטיפים ומתוקים',
+  'קטניות ודגנים שימורים ובישול',
+  'קפואים',
+  'אורגני ובריאות',
+  'עשירים השקעות',
+  'בשר ודגים',
+  'חלב ביצים וסלטים',
+]
+
+function updateCategory() {
+  category.value = detectCategory(name.value)
+}
 
 let marker: L.Marker | null = null
 
@@ -89,6 +118,7 @@ async function handleSubmit() {
     price: price.value,
     expiryDate: expiryDate.value,
     imageUrl: imageUrl.value,
+    category: category.value,
     location: {
       type: 'Point',
       coordinates: [lng.value, lat.value],
@@ -129,7 +159,8 @@ label {
   font-weight: bold;
 }
 
-input {
+input,
+select {
   padding: 0.5rem;
   border-radius: 6px;
   border: 1px solid #ccc;

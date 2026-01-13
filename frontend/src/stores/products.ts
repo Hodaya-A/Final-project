@@ -49,3 +49,31 @@ export const useProductStore = defineStore('products', {
     },
   },
 })
+
+// Utility function to detect category based on product name
+function detectCategory(productName: string): string {
+  const categories = [
+    { name: 'לחם ומאפים טריים', keywords: ['לחם', 'מאפה', 'באגט'] },
+    { name: 'פארם ותינוקות', keywords: ['חיתול', 'תינוק', 'תרופה'] },
+    { name: 'חד פעמי או מטבח', keywords: ['צלחת', 'כוס', 'סכו"ם'] },
+    { name: 'אחזקת הבית ובעלי חיים', keywords: ['מטאטא', 'חומר ניקוי', 'מזון לחיות'] },
+    { name: 'חטיפים ומתוקים', keywords: ['חטיף', 'שוקולד', 'עוגיה'] },
+    { name: 'קטניות ודגנים שימורים ובישול', keywords: ['אורז', 'עדשים', 'שימורים'] },
+    { name: 'קפואים', keywords: ['גלידה', 'פיצה', 'קפוא'] },
+    { name: 'אורגני ובריאות', keywords: ['אורגני', 'בריאות', 'טבעי'] },
+    { name: 'עשירים השקעות', keywords: ['השקעה', 'עשיר'] },
+    { name: 'בשר ודגים', keywords: ['בשר', 'דג', 'עוף'] },
+    { name: 'חלב ביצים וסלטים', keywords: ['חלב', 'ביצה', 'סלט'] },
+  ]
+
+  for (const category of categories) {
+    if (category.keywords.some((keyword) => productName.includes(keyword))) {
+      return category.name
+    }
+  }
+
+  return 'לא מוגדר'
+}
+
+// Export the function for use in other components
+export { detectCategory }

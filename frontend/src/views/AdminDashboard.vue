@@ -8,6 +8,15 @@
       <button @click="goToReports">הנפקת דוחות</button>
       <button @click="goToInventory">ניהול מלאי</button>
     </div>
+
+    <div class="category-selection">
+      <label for="category">בחר קטגוריה:</label>
+      <select id="category" v-model="selectedCategory">
+        <option v-for="category in categories" :key="category" :value="category">
+          {{ category }}
+        </option>
+      </select>
+    </div>
   </div>
 
   <div v-else class="unauthorized">
@@ -24,6 +33,22 @@ import axios from 'axios'
 const userStore = useUserStore()
 const isAdmin = userStore.isAdmin
 const router = useRouter()
+
+const categories = [
+  'לחם ומאפים טריים',
+  'פארם ותינוקות',
+  'חד פעמי או מטבח',
+  'אחזקת הבית ובעלי חיים',
+  'חטיפים ומתוקים',
+  'קטניות ודגנים שימורים ובישול',
+  'קפואים',
+  'אורגני ובריאות',
+  'עשירים השקעות',
+  'בשר ודגים',
+  'חלב ביצים וסלטים',
+]
+
+const selectedCategory = ''
 
 function goToReports() {
   router.push('/admin/reports')
@@ -47,7 +72,6 @@ function goToUserManagement() {
 }
 
 function goToInventory() {
-  // ✅ עדכון לפי האפשרות המומלצת — נתיב קיים ב-router שלך
   router.push('/shop/inventory')
 }
 </script>
@@ -76,6 +100,21 @@ function goToInventory() {
   flex-direction: column;
   gap: 1rem;
   margin-top: 2rem;
+}
+
+.category-selection {
+  margin-top: 2rem;
+}
+
+.category-selection label {
+  font-weight: bold;
+  margin-right: 1rem;
+}
+
+.category-selection select {
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
 }
 
 button {
