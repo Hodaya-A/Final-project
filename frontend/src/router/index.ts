@@ -2,18 +2,13 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
 import CartView from '../views/CartView.vue'
-// import LoginView from '../views/LoginView.vue'
-// import RegisterView from '../views/RegisterView.vue'
-// import ProductCard from '../components/ProductCard.vue'
 import AdminDashboardView from '../views/AdminDashboard.vue'
 import AddProductView from '../views/AddProductView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
 import ThankYouView from '@/views/ThankYouView.vue'
-import MyOrdersView from '@/views/MyOrdersView.vue' // ✅ חדש
-// import AdminReportsView from '@/views/AdminReportsView.vue'
+import MyOrdersView from '@/views/MyOrdersView.vue'
 
 import { useUserStore } from '@/stores/user'
-// import { auth } from '@/services/firebase'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -50,7 +45,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/ShopInventoryView.vue'),
     meta: { requiresAuth: false },
   },
-
   {
     path: '/thank-you',
     name: 'thank-you',
@@ -152,7 +146,8 @@ const routes: RouteRecordRaw[] = [
     path: '/courier',
     name: 'courier-dashboard',
     component: () => import('@/views/CourierDashboard.vue'),
-    meta: { requiresAuth: true },
+    // ✅ תיקון: הוספתי כאן את בדיקת התפקיד כדי שלא כולם יוכלו להיכנס
+    meta: { requiresAuth: true, roles: ['courier'] },
   },
   {
     path: '/courier/wallet',
@@ -160,20 +155,8 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/components/CourierWallet.vue'),
     meta: { requiresAuth: true, roles: ['courier'] },
   },
-  // {
-  // path: '/store-products',
-  // name: 'store-products',
-  // component: () => import('@/views/StoreProducts.vue'),
-  // meta: { requiresAuth: true, roles: ['storeManager'] },
-  // },
-  // {
-  // path: '/store-reports',
-  // name: 'store-reports',
-  // component: () => import('@/views/StoreReports.vue'),
-  // meta: { requiresAuth: true, roles: ['storeManager'] },
-  // },
 
-  // אופציונלי 404:
+  // אופציונלי: דף 404 (מומלץ להשאיר פעיל אם יש לך קומפוננטה כזו)
   // { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFound.vue') },
 ]
 
@@ -181,34 +164,52 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   scrollBehavior(to, from, savedPosition) {
-    // אם יש מיקום שמור (כפתור חזור), חזור אליו
     if (savedPosition) {
       return savedPosition
     }
-    // אחרת, גלול לראש הדף
     return { top: 0, behavior: 'smooth' }
   },
 })
 
-// ✅ הגנה על דפים שדורשים הרשאת admin או authentication
+// ✅ הגנה משופרת על הנתיבים
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
-  // make sure store has initialized auth state (on page refresh)
+  // 1. אתחול המשתמש
   try {
     await userStore.initializeUser()
   } catch (e) {
-    // ignore initialization errors and proceed to checks
     console.warn('User initialization error in router guard', e)
   }
 
+  // 2. בדיקת אדמין
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
-    next('/')
-  } else if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    next('/auth')
-  } else {
-    next()
+    // אם נדרש אדמין והמשתמש אינו אדמין -> לדף הבית
+    return next('/')
   }
+
+  // 3. בדיקת התחברות כללית
+  if (to.meta.requiresAuth && !userStore.isLoggedIn) {
+    // אם נדרשת התחברות והמשתמש לא מחובר -> לדף התחברות
+    return next('/auth')
+  }
+
+  // 4. ✅ בדיקת תפקידים (Roles) - התיקון הקריטי
+  if (to.meta.roles) {
+    const requiredRoles = to.meta.roles as string[]
+
+    // הנחה: ב-store שלך יש שדה בשם role.
+    // אם השדה נקרא אחרת (למשל userStore.user?.role), יש לשנות כאן בהתאם.
+    const userRole = userStore.role
+
+    if (!userRole || !requiredRoles.includes(userRole)) {
+      // אם למשתמש אין תפקיד, או שהתפקיד שלו לא נמצא ברשימה המורשית -> חסימה
+      return next('/')
+    }
+  }
+
+  // אם הכל תקין, המשך לנתיב
+  next()
 })
 
 export default router

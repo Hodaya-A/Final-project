@@ -1,25 +1,21 @@
 // backend/routes/reports.js
 import express from "express";
 import { db } from "../config/firebaseAdmin.js";
-import Product from "../models/Product.js";
 import Order from "../models/Order.js";
+import Inventory from "../models/Inventory.js";
 
 const router = express.Router();
 
-// � דוח הזמנות ממתינות לאישור
+// 🕒 דוח הזמנות ממתינות (רק למוכר הנוכחי)
 router.get("/pending", async (req, res) => {
   try {
     const { sellerId } = req.query;
-
-    if (!sellerId) {
+    if (!sellerId)
       return res.status(400).json({ error: "sellerId is required" });
-    }
 
-    // חפש הזמנות ממתינות (לא מאושרות + לא מוכנות לאיסוף)
-    // חפש גם עם sellerId וגם עם DEFAULT (compatibility)
     const filter = {
       $and: [
-        { $or: [{ sellerId }, { sellerId: "DEFAULT" }] },
+        { sellerId: sellerId }, // ✅ חובה להתאים למוכר
         {
           $or: [
             { readyForPickup: { $exists: false } },
@@ -29,46 +25,80 @@ router.get("/pending", async (req, res) => {
       ],
     };
 
-    console.log("🔍 [Reports] Searching pending orders with filter:", filter);
-
     const pendingOrders = await Order.find(filter).sort({ createdAt: -1 });
-
-    console.log(
-      `📦 [Reports] Found ${pendingOrders.length} pending orders for sellerId: ${sellerId}`
-    );
-
-    res.json({
-      orders: pendingOrders,
-      count: pendingOrders.length,
-    });
+    res.json({ orders: pendingOrders, count: pendingOrders.length });
   } catch (err) {
-    console.error("❌ שגיאה בדוח הזמנות ממתינות:", err);
     res.status(500).json({ error: "Failed to fetch pending orders" });
   }
 });
 
-// �📈 דוח מכירות כולל
+// 📈 דוח מכירות + מלאי (מאובטח בקפדנות)
 router.get("/sales", async (req, res) => {
   try {
+    const { sellerId } = req.query;
+    if (!sellerId)
+      return res.status(400).json({ error: "sellerId is required" });
+
+    console.log(`🔒 מפיק דוח מכירות מאובטח עבור: ${sellerId}`);
+
     const snapshot = await db.collection("orders").get();
 
     let totalRevenue = 0;
     let orderCount = 0;
-    let productStats = {}; // { productName: { sold: 0, total: 0 } }
+    let productStats = {};
 
+    // 1. איסוף נתונים מההזמנות
     snapshot.forEach((doc) => {
       const order = doc.data();
-      totalRevenue += order.total;
+
+      // ✅ סינון קפדני: אם ההזמנה לא שייכת למוכר הזה - דלג עליה
+      if (order.sellerId !== sellerId) return;
+
+      if (order.status === "REJECTED" || order.status === "CANCELLED") return;
+
+      totalRevenue += order.total || order.totalPrice || 0;
       orderCount++;
 
-      order.items.forEach((item) => {
-        if (!productStats[item.name]) {
-          productStats[item.name] = { sold: 0, total: 0 };
-        }
-        productStats[item.name].sold += item.quantity;
-        productStats[item.name].total += item.price * item.quantity;
-      });
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((item) => {
+          const rawName = item.name || item.productName;
+          if (!rawName) return;
+          const name = rawName.trim(); // ניקוי רווחים
+
+          if (!productStats[name]) {
+            productStats[name] = {
+              sold: 0,
+              total: 0,
+              currentStock: 0,
+            };
+          }
+          productStats[name].sold += item.quantity || 0;
+          productStats[name].total += (item.price || 0) * (item.quantity || 0);
+        });
+      }
     });
+
+    // 2. שליפת מלאי (רק של המוכר הספציפי!)
+    const productNames = Object.keys(productStats);
+
+    if (productNames.length > 0) {
+      // ✅ אבטחה: מחפשים רק מוצרים ששייכים ל-sellerId הזה
+      const inventoryItems = await Inventory.find({
+        name: { $in: productNames },
+        sellerId: sellerId, // <--- זה הפילטר הקריטי
+      }).select("name quantity sellerId");
+
+      console.log(
+        `📦 נמצאו ${inventoryItems.length} מוצרים תואמים במלאי של ${sellerId}`
+      );
+
+      inventoryItems.forEach((invItem) => {
+        const cleanName = invItem.name.trim();
+        if (productStats[cleanName]) {
+          productStats[cleanName].currentStock = invItem.quantity;
+        }
+      });
+    }
 
     res.json({ totalRevenue, orderCount, productStats });
   } catch (err) {
@@ -77,48 +107,63 @@ router.get("/sales", async (req, res) => {
   }
 });
 
-// ⏰ דוח מוצרים קרובים לתפוגה (תוך 10 ימים)
+// ⏰ דוח תפוגה (מאובטח)
 router.get("/expiring", async (req, res) => {
   try {
+    const { sellerId } = req.query;
+    if (!sellerId)
+      return res.status(400).json({ error: "sellerId is required" });
+
     const start = new Date();
     start.setHours(0, 0, 0, 0);
-
     const end = new Date();
     end.setDate(end.getDate() + 10);
     end.setHours(23, 59, 59, 999);
 
-    const expiringProducts = await Product.find({
+    // ✅ שליפה רק של מוצרים ששייכים למוכר
+    const expiringProducts = await Inventory.find({
       expiryDate: { $gte: start, $lte: end },
+      sellerId: sellerId,
     });
 
     res.json(expiringProducts);
   } catch (err) {
-    console.error("❌ שגיאה בדוח תפוגה:", err);
     res.status(500).json({ message: "שגיאה בדוח תפוגה" });
   }
 });
 
-// 🚫 דוח מוצרים שלא נמכרו כלל
+// 🚫 דוח לא נמכרו (מאובטח)
 router.get("/unsold", async (req, res) => {
   try {
+    const { sellerId } = req.query;
+    if (!sellerId)
+      return res.status(400).json({ error: "sellerId is required" });
+
     const snapshot = await db.collection("orders").get();
-    const soldProductIds = new Set();
+    const soldNames = new Set();
 
     snapshot.forEach((doc) => {
-      const order = doc.data();
-      order.items.forEach((item) => soldProductIds.add(item.id));
+      const o = doc.data();
+      // ✅ סינון הזמנות לפי מוכר
+      if (o.sellerId !== sellerId) return;
+
+      if (o.items)
+        o.items.forEach((i) => {
+          const n = i.name || i.productName;
+          if (n) soldNames.add(n.trim());
+        });
     });
 
-    const unsoldProducts = await Product.find({
-      _id: { $nin: Array.from(soldProductIds) },
+    // ✅ שליפת מלאי רק של המוכר
+    const unsold = await Inventory.find({
+      name: { $nin: Array.from(soldNames) },
+      sellerId: sellerId,
     });
 
-    res.json(unsoldProducts);
+    res.json(unsold);
   } catch (err) {
-    console.error("❌ שגיאה בדוח מוצרים לא נמכרו:", err);
-    res.status(500).json({ message: "שגיאה בדוח מוצרים לא נמכרו" });
+    res.status(500).json({ message: "שגיאה בדוח לא נמכרו" });
   }
 });
 
-// 🟢 ייצוא ברירת מחדל (חובה לגרסת ESM)
 export default router;
