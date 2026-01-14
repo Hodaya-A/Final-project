@@ -2,9 +2,7 @@
   <div class="inventory-page animate-fade-in" v-if="isStoreManager">
     <h1 class="page-title">ניהול מוצרים לחנות שלך</h1>
 
-    <!-- גריד עיקרי -->
     <div class="inventory-grid">
-      <!-- תיבת העלאה -->
       <div class="upload-card">
         <h2 class="card-title">העלאת קובץ מלאי</h2>
 
@@ -37,7 +35,6 @@
         </p>
       </div>
 
-      <!-- טבלת המלאי -->
       <div class="inventory-card">
         <div class="card-header">
           <h2 class="card-title">רשימת מוצרים</h2>
@@ -57,12 +54,13 @@
               <tr>
                 <th>ברקוד</th>
                 <th>שם מוצר</th>
+                <th>מותג</th>
                 <th>תמונה</th>
-                <th>מחיר</th>
+                <th>קטגוריה</th>
+                <th>מחיר מקורי</th>
                 <th>מחיר מבצע</th>
                 <th>כמות</th>
                 <th>תוקף</th>
-                <th>קטגוריה</th>
                 <th>פעולות</th>
               </tr>
             </thead>
@@ -70,6 +68,11 @@
               <tr v-for="product in products" :key="product._id">
                 <td>{{ product._id?.slice(-4) || '-' }}</td>
                 <td>{{ product.name }}</td>
+
+                <td>
+                  <strong>{{ product.brand || '-' }}</strong>
+                </td>
+
                 <td class="image-cell">
                   <div
                     v-if="product.imageUrl && isValidImageUrl(product.imageUrl)"
@@ -80,11 +83,33 @@
                   </div>
                   <span v-else class="no-image">אין תמונה</span>
                 </td>
-                <td>₪{{ product.price }}</td>
-                <td>₪{{ typeof product.salePrice === 'number' ? product.salePrice : '-' }}</td>
+                <td>{{ product.category }}</td>
+
+                <td>
+                  <span
+                    :style="
+                      product.salePrice && product.salePrice < product.price
+                        ? 'text-decoration: line-through; color: #999;'
+                        : ''
+                    "
+                  >
+                    ₪{{ product.price }}
+                  </span>
+                </td>
+
+                <td>
+                  <strong
+                    v-if="product.salePrice && product.salePrice < product.price"
+                    style="color: #d32f2f; font-size: 1.1em"
+                  >
+                    ₪{{ product.salePrice }}
+                  </strong>
+                  <span v-else>-</span>
+                </td>
+
                 <td>{{ product.quantity ?? 0 }}</td>
                 <td>{{ formatDate(product.expiryDate || '') }}</td>
-                <td>{{ product.category }}</td>
+
                 <td class="actions">
                   <button @click="openEditModal(product)" class="edit-btn" title="ערוך">
                     <svg
@@ -155,13 +180,17 @@
       </div>
     </div>
 
-    <!-- הוספת מוצר בודד -->
     <div class="single-product-card">
       <h2 class="card-title">הוספת מוצר בודד</h2>
       <form @submit.prevent="handleSubmit" class="product-form">
         <label>
           שם מוצר:
-          <input v-model="name" required />
+          <input v-model="name" required placeholder="לדוגמה: חלב טרי" />
+        </label>
+
+        <label>
+          מותג / חברה:
+          <input v-model="brand" required placeholder="לדוגמה: תנובה" />
         </label>
 
         <label>
@@ -175,8 +204,8 @@
         </label>
 
         <label>
-          כמות:
-          <input v-model.number="quantity" type="number" min="0" />
+          כמות במלאי:
+          <input v-model.number="quantity" type="number" min="0" required />
         </label>
 
         <label>
@@ -186,13 +215,17 @@
 
         <label>
           קטגוריה:
-          <input v-model="category" required />
+          <select v-model="category" required>
+            <option value="" disabled selected>בחר קטגוריה...</option>
+            <option v-for="cat in categories" :key="cat" :value="cat">
+              {{ cat }}
+            </option>
+          </select>
         </label>
 
         <div class="image-upload-section">
           <label class="section-label">תמונת מוצר:</label>
 
-          <!-- כפתורים להעלאה - מוצגים רק כשאין תמונה -->
           <div v-if="!imageUrl" class="image-buttons-group">
             <label class="btn-upload-file">
               <input
@@ -227,7 +260,6 @@
             </button>
           </div>
 
-          <!-- תצוגת תמונה עם כפתור שנה - מוצג כשיש תמונה -->
           <div v-if="imageUrl" class="current-image-preview">
             <div class="image-with-checkmark">
               <img :src="imageUrl" alt="תמונת מוצר" />
@@ -256,7 +288,6 @@
       </form>
     </div>
 
-    <!-- Modal עריכת מוצר -->
     <transition name="fade-zoom">
       <div v-if="showEditModal" class="modal-backdrop" @click.self="closeEditModal">
         <div class="modal edit-modal">
@@ -265,6 +296,11 @@
             <label>
               שם מוצר:
               <input v-model="editedProduct.name" required />
+            </label>
+
+            <label>
+              מותג:
+              <input v-model="editedProduct.brand" />
             </label>
 
             <label>
@@ -278,13 +314,22 @@
             </label>
 
             <label>
+              כמות במלאי:
+              <input v-model.number="editedProduct.quantity" type="number" />
+            </label>
+
+            <label>
               תאריך תפוגה:
               <input v-model="editedProduct.expiryDate" type="date" />
             </label>
 
             <label>
               קטגוריה:
-              <input v-model="editedProduct.category" />
+              <select v-model="editedProduct.category">
+                <option v-for="cat in categories" :key="cat" :value="cat">
+                  {{ cat }}
+                </option>
+              </select>
             </label>
 
             <label>
@@ -315,7 +360,6 @@
       </div>
     </transition>
 
-    <!-- Modal לאישור תמונה לפני שמירה -->
     <transition name="fade-zoom">
       <div v-if="showImagePreviewModal" class="modal-backdrop" @click.self="closeImagePreviewModal">
         <div class="modal preview-modal">
@@ -342,7 +386,6 @@
       </div>
     </transition>
 
-    <!-- ⭐ Modal חדש: בחירת תמונה מחיפוש Google -->
     <transition name="fade-zoom">
       <div
         v-if="showImageSelectionModal"
@@ -352,7 +395,7 @@
         <div class="modal image-selection-modal">
           <h2 class="modal-title">בחרי תמונה עבור: {{ selectedProduct?.name }}</h2>
 
-          <div v-if="searchingImages" class="loading-message">🔍 מחפש תמונות...</div>
+          <div v-if="searchingImages" class="loading-message">מחפש תמונות...</div>
 
           <div v-else class="images-grid">
             <div
@@ -375,7 +418,6 @@
       </div>
     </transition>
 
-    <!-- Modal להעלאת תמונה -->
     <transition name="fade-zoom">
       <div v-if="showUploadImageModal" class="modal-backdrop" @click.self="closeUploadImageModal">
         <div class="modal">
@@ -405,7 +447,6 @@
       </div>
     </transition>
 
-    <!-- Modal לבחירת סוג העלאה -->
     <transition name="fade-zoom">
       <div v-if="showModal" class="modal-backdrop" @click.self="closeModal">
         <div class="modal">
@@ -434,7 +475,9 @@ const userStore = useUserStore()
 const isStoreManager = computed(() => userStore.role === 'storeManager')
 const sellerId = userStore.email
 
+// משתנים לטופס הוספה/עריכה
 const name = ref('')
+const brand = ref('') // ✅ הוספתי משתנה למותג
 const price = ref(0)
 const salePrice = ref(0)
 const quantity = ref(0)
@@ -442,13 +485,29 @@ const expiryDate = ref('')
 const category = ref('')
 const imageUrl = ref('')
 
+// רשימת הקטגוריות הקבועה
+const categories = [
+  'לחם ומאפים טריים',
+  'פארם ותינוקות',
+  'חד פעמי ומטבח',
+  'אחזקת הבית ובעלי חיים',
+  'חטיפים ומתוקים',
+  'קטניות ודגנים',
+  'שימורים ובישול',
+  'קפואים',
+  'אורגני ובריאות',
+  'משקאות',
+  'בשר ודגים',
+  'חלב, ביצים וסלטים',
+]
+
 const products = ref<Product[]>([])
 const editingId = ref<string | null>(null)
 
 const file = ref<File | null>(null)
 const uploadMessage = ref('')
 const generatingImage = ref(false)
-const useAIForImages = ref(true) // ברירת מחדל: כן
+const useAIForImages = ref(true)
 const generatingImageForId = ref<string | null>(null)
 const showUploadImageModal = ref(false)
 const selectedProductForImage = ref<Product | null>(null)
@@ -458,13 +517,11 @@ const showEditModal = ref(false)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const editedProduct = ref<Record<string, any>>({})
 
-// ⭐ חדש: modal לבחירת תמונות מחיפוש
 const showImageSelectionModal = ref(false)
 const searchedImages = ref<SearchedImage[]>([])
 const selectedProduct = ref<Product | null>(null)
 const searchingImages = ref(false)
 
-// משתנים להעלאת תמונה למוצר בודד
 const uploadingImageForSingleProduct = ref(false)
 const singleProductImageFile = ref<File | null>(null)
 const showImagePreviewModal = ref(false)
@@ -486,19 +543,16 @@ function closeModal() {
 }
 
 function changeImage() {
-  // איפוס התמונה כדי להציג שוב את כפתורי ההעלאה
   imageUrl.value = ''
   singleProductImageFile.value = null
 }
 
-// פונקציה חדשה ליצירת תמונה עם AI למוצר בודד - עם תצוגה מקדימה
 async function generateAIImageForSingleProduct() {
   if (!name.value) {
     alert('אנא הזן שם מוצר קודם')
     return
   }
 
-  // פותח modal לבחירת תמונה - כמו בטבלה
   selectedProduct.value = {
     _id: '',
     name: name.value,
@@ -506,6 +560,7 @@ async function generateAIImageForSingleProduct() {
     salePrice: salePrice.value,
     quantity: quantity.value,
     category: category.value,
+    brand: brand.value, // הוספת מותג לאובייקט הזמני
     expiryDate: expiryDate.value,
     imageUrl: imageUrl.value,
     shopId: '',
@@ -534,7 +589,6 @@ async function generateAIImageForSingleProduct() {
   }
 }
 
-// פונקציה לטיפול בבחירת קובץ תמונה למוצר בודד
 function onSingleProductImageChange(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -544,7 +598,6 @@ function onSingleProductImageChange(event: Event) {
   singleProductImageFile.value = file
   uploadingImageForSingleProduct.value = true
 
-  // העלאת התמונה לשרת
   const formData = new FormData()
   formData.append('image', file)
 
@@ -554,7 +607,6 @@ function onSingleProductImageChange(event: Event) {
     })
     .then(({ data }) => {
       if (data.success && data.imageUrl) {
-        // הצג תצוגה מקדימה לאישור
         previewImageUrl.value = data.imageUrl
         previewImageSource.value = 'upload'
         showImagePreviewModal.value = true
@@ -569,7 +621,6 @@ function onSingleProductImageChange(event: Event) {
     })
 }
 
-// פונקציה לאישור התמונה ושמירתה
 function confirmImageAndSave() {
   imageUrl.value = previewImageUrl.value
   showImagePreviewModal.value = false
@@ -578,12 +629,10 @@ function confirmImageAndSave() {
   )
 }
 
-// פונקציה לסגירת מודל התצוגה המקדימה
 function closeImagePreviewModal() {
   showImagePreviewModal.value = false
   previewImageUrl.value = ''
   previewImageSource.value = 'upload'
-  // אפס את שדה הקובץ
   singleProductImageFile.value = null
 }
 
@@ -615,27 +664,23 @@ async function generateAIImageForEdit() {
   }
 }
 
-// פונקציה לפתיחת מודל העלאת תמונה
 function openUploadImageModal(product: Product) {
   selectedProductForImage.value = product
   showUploadImageModal.value = true
   imageFileToUpload.value = null
 }
 
-// פונקציה לסגירת מודל העלאת תמונה
 function closeUploadImageModal() {
   showUploadImageModal.value = false
   selectedProductForImage.value = null
   imageFileToUpload.value = null
 }
 
-// פונקציה לטיפול בבחירת קובץ תמונה
 function onImageFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   imageFileToUpload.value = target.files?.[0] || null
 }
 
-// פונקציה להעלאת תמונה לשרת
 async function uploadImageFile() {
   if (!imageFileToUpload.value || !selectedProductForImage.value) {
     alert('❌ אנא בחר קובץ תמונה')
@@ -651,7 +696,6 @@ async function uploadImageFile() {
     })
 
     if (data.success && data.imageUrl) {
-      // עדכון התמונה של המוצר
       await axios.put(`/api/inventory/${selectedProductForImage.value._id}`, {
         imageUrl: data.imageUrl,
       })
@@ -666,7 +710,6 @@ async function uploadImageFile() {
   }
 }
 
-// פונקציה ליצירת תמונה עם AI למוצר בטבלה
 async function generateImageForProduct(product: Product) {
   selectedProduct.value = product
   searchingImages.value = true
@@ -696,26 +739,22 @@ async function selectSearchedImage(selectedImageUrl: string) {
   if (!selectedProduct.value) return
 
   try {
-    // אם זה מוצר מהטבלה - עדכן אותו
     if (selectedProduct.value._id) {
       console.log('עדכון תמונה למוצר:', selectedProduct.value._id, 'URL:', selectedImageUrl)
       const response = await axios.put(`/api/inventory/${selectedProduct.value._id}`, {
         imageUrl: selectedImageUrl,
-        sellerId: sellerId, // ✅ חשוב לשלוח את ה-sellerId
+        sellerId: sellerId,
       })
       console.log('תגובה מהשרת:', response.data)
 
-      // סגור את המודל לפני הטעינה מחדש
       showImageSelectionModal.value = false
       searchedImages.value = []
       selectedProduct.value = null
 
-      // טען מחדש את המוצרים
       await loadProducts()
 
       alert('✅ התמונה נשמרה בהצלחה!')
     } else {
-      // אם זה מוצר בודד - שמור את ה-URL למשתנה
       imageUrl.value = selectedImageUrl
       alert('✅ תמונה נבחרה בהצלחה!')
 
@@ -773,19 +812,16 @@ async function handleUpload(mode: 'update' | 'renew') {
     const formData = new FormData()
     formData.append('file', file.value)
     formData.append('mode', mode)
-    formData.append('useAI', useAIForImages.value.toString()) // הוספת פרמטר AI
+    formData.append('useAI', useAIForImages.value.toString())
 
-    // ✅ צרפי את shopId ו-sellerId
     formData.append('shopId', userStore.storeId || userStore.uid || '')
     formData.append('sellerId', sellerId)
 
-    // שלוף פרטי החנות מ-user store ושלח אותם
     formData.append('shopName', userStore.storeName || '')
     formData.append('shopCity', userStore.city || '')
     formData.append('shopStreet', userStore.street || '')
     formData.append('shopNumber', userStore.houseNumber || '')
 
-    // אל תקבעי Content-Type ידנית – axios יוסיף boundary נכון
     const { data } = await axios.post('/api/inventory/upload', formData)
 
     uploadMessage.value =
@@ -811,9 +847,11 @@ function downloadExcel() {
   const worksheet = XLSX.utils.json_to_sheet(
     products.value.map((item: Product) => ({
       'שם מוצר': item.name,
+      מותג: item.brand || '-', // הוספה לאקסל
       מחיר: item.price,
       'מחיר מבצע': item.salePrice || '-',
       קטגוריה: item.category || '-',
+      כמות: item.quantity || 0,
       'תאריך תפוגה': item.expiryDate ? new Date(item.expiryDate).toLocaleDateString('he-IL') : '-',
       'קישור תמונה': item.imageUrl || '-',
     })),
@@ -828,7 +866,6 @@ async function loadProducts() {
   try {
     console.log('🔄 טוען מוצרים מהשרת...')
     const { data } = await axios.get(`/api/inventory?sellerId=${encodeURIComponent(sellerId)}`)
-    // יצירת מערך חדש כדי לוודא שה-Vue מזהה את השינוי
     products.value = [...data]
     console.log(`✅ נטענו ${products.value.length} מוצרים`)
   } catch (err) {
@@ -844,7 +881,6 @@ async function deleteAllInventory() {
   if (!confirmDelete) return
 
   try {
-    // מחיקה של כל המוצרים של המוכר הנוכחי
     await axios.delete(`/api/inventory/all?sellerId=${encodeURIComponent(sellerId)}`)
     alert('✅ כל המלאי נמחק בהצלחה!')
     await loadProducts()
@@ -861,6 +897,7 @@ onMounted(() => {
 async function handleSubmit() {
   const product = {
     name: name.value,
+    brand: brand.value, // ✅ הוספת המותג לאובייקט
     price: price.value,
     salePrice: salePrice.value,
     quantity: quantity.value,
@@ -890,6 +927,7 @@ async function handleSubmit() {
 function clearForm() {
   editingId.value = null
   name.value = ''
+  brand.value = '' // איפוס המותג
   price.value = 0
   salePrice.value = 0
   quantity.value = 0
@@ -915,19 +953,13 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('he-IL')
 }
 
-// פונקציה לבדיקת תקינות URL של תמונה
 function isValidImageUrl(url: string): boolean {
   if (!url) return false
-
-  // אם זה נתיב מקומי שמתחיל ב-/uploads/ - זה תקין
   if (url.startsWith('/uploads/')) return true
-
-  // בדיקה אם זה URL תקין
   try {
     const urlObj = new URL(url)
     return urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
   } catch {
-    // אם זה לא URL מלא, אבל נראה כמו נתיב תמונה - תן לו צ'אנס
     return (
       url.includes('.jpg') ||
       url.includes('.jpeg') ||
@@ -938,17 +970,13 @@ function isValidImageUrl(url: string): boolean {
   }
 }
 
-// פונקציה לטיפול בשגיאות טעינת תמונות
 function handleImageError(event: Event) {
   const img = event.target as HTMLImageElement
   img.style.display = 'none'
-  // החלף את התמונה השבורה ב"אין תמונה"
   if (img.parentElement) {
     img.parentElement.innerHTML = '<span class="no-image">אין תמונה</span>'
   }
 }
-
-// הגדרת טיפוס SearchedImage מקומית
 
 type SearchedImage = {
   url: string
@@ -1262,7 +1290,8 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 
-.product-form input {
+.product-form input,
+.product-form select {
   margin-top: 0.4rem;
   padding: 0.7rem;
   border: 1px solid #e5e7eb;
@@ -1272,7 +1301,8 @@ tbody tr:last-child td {
   background: white;
 }
 
-.product-form input:focus {
+.product-form input:focus,
+.product-form select:focus {
   outline: none;
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
@@ -1380,7 +1410,8 @@ tbody tr:last-child td {
   font-size: 0.9rem;
 }
 
-.edit-form input {
+.edit-form input,
+.edit-form select {
   margin-top: 0.4rem;
   padding: 0.7rem;
   border: 1px solid #e5e7eb;
@@ -1389,7 +1420,8 @@ tbody tr:last-child td {
   transition: all 0.2s ease;
 }
 
-.edit-form input:focus {
+.edit-form input:focus,
+.edit-form select:focus {
   outline: none;
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);

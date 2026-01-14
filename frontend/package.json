@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@vee-validate/rules": "^4.15.1",
     "axios": "^1.9.0",
     "chart.js": "^4.5.1",
     "emailjs-com": "^3.2.0",
@@ -22,6 +23,7 @@
     "lucide-vue-next": "^0.546.0",
     "pinia": "^3.0.1",
     "socket.io-client": "^4.8.3",
+    "vee-validate": "^4.15.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vue-slider-component": "^3.2.24",

@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const router = express.Router();
-// בראש הקובץ (אחרי require):
+
+// --- מנגנון Cache (נשמר מהקוד שלך) ---
 const cache = new Map(); // key -> { data, expires }
 const TTL_MS = 10 * 60 * 1000; // 10 דקות
 
@@ -21,12 +22,45 @@ function setCache(key, data) {
   cache.set(key, { data, expires: Date.now() + TTL_MS });
 }
 
-// ===== /streets – רשימת רחובות לעיר עם Nominatim bbox + Overpass mirrors + cache =====
+// ✅ הוספה חדשה: הראוט הראשי לטיפול בבקשות המפה מהפרונט-אנד
+// זה פותר את שגיאת ה-CORS ב-ProductMapView.vue
+router.get("/", async (req, res) => {
+  try {
+    const { address } = req.query;
+
+    if (!address) {
+      return res.status(400).json({ error: "Address is required" });
+    }
+
+    // פנייה ל-Nominatim דרך השרת עם Header מזהה (חובה!)
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+      String(address)
+    )}&limit=1`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "fresh-end-app/1.0 (contact: admin@fresh-end)",
+        "Accept-Language": "he,en", // מעדיף תוצאות בעברית
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Nominatim error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("Geocode error:", error.message);
+    res.status(500).json({ error: "Failed to fetch coordinates" });
+  }
+});
+
+// ===== /streets – רשימת רחובות לעיר =====
 router.get("/streets", async (req, res) => {
   const { city, q = "" } = req.query;
   if (!city) return res.json([]);
 
-  // קאש מלא לפי עיר
   const cacheKey = `streets_all|${city}`;
   const cached = getCache(cacheKey);
   if (cached) {
@@ -37,7 +71,7 @@ router.get("/streets", async (req, res) => {
   }
 
   try {
-    // 1) מבקשים מ-Nominatim את ה-bbox של העיר (מהיר ויציב)
+    // 1) Nominatim bbox
     const nomiUrl = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=il&addressdetails=1&city=${encodeURIComponent(
       String(city)
     )}`;
@@ -50,19 +84,16 @@ router.get("/streets", async (req, res) => {
     }
     const ndata = await nr.json();
     if (!Array.isArray(ndata) || !ndata.length) {
-      console.warn("Nominatim no results for city:", city);
       return res.json([]);
     }
 
-    // Nominatim מחזיר boundingbox: [south, north, west, east] כמחרוזות
     const bb = ndata[0].boundingbox;
-    // נמפה ל-S, N, W, E
     const south = Number(bb[0]);
     const north = Number(bb[1]);
     const west = Number(bb[2]);
     const east = Number(bb[3]);
 
-    // 2) ניסוי מול מספר מראות Overpass עם bbox (מהיר יותר מ-area)
+    // 2) Overpass API Mirrors
     const MIRRORS = [
       "https://overpass-api.de/api/interpreter",
       "https://z.overpass-api.de/api/interpreter",
@@ -70,7 +101,6 @@ router.get("/streets", async (req, res) => {
       "https://overpass.kumi.systems/api/interpreter",
     ];
 
-    // שאילתה: כל ways עם highway + name בתוך ה-bbox
     const query = `
 [out:json][timeout:40];
 way(${south},${west},${north},${east})["highway"]["name"];
@@ -88,23 +118,19 @@ out tags;`;
     }
 
     let odata = null;
-    let lastErr = null;
     for (const m of MIRRORS) {
       try {
         odata = await tryOne(m);
-        break; // הצליח באחד המראות
+        break;
       } catch (e) {
-        lastErr = e;
-        console.warn("Overpass mirror failed:", e.message);
         continue;
       }
     }
     if (!odata) {
-      console.error("All Overpass mirrors failed:", lastErr?.message);
       return res.status(502).json([]);
     }
 
-    // 3) חילוץ שמות רחובות, ייחוד, ניקוי, מיון
+    // 3) Process Results
     let roads = (odata.elements || [])
       .map((el) => el?.tags?.name ?? null)
       .filter(Boolean);
@@ -114,7 +140,7 @@ out tags;`;
       .filter((s) => s.length > 1)
       .sort((a, b) => a.localeCompare(b, "he"));
 
-    setCache(cacheKey, roads); // נשמור ל-10 דק'
+    setCache(cacheKey, roads);
 
     const prefix = String(q).trim();
     if (!prefix) return res.json(roads);
@@ -126,7 +152,7 @@ out tags;`;
   }
 });
 
-// טוען את רשימת הערים מקובץ JSON
+// --- טעינת רשימת ערים ---
 const citiesPath = path.join(__dirname, "../data/cities.json");
 let citiesList = [];
 
@@ -137,43 +163,13 @@ try {
     citiesList = parsed;
     console.log(`✅ נטענו ${citiesList.length} ערים מתוך cities.json`);
   } else {
-    console.warn("⚠️ cities.json לא מכיל מערך תקין, משתמשים ברשימה ברירת מחדל");
     citiesList = ["ירושלים", "תל אביב-יפו", "חיפה", "באר שבע"];
   }
 } catch (e) {
-  console.error("❌ שגיאה בטעינת cities.json:", e.message);
   citiesList = ["ירושלים", "תל אביב-יפו", "חיפה", "באר שבע"];
 }
 
-// ✅ אימות כתובת – מחזיר גם פורמט מנורמל וגם lat/lng
-// router.get("/validate", async (req, res) => {
-// const { address } = req.query;
-// if (!address || String(address).trim().length < 5) {
-// return res.json({ ok: false, reason: "כתובת קצרה מדי" });
-// }
-// try {
-// const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=il&q=${encodeURIComponent(
-// String(address)
-// )}`;
-// const r = await fetch(url, {
-// headers: { "User-Agent": "fresh-end-app/1.0 (contact: admin@fresh-end)" },
-// });
-// if (!r.ok) return res.json({ ok: false, reason: "שגיאה מול שירות המפות" });
-// const results = await r.json();
-// if (!Array.isArray(results) || results.length === 0) {
-// return res.json({ ok: false, reason: "לא נמצאה כתובת מתאימה" });
-// }
-// const m = results[0];
-// return res.json({
-// ok: true,
-// formatted: m.display_name,
-// lat: Number(m.lat),
-// lng: Number(m.lon),
-// });
-// } catch {
-// return res.json({ ok: false, reason: "שגיאה באימות כתובת" });
-// }
-// });
+// ✅ אימות כתובת מורכב
 router.get("/validate", async (req, res) => {
   const { address } = req.query;
   const addr = String(address || "").trim();
@@ -181,26 +177,22 @@ router.get("/validate", async (req, res) => {
     return res.json({ ok: false, reason: "כתובת קצרה מדי" });
   }
 
-  // נסיון לקבל רכיבים בסיסיים מהטקסט (מספיק טוב לרוב המקרים)
   function parseParts(a) {
-    // דוגמה: "דיזנגוף 100, תל אביב-יפו, ישראל"
     const parts = a
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
     const first = parts[0] || "";
     const city = (parts[1] || parts[0] || "").trim();
-    // מפרקים "רחוב + מספר" מהחלק הראשון
-    const m = first.match(/^(.+?)\s+(\d+.*)$/); // תופס גם 10א'
+    const m = first.match(/^(.+?)\s+(\d+.*)$/);
     const street = m ? m[1] : first;
     const house = m ? m[2] : "";
     return { street, house, city };
   }
 
-  // נרמול שם עיר (וריאנטים נפוצים)
   function normalizeCity(c) {
     return String(c || "")
-      .replace(/-/g, " ") // "תל אביב-יפו" -> "תל אביב יפו"
+      .replace(/-/g, " ")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -247,19 +239,12 @@ router.get("/validate", async (req, res) => {
     const parts = parseParts(addr);
     const cityNorm = normalizeCity(parts.city);
 
-    // 1) חיפוש מובנה: street+house+city+country
     let hit = await searchStructured(parts.street, parts.house, cityNorm);
-
-    // 2) אם לא הצליח – נסה וריאנטים: בלי מספר בית
     if (!hit) hit = await searchStructured(parts.street, "", cityNorm);
-
-    // 3) אם לא – טקסט חופשי כולל ישראל
     if (!hit)
       hit = await searchFree(
         `${parts.street} ${parts.house}, ${cityNorm}, ישראל`
       );
-
-    // 4) ניסיון אחרון: טקסט חופשי בלי מספר
     if (!hit) hit = await searchFree(`${parts.street}, ${cityNorm}, ישראל`);
 
     if (!hit) {
@@ -280,12 +265,12 @@ router.get("/validate", async (req, res) => {
   }
 });
 
-// ✅ רשימת ערים מהקובץ JSON
+// ✅ רשימת ערים
 router.get("/cities", (req, res) => {
   res.json(citiesList);
 });
 
-// ✅ חיפוש כתובת חופשי (לשימוש במערכת ההתראות)
+// ✅ חיפוש חופשי (משמש חלקים אחרים במערכת)
 router.get("/search", async (req, res) => {
   const { q } = req.query;
 
@@ -306,7 +291,6 @@ router.get("/search", async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error("Nominatim search status:", response.status);
       return res.status(502).json({ error: "שגיאה בחיפוש כתובת" });
     }
 
