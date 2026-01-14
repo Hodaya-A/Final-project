@@ -56,26 +56,11 @@
             מחיר מוצרים: <strong>₪{{ totalPrice.toFixed(2) }}</strong>
           </p>
 
-          <!-- בחירת משלוח/איסוף -->
-          <div class="delivery-choice">
-            <label class="delivery-option">
-              <input type="radio" v-model="deliveryMethod" value="delivery" />
-              <span>משלוח עד הבית (+₪{{ shippingPrice.toFixed(2) }})</span>
-            </label>
-            <label class="delivery-option">
-              <input type="radio" v-model="deliveryMethod" value="pickup" />
-              <span>איסוף עצמי מהחנות (חינם)</span>
-            </label>
+          <!-- מידע על שיטת המשלוח -->
+          <div class="delivery-info">
+            <p class="delivery-note">שיטת המשלוח תיבחר בעמוד התשלום.</p>
           </div>
-
-          <p v-if="deliveryMethod === 'delivery'">
-            מחיר משלוח: <strong>₪{{ shippingPrice.toFixed(2) }}</strong>
-          </p>
-          <p v-else>איסוף עצמי: <strong>חינם</strong></p>
-          <p class="total-sum">
-            לתשלום כולל: <strong>₪{{ finalTotal.toFixed(2) }}</strong>
-          </p>
-          <button class="checkout-btn" @click="goToCheckout">לתשלום</button>
+          <button class="checkout-btn" @click="goToCheckout">מעבר לעמוד התשלום</button>
         </div>
       </div>
     </div>
@@ -91,7 +76,6 @@ const router = useRouter()
 const cartStore = useCartStore()
 
 const confirmingClear = ref(false)
-const shippingPrice = 29.9
 const deliveryMethod = ref<'delivery' | 'pickup'>('delivery')
 
 function goToCheckout() {
@@ -113,12 +97,6 @@ const totalPrice = computed(() =>
 )
 
 const totalCount = computed(() => cartStore.items.reduce((sum, item) => sum + item.quantity, 0))
-
-const finalTotal = computed(() => {
-  if (cartStore.items.length === 0) return 0
-  const shipping = deliveryMethod.value === 'delivery' ? shippingPrice : 0
-  return totalPrice.value + shipping
-})
 
 // קיבוץ פריטים לפי חנות
 const itemsByStore = computed(() => {
@@ -331,5 +309,11 @@ button:hover {
   color: #007bff;
   text-decoration: underline;
   cursor: pointer;
+}
+.delivery-note {
+  color: #888;
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0.5rem 0 0 0;
 }
 </style>

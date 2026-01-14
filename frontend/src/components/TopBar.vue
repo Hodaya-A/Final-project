@@ -375,6 +375,7 @@ const submitSearch = () => {
 }
 .logo {
   transition: transform 0.3s ease;
+  margin-top: 14px;
 }
 
 .logo:hover {
@@ -554,11 +555,17 @@ const submitSearch = () => {
 
 /* לוגו */
 .logo-img {
-  height: 40px;
+  height: 230px;
   width: auto;
-  max-width: 150px;
+  max-width: 736px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.15));
+  border-radius: 24px;
+  background: transparent;
+  padding: 8px 0;
+  transition:
+    height 0.3s,
+    max-width 0.3s;
 }
 
 /* חיפוש מודרני */
