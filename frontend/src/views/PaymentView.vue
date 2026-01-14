@@ -159,6 +159,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import axios from 'axios'
+import emailjs from '@emailjs/browser'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
@@ -359,6 +360,25 @@ async function renderButtons() {
           })
 
           if (captureResponse.data.success || captureResponse.data.order) {
+            // שליחת מייל ללקוח מיד אחרי תשלום מוצלח (מה-frontend)
+            try {
+              const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_49p0lal'
+              const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_rcano4g'
+              const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'ZG0JybfpjvHAChnsz'
+              const itemList = cartStore.items.map((it) => `${it.name} (${it.quantity})`).join(', ')
+              const logoImg = `<img src='https://raw.githubusercontent.com/Hodaya-A/Final-project/main/frontend/src/assets/logo2.png' alt='Fresh End Logo' style='height:60px;margin-bottom:12px;'/>`
+              const templateParams = {
+                user_email: userEmail,
+                title: `הזמנה ${captureResponse.data.order?._id || data.orderID}`,
+                order_items: itemList,
+                order_total: `₪${Number(total.value || 0).toFixed(2)}`,
+                order_date: new Date().toLocaleString('he-IL'),
+                logo: logoImg,
+              }
+              await emailjs.send(serviceId, templateId, templateParams, publicKey)
+            } catch (mailErr) {
+              console.error('שגיאה בשליחת מייל ללקוח:', mailErr)
+            }
             cartStore.clearCart()
             router.push({
               name: 'thank-you',

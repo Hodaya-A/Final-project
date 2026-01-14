@@ -1,12 +1,12 @@
 <template>
   <div class="thank-you">
-    <h1>תודה על ההזמנה! 🙏</h1>
-    <p class="pending-msg">✅ ההזמנה שלך התקבלה בהצלחה!</p>
-    <p class="approval-msg">📋 ההזמנה כעת ממתינה לאישור מנהל החנות.</p>
+    <h1>תודה על ההזמנה</h1>
+    <p class="pending-msg">ההזמנה שלך התקבלה בהצלחה.</p>
+    <p class="approval-msg">ההזמנה ממתינה לאישור מנהל החנות.</p>
     <p class="email-msg">
-      📧 לאחר אישור ההזמנה, תקבל מייל אישור בכתובת: <strong>{{ userStore.email }}</strong>
+      נשלח אליך מייל אישור לכתובת: <strong>{{ userStore.email }}</strong>
     </p>
-    <p>תוכל לצפות בהזמנות הקודמות שלך בכל עת בלחיצה על "הזמנות קודמות" בסרגל העליון.</p>
+    <p>ניתן לצפות בהזמנות קודמות בכל עת דרך "הזמנות קודמות" בסרגל העליון.</p>
     <router-link to="/" class="btn-home">חזרה לדף הבית</router-link>
   </div>
 </template>
