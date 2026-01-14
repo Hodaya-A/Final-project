@@ -1,3 +1,14 @@
+import { onMounted, ref, computed, onBeforeUnmount } from 'vue' import { getSocket } from
+'@/services/socket' import { useUserStore } from '@/stores/user' import axios from 'axios' import {
+useToast } from 'vue-toastification' const toast = useToast() // הצגת טואסט למנהל על שינוי סטטוס
+הזמנה function showManagerOrderStatusToast(orderId: string, status: string) { let message = '' let
+type: 'success' | 'info' | 'warning' | 'error' = 'info' switch (status) { case 'APPROVED': message =
+`הזמנה ${orderId} אושרה!` type = 'success' break case 'READY_FOR_PICKUP': message = `הזמנה
+${orderId} מוכנה לאיסוף!` type = 'info' break case 'COURIER_ASSIGNED': message = `שליח שוייך להזמנה
+${orderId}` type = 'info' break case 'IN_DELIVERY': message = `הזמנה ${orderId} נאספה למשלוח.` type
+= 'info' break case 'DELIVERED': message = `הזמנה ${orderId} נמסרה.` type = 'success' break case
+'REJECTED': message = `הזמנה ${orderId} בוטלה.` type = 'error' break default: message = `סטטוס הזמנה
+${orderId} עודכן: ${status}` } if (message) { toast[type](message, { timeout: 6000 }) } }
 <template>
   <Teleport to="body">
     <transition name="modal-fade">
@@ -200,6 +211,24 @@ onMounted(() => {
   // Join shop room and listen for new orders
   socket.emit('join-shop', userStore.storeId)
   socket.on('new-order', handleNewOrder)
+
+  // האזנה לאירועי שינוי סטטוס והצגת טואסט
+  const statusEvents = [
+    'order-approved',
+    'order-ready',
+    'courier-assigned',
+    'delivery-started',
+    'order-delivered',
+    'order-converted-to-pickup',
+    'order-rejected',
+  ]
+  statusEvents.forEach((event) => {
+    socket.on(event, (data: { orderId: string; status: string }) => {
+      if (data && data.orderId && data.status) {
+        showManagerOrderStatusToast(data.orderId.toString().slice(-6), data.status)
+      }
+    })
+  })
 })
 
 onBeforeUnmount(() => {

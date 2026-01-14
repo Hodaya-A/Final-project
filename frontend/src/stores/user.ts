@@ -67,6 +67,9 @@ export const useUserStore = defineStore('user', () => {
     street.value = ''
     houseNumber.value = ''
 
+    // Clear auth token used by backend API calls
+    localStorage.removeItem('token')
+
     // Clear local cart to avoid showing previous user's items to another user
     try {
       const m2 = await import('@/stores/cart')
@@ -132,19 +135,11 @@ export const useUserStore = defineStore('user', () => {
                 sCity = String(storeData?.city || sCity || '')
                 sStreet = String(storeData?.street || sStreet || '')
                 sNumber = String(storeData?.houseNumber || sNumber || '')
-                console.log('Store details loaded from stores collection:', {
-                  sName,
-                  sCity,
-                  sStreet,
-                  sNumber,
-                })
               }
             } catch (err) {
               console.error('Failed to load store details:', err)
             }
           }
-
-          console.log('User store loading:', { sName, sCity, sStreet, sNumber })
 
           setUser(
             user.uid,

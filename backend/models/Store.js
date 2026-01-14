@@ -31,6 +31,9 @@ const storeSchema = new mongoose.Schema({
   description: {
     type: String,
   },
+  logoUrl: {
+    type: String,
+  },
   phone: {
     type: String,
   },

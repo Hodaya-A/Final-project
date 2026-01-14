@@ -5,6 +5,20 @@
       <button @click="goToWallet" class="financial-btn">הארנק שלי</button>
     </div>
 
+    <Transition name="warning-fade">
+      <div v-if="userStore.courierOptIn && !hasPaymentDetails && isLoaded" class="warning-banner">
+        <div class="warning-content">
+          <div class="warning-text">
+            <p class="warning-title">עדכון חשוב - פרטי תשלום חסרים</p>
+            <p class="warning-desc">
+              כדי שנוכל להעביר לך כספים, עליך להוסיף פרטי חשבון בנק בפרופיל.
+            </p>
+          </div>
+        </div>
+        <button type="button" class="btn-warning" @click="goToProfile">עדכן פרטי בנק</button>
+      </div>
+    </Transition>
+
     <div class="cards">
       <section class="card">
         <h2>משלוחים ממתינים</h2>
@@ -84,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, onUnmounted } from 'vue'
 import axios from 'axios'
 
 import { useUserStore } from '@/stores/user'
@@ -134,6 +148,10 @@ const myOrders = ref<OrderDto[]>([])
 const loadingAvailable = ref(false)
 const loadingMine = ref(false)
 const actionBusy = ref(false)
+const hasPaymentDetails = ref(false)
+const isLoaded = ref(false)
+
+let unsubscribe: (() => void) | null = null
 
 function labelStatus(order: OrderDto): string {
   if (order.courierAssignedAt) {
@@ -207,13 +225,45 @@ function goToWallet() {
   router.push('/courier/wallet')
 }
 
+function goToProfile() {
+  router.push('/profile')
+}
+
+async function loadPaymentDetails() {
+  try {
+    const { doc, onSnapshot } = await import('firebase/firestore')
+    const { db } = await import('@/services/firebase')
+
+    const userRef = doc(db, 'users', userStore.uid || '')
+
+    // Subscribe to real-time updates
+    unsubscribe = onSnapshot(userRef, (userSnap) => {
+      if (userSnap.exists()) {
+        const data = userSnap.data()
+        hasPaymentDetails.value = !!data.bankCode
+      }
+      isLoaded.value = true
+    })
+  } catch {
+    // אם יש שגיאה, נניח שאין פרטים
+    hasPaymentDetails.value = false
+    isLoaded.value = true
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([fetchAvailable(), fetchMine()])
+  await Promise.all([fetchAvailable(), fetchMine(), loadPaymentDetails()])
   // רענן כל 30 שניות
   setInterval(() => {
     fetchAvailable()
     fetchMine()
   }, 30000)
+})
+
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe()
+  }
 })
 </script>
 
@@ -476,5 +526,82 @@ h1 {
   .card {
     padding: 1.5rem;
   }
+}
+
+/* Warning Banner Styles */
+.warning-banner {
+  background: #fef3c7;
+  border: 1.5px solid #fbbf24;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.warning-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.warning-text {
+  flex: 1;
+}
+
+.warning-title {
+  margin: 0;
+  color: #92400e;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.warning-desc {
+  margin: 0.25rem 0 0;
+  color: #b45309;
+  font-size: 0.9rem;
+}
+
+.btn-warning {
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+}
+
+.btn-warning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.35);
+}
+
+.btn-warning:active {
+  transform: translateY(0);
+}
+
+/* Warning Banner Transition */
+.warning-fade-enter-active,
+.warning-fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.warning-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.warning-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

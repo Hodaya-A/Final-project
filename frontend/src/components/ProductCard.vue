@@ -45,6 +45,7 @@
       <router-link :to="`/product/${product._id}`" class="product-link">
         <h3 class="product-name">{{ product.name }}</h3>
         <p class="product-category">{{ product.category }}</p>
+        <p v-if="product.shopName" class="product-shop">{{ product.shopName }}</p>
 
         <!-- מחיר רגיל + מחיר מבצע -->
         <p class="product-price">
@@ -94,36 +95,28 @@ const isExpiringSoon = computed(() => {
 const FALLBACK = 'https://placehold.co/300x300/e0e0e0/666666?text=No+Image'
 
 const getDefaultImage = () => {
-  console.log('Product:', props.product.name, 'ImageURL:', props.product.imageUrl)
-
   if (props.product.imageUrl && props.product.imageUrl.trim()) {
     const url = props.product.imageUrl.trim()
 
     // אם זה URL מלא (HTTP/HTTPS) - חשוב לבדוק קודם!
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      console.log('Using external URL:', url)
       return url
     }
     // אם זה נתיב מקומי
     if (url.startsWith('/uploads/')) {
-      console.log('Using local path:', url)
       return url
     }
     // אם זה נתיב יחסי, נוסיף את הקידומת
     const fullPath = `/uploads/images/${url}`
-    console.log('Using relative path:', fullPath)
     return fullPath
   }
-  console.log('Using fallback image')
   return FALLBACK
 }
 
 const imgSrc = ref<string>(getDefaultImage())
 
 function onImgError() {
-  console.log('Image load error for:', imgSrc.value)
   if (imgSrc.value !== FALLBACK) {
-    console.log('Switching to fallback image')
     imgSrc.value = FALLBACK
   }
 }
@@ -168,18 +161,6 @@ function addToCart() {
   const shopId = props.product.shopId
   const shopName = (props.product as { shopName?: string }).shopName
   const sellerId = props.product.sellerId
-
-  console.log('🛒 [ProductCard] addToCart called:')
-  console.log({
-    productId: props.product._id,
-    productName: props.product.name,
-    shopId: shopId,
-    shopIdType: typeof shopId,
-    shopName: shopName,
-    sellerId: sellerId,
-    sellerIdType: typeof sellerId,
-    fullProduct: props.product,
-  })
 
   // אין צורך להוסיף localhost - ה-proxy מטפל בזה
   cartStore.addToCart({
@@ -355,6 +336,17 @@ function addToCart() {
   color: var(--neutral, #6b7280);
   margin-bottom: 0.5rem;
   font-weight: 500;
+}
+
+.product-shop {
+  font-size: 0.85rem;
+  color: #8b5cf6;
+  background: #f5f3ff;
+  padding: 0.25rem 0.65rem;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
 
 .product-price {

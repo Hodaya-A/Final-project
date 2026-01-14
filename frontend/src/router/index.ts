@@ -5,6 +5,7 @@ import CartView from '../views/CartView.vue'
 import AdminDashboardView from '../views/AdminDashboard.vue'
 import AddProductView from '../views/AddProductView.vue'
 import UserManagementView from '../views/UserManagementView.vue'
+import UserProfile from '../views/UserProfile.vue'
 import ThankYouView from '@/views/ThankYouView.vue'
 import MyOrdersView from '@/views/MyOrdersView.vue'
 
@@ -75,6 +76,12 @@ const routes: RouteRecordRaw[] = [
     path: '/auth',
     name: 'auth',
     component: () => import('@/views/AuthView.vue'),
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: UserProfile,
+    meta: { requiresAuth: true },
   },
 
   // ---- Admin ----
