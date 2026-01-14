@@ -1,16 +1,40 @@
 import express from "express";
-import Store from "../models/Store.js";
+import Store from "../models/Store.js"; // מודל ה-MongoDB הקיים שלך
+import { db } from "../config/firebaseAdmin.js"; // ודאי שהנתיב לקובץ הגדרות ה-Firebase Admin נכון
 
 const router = express.Router();
 
 /**
+ * GET /api/stores
+ * שליפת כל החנויות מקולקציית STORES ב-Firebase Firestore
+ * זה הנתיב שפותר את שגיאת ה-404 במפה
+ */
+router.get("/", async (req, res) => {
+  try {
+    const snapshot = await db.collection("STORES").get();
+    const stores = [];
+
+    snapshot.forEach((doc) => {
+      stores.push({
+        _id: doc.id, // שימוש ב-ID של המסמך כ-ID של החנות
+        ...doc.data(),
+      });
+    });
+
+    res.json(stores);
+  } catch (error) {
+    console.error("Error fetching all stores from Firebase:", error);
+    res.status(500).json({ error: "Failed to fetch stores from Firebase" });
+  }
+});
+
+/**
  * GET /api/stores/:storeId
- * Fetch store details including commission rate
+ * שליפת פרטי חנות בודדת (MongoDB)
  */
 router.get("/:storeId", async (req, res) => {
   try {
     const { storeId } = req.params;
-
     const store = await Store.findOne({ storeId });
 
     if (!store) {
@@ -26,7 +50,7 @@ router.get("/:storeId", async (req, res) => {
 
 /**
  * POST /api/stores/:storeId
- * Create or update store details
+ * עדכון או יצירת פרטי חנות (MongoDB)
  */
 router.post("/:storeId", async (req, res) => {
   try {
@@ -44,16 +68,14 @@ router.post("/:storeId", async (req, res) => {
       isActive,
     } = req.body;
 
-    // Validate commission rate
     if (commissionRate !== undefined) {
       if (commissionRate < 0 || commissionRate > 1) {
         return res.status(400).json({
-          error: "Commission rate must be between 0 and 1 (0 to 100%)",
+          error: "Commission rate must be between 0 and 1",
         });
       }
     }
 
-    // Find or create store
     let store = await Store.findOne({ storeId });
 
     if (!store) {
@@ -64,7 +86,6 @@ router.post("/:storeId", async (req, res) => {
       });
     }
 
-    // Update fields
     if (name !== undefined) store.name = name;
     if (city !== undefined) store.city = city;
     if (street !== undefined) store.street = street;
@@ -77,7 +98,6 @@ router.post("/:storeId", async (req, res) => {
     if (isActive !== undefined) store.isActive = isActive;
 
     store.updatedAt = new Date();
-
     await store.save();
 
     res.json({
@@ -93,30 +113,25 @@ router.post("/:storeId", async (req, res) => {
 
 /**
  * PATCH /api/stores/:storeId/commission
- * Update only the commission rate
  */
 router.patch("/:storeId/commission", async (req, res) => {
   try {
     const { storeId } = req.params;
     const { commissionRate } = req.body;
 
-    // Validate commission rate
     if (commissionRate === undefined || commissionRate === null) {
       return res.status(400).json({ error: "Commission rate is required" });
     }
 
     if (commissionRate < 0 || commissionRate > 1) {
       return res.status(400).json({
-        error: "Commission rate must be between 0 and 1 (0 to 100%)",
+        error: "Commission rate must be between 0 and 1",
       });
     }
 
     const store = await Store.findOneAndUpdate(
       { storeId },
-      {
-        commissionRate,
-        updatedAt: new Date(),
-      },
+      { commissionRate, updatedAt: new Date() },
       { new: true }
     );
 
@@ -137,12 +152,10 @@ router.patch("/:storeId/commission", async (req, res) => {
 
 /**
  * GET /api/stores/:storeId/commission
- * Get only the commission rate for a store
  */
 router.get("/:storeId/commission", async (req, res) => {
   try {
     const { storeId } = req.params;
-
     const store = await Store.findOne({ storeId }, { commissionRate: 1 });
 
     if (!store) {

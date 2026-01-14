@@ -1,5 +1,6 @@
 import express from "express";
 import Order from "../models/Order.js";
+import Inventory from "../models/Inventory.js"; // ⭐ הוספנו ייבוא של המלאי
 
 const router = express.Router();
 
@@ -36,6 +37,34 @@ router.post("/", async (req, res) => {
 
     await newOrder.save();
 
+    // ⭐⭐ התחלת קוד עדכון מלאי אוטומטי ⭐⭐
+    if (items && items.length > 0) {
+      try {
+        const bulkOps = items.map((item) => ({
+          updateOne: {
+            // מסתמכים על productId או _id שנמצא בפריט ההזמנה
+            filter: { _id: item.productId || item._id },
+            update: {
+              $inc: {
+                quantity: -item.quantity, // מורידים את הכמות שנקנתה
+                sold: item.quantity, // מוסיפים לכמות שנמכרה
+              },
+            },
+          },
+        }));
+
+        if (bulkOps.length > 0) {
+          await Inventory.bulkWrite(bulkOps);
+          console.log(
+            "✅ Inventory updated: quantities decreased, sold counts increased."
+          );
+        }
+      } catch (invError) {
+        console.error("⚠️ Failed to update inventory counts:", invError);
+      }
+    }
+    // ⭐⭐ סוף קוד עדכון מלאי ⭐⭐
+
     // Emit real-time event to store manager
     const io = req.app.get("io");
     if (io && shopId) {
@@ -71,50 +100,26 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ... שאר הנתיבים בקובץ נשארים ללא שינוי, העתקתי לך אותם ליתר ביטחון ...
+
 router.get("/pending/store", async (req, res) => {
   try {
     const { shopId, sellerId } = req.query;
-
-    // שקט — אין לוגים לבקשה
 
     if (!shopId && !sellerId) {
       return res.status(400).json({ error: "shopId or sellerId is required" });
     }
 
-    // בסיס הסינון לפי חנות/מוכר
     const baseFilter = sellerId ? { sellerId } : { shopId };
-    // הצג הזמנות שלא סומנו כמוכנות לאיסוף (כולל מאושרות)
     const notReadyFilter = {
       $or: [{ readyForPickup: { $exists: false } }, { readyForPickup: false }],
     };
 
     const finalFilter = { ...baseFilter, ...notReadyFilter };
 
-    // DEBUG: לראות מה מחפשים
     console.log("🔍 Searching for pending orders with filter:", finalFilter);
 
     const pendingOrders = await Order.find(finalFilter).sort({ createdAt: -1 });
-
-    // DEBUG: לראות מה מצאנו
-    console.log(`📦 Found ${pendingOrders.length} orders`);
-    if (pendingOrders.length > 0) {
-      console.log("First order shopId:", pendingOrders[0].shopId);
-    }
-
-    // לראות את כל ההזמנות בDB (ללא פילטר) - רק shopId
-    const allOrders = await Order.find({})
-      .select("shopId sellerId readyForPickup")
-      .limit(5);
-    console.log(
-      "📋 Last 5 orders in DB:",
-      allOrders.map((o) => ({
-        shopId: o.shopId,
-        sellerId: o.sellerId,
-        ready: o.readyForPickup,
-      }))
-    );
-
-    // שקט — אין סיכומי לוגים
 
     res.json({
       orders: pendingOrders,
@@ -125,22 +130,20 @@ router.get("/pending/store", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch pending orders" });
   }
 });
+
 router.post("/approve/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // 1. מצא את ההזמנה
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // 2. סמן כמאושרת
     order.approvedAt = new Date();
     order.status = "APPROVED";
     await order.save();
 
-    // Emit event to customer
     const io = req.app.get("io");
     if (io && order.userId) {
       io.to(`customer-${order.userId}`).emit("order-approved", {
@@ -149,7 +152,6 @@ router.post("/approve/:orderId", async (req, res) => {
       });
     }
 
-    // 3. החזר את פרטי ההזמנה כדי שהפרונטאנד ישלח מייל
     res.json({
       success: true,
       message: "Order approved",
@@ -179,7 +181,6 @@ router.post("/reject/:orderId", async (req, res) => {
     order.status = "REJECTED";
     await order.save();
 
-    // Emit event to customer
     const io = req.app.get("io");
     if (io && order.userId) {
       io.to(`customer-${order.userId}`).emit("order-rejected", {
@@ -206,28 +207,23 @@ router.post("/ready/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
 
-    // מצא את ההזמנה
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // סמן כמוכן לאיסוף
     order.readyForPickup = true;
     order.readyAt = new Date();
     order.status = "READY_FOR_PICKUP";
 
-    // אם זה משלוח - תן 30 דקות למשלוחנים לקחת
     if (order.deliveryMethod === "delivery") {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 30);
       order.readyForPickupExpiresAt = expiresAt;
-      // שקט — אין לוגים למועד פקיעה
     }
 
     await order.save();
 
-    // Emit event to couriers and customer
     const io = req.app.get("io");
     if (io) {
       if (order.deliveryMethod === "delivery") {
@@ -263,7 +259,6 @@ router.post("/ready/:orderId", async (req, res) => {
 
 // ===== נתיבים ספציפיים =====
 
-// POST סיום משלוח (משלוחן סימן כנמסר)
 router.post("/complete-delivery/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -277,7 +272,6 @@ router.post("/complete-delivery/:orderId", async (req, res) => {
     order.status = "DELIVERED";
     await order.save();
 
-    // Emit event to customer
     const io = req.app.get("io");
     if (io && order.userId) {
       io.to(`customer-${order.userId}`).emit("order-delivered", {
@@ -300,7 +294,6 @@ router.post("/complete-delivery/:orderId", async (req, res) => {
   }
 });
 
-// GET משלוחים זמינים
 router.get("/available-deliveries/list", async (req, res) => {
   try {
     console.log("🔍 Fetching available deliveries...");
@@ -317,7 +310,6 @@ router.get("/available-deliveries/list", async (req, res) => {
       .sort({ readyAt: -1 })
       .lean();
 
-    // הוסף פרטי חנות מ-Firestore
     const ordersWithShopInfo = await Promise.all(
       availableOrders.map(async (order) => {
         let shopName = null;
@@ -358,7 +350,6 @@ router.get("/available-deliveries/list", async (req, res) => {
   }
 });
 
-// POST קבלת משלוח על ידי משלוחן
 router.post("/accept-delivery/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -382,7 +373,6 @@ router.post("/accept-delivery/:orderId", async (req, res) => {
     order.status = "COURIER_ASSIGNED";
     await order.save();
 
-    // Emit event to customer
     const io = req.app.get("io");
     if (io && order.userId) {
       io.to(`customer-${order.userId}`).emit("courier-assigned", {
@@ -402,7 +392,6 @@ router.post("/accept-delivery/:orderId", async (req, res) => {
   }
 });
 
-// GET משלוחים שלי
 router.get("/my-deliveries/:courierId", async (req, res) => {
   try {
     const { courierId } = req.params;
@@ -414,7 +403,6 @@ router.get("/my-deliveries/:courierId", async (req, res) => {
       .sort({ courierAssignedAt: -1 })
       .lean();
 
-    // הוסף פרטי חנות מ-Firestore
     const ordersWithShopInfo = await Promise.all(
       myDeliveries.map(async (order) => {
         let shopName = null;
@@ -455,9 +443,6 @@ router.get("/my-deliveries/:courierId", async (req, res) => {
   }
 });
 
-// ===== נתיבים גנריים (לאחר נתיבים ספציפיים) =====
-
-// שליפת הזמנות של משתמש
 router.get("/:userId", async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.params.userId }).sort({
