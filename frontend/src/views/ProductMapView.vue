@@ -68,7 +68,6 @@ import 'leaflet/dist/leaflet.css'
 import Slider from 'vue3-slider'
 import { useRouter, useRoute } from 'vue-router'
 
-// הגדרת מבנה חנות (Firebase)
 interface Store {
   _id: string
   name: string
@@ -79,7 +78,6 @@ interface Store {
   }
 }
 
-// הגדרת מבנה מוצר (MongoDB)
 interface Product {
   _id: string
   name: string
@@ -120,7 +118,6 @@ const categoryColors: Record<string, string> = {
   'חלב, ביצים וסלטים': '#1abc9c',
 }
 
-// הגדרת האייקון הסגול של החנות
 const shopIcon = L.divIcon({
   html: `<div style="background-color: #4f46e5; border: 2px solid white; border-radius: 50%; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -136,16 +133,18 @@ const shopIcon = L.divIcon({
 async function geocodeLocation() {
   if (!locationInput.value) return
   try {
+    console.log('📡 [FRONTEND] Geocoding address:', locationInput.value)
     const { data } = await axios.get('/api/geocode', { params: { address: locationInput.value } })
     const result = Array.isArray(data) ? data[0] : data
     if (result && result.lat && result.lon) {
       userLat.value = parseFloat(result.lat)
       userLng.value = parseFloat(result.lon)
+      console.log('📍 [FRONTEND] Geocoded location:', userLat.value, userLng.value)
       map.setView([userLat.value, userLng.value], 16)
       await loadProducts()
     }
   } catch (err) {
-    console.error('Geocode error:', err)
+    console.error('❌ [FRONTEND] Geocode error:', err)
   }
 }
 
@@ -168,7 +167,7 @@ function getCloudPosition(lat: number, lng: number) {
 
 async function loadProducts() {
   try {
-    // משיכת נתונים משולבת ממונגו ופיירבייס
+    console.log('📡 [FRONTEND] Fetching map data (Stores + Inventory)...')
     const [storesRes, invRes] = await Promise.all([
       axios.get('/api/stores'),
       axios.get('/api/inventory'),
@@ -177,22 +176,31 @@ async function loadProducts() {
     const allStores: Store[] = Array.isArray(storesRes.data) ? storesRes.data : []
     const allInventoryItems: Product[] = Array.isArray(invRes.data) ? invRes.data : []
 
+    console.log(`🏪 [FRONTEND] Received ${allStores.length} stores from API`)
+    console.log(`📦 [FRONTEND] Received ${allInventoryItems.length} inventory items from API`)
+
     if (productLayer) productLayer.clearLayers()
     if (storeLayer) storeLayer.clearLayers()
     if (userCircle) userCircle.remove()
 
     const targetProductId = route.query.select as string
 
-    // הצגת כל החנויות (האייקון הסגול)
+    // 1. הצגת כל החנויות (האייקון הסגול)
     allStores.forEach((store) => {
-      if (!store.location?.coordinates) return
+      if (!store.location || !store.location.coordinates) {
+        console.warn(`⚠️ [FRONTEND] Store '${store.name}' is missing coordinates!`, store)
+        return
+      }
+
       const [lng, lat] = store.location.coordinates
+      console.log(`📍 [FRONTEND] Rendering store marker: ${store.name} at [${lat}, ${lng}]`)
+
       L.marker([lat, lng], { icon: shopIcon, zIndexOffset: 2000 })
         .addTo(storeLayer)
         .bindTooltip(`<strong>${store.name}</strong><br/>📍 ${store.address}`, { sticky: true })
     })
 
-    // סינון מוצרי המלאי
+    // 2. סינון מוצרי המלאי
     const filteredItems = allInventoryItems.filter((item) => {
       const isSelected = item._id === targetProductId
       const matchName = item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -209,6 +217,7 @@ async function loadProducts() {
     })
 
     productCount.value = filteredItems.length
+    console.log(`🔍 [FRONTEND] Filtered products count: ${productCount.value}`)
 
     if (userLat.value && userLng.value) {
       userCircle = L.circle([userLat.value, userLng.value], {
@@ -219,7 +228,7 @@ async function loadProducts() {
       }).addTo(map)
     }
 
-    // ציור נקודות המוצרים (העיגולים הצבעוניים)
+    // 3. ציור נקודות המוצרים (העיגולים הצבעוניים)
     filteredItems.forEach((item) => {
       if (!item.location) return
       const [centerLng, centerLat] = item.location.coordinates
@@ -235,7 +244,6 @@ async function loadProducts() {
         fillOpacity: 0.9,
       }).addTo(productLayer)
 
-      // בועת מידע ללא מחיר
       marker.bindPopup(`
         <div style="direction: rtl; text-align: right; font-family: sans-serif; min-width: 140px;">
           <strong style="font-size:1.1em;">${item.name}</strong><br/>
@@ -266,7 +274,7 @@ async function loadProducts() {
       map.fitBounds(group.getBounds().pad(0.1))
     }
   } catch (error) {
-    console.error('Error loading map data:', error)
+    console.error('❌ [FRONTEND] Error loading map data:', error)
   }
 }
 
@@ -282,6 +290,7 @@ onMounted(() => {
   if (queryLat && queryLng) {
     userLat.value = parseFloat(queryLat as string)
     userLng.value = parseFloat(queryLng as string)
+    console.log('📍 [FRONTEND] Initial location from query:', userLat.value, userLng.value)
     map.setView([userLat.value, userLng.value], 18)
     loadProducts()
   } else if ('geolocation' in navigator) {
@@ -289,10 +298,14 @@ onMounted(() => {
       (pos) => {
         userLat.value = pos.coords.latitude
         userLng.value = pos.coords.longitude
+        console.log('📍 [FRONTEND] Current geolocation:', userLat.value, userLng.value)
         map.setView([userLat.value, userLng.value], 16)
         loadProducts()
       },
-      () => loadProducts(),
+      () => {
+        console.warn('⚠️ [FRONTEND] Geolocation failed, loading without user position')
+        loadProducts()
+      },
     )
   } else {
     loadProducts()

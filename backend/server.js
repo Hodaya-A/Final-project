@@ -1,6 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 // backend/server.js
 import "dotenv/config";
 import express from "express";
@@ -22,8 +19,8 @@ import productRoutes from "./routes/products.js";
 import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js";
-import paymentsRoutes from "./routes/payments.js";
-import storesRoutes from "./routes/stores.js"; // ⭐ זה הקובץ שבו הוספנו את הגישה ל-Firebase STORES
+import paymentsRoutes, { setSocketIO } from "./routes/payments.js"; // ⭐ יבוא משולב ותקין
+import storesRoutes from "./routes/stores.js";
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
 import uploadRoutes from "./routes/upload.js";
@@ -53,9 +50,12 @@ const io = new Server(httpServer, {
   },
 });
 
+// Initialize Socket.IO for payments logic
+setSocketIO(io);
+
 // Make io and db available to routes
 app.set("io", io);
-app.set("db", db); // ✅ הוספת Firestore DB לשימוש ב-Routes
+app.set("db", db);
 
 // Socket.io connection handler
 io.on("connection", (socket) => {
@@ -105,7 +105,12 @@ app.use("/uploads/images", express.static("uploads/images"));
 /* ======================= MongoDB ======================= */
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB"))
+  .then(async () => {
+    console.log("✅ Connected to MongoDB");
+    // ⭐ לוג בדיקה: כמה מוצרים יש באמת במסד הנתונים?
+    const count = await Inventory.countDocuments();
+    console.log(`📊 Total products found in MongoDB: ${count}`);
+  })
   .catch((err) => console.error("❌ שגיאה בחיבור למונגו:", err));
 
 /* ======================= Routes ======================= */
@@ -115,16 +120,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api", imagesRoutes);
 app.use("/api/orders", ordersRouter);
-
-// Initialize Socket.IO for payments
-import { setSocketIO } from "./routes/payments.js";
-setSocketIO(io);
-
 app.use("/api/payments", paymentsRoutes);
-
-// ⭐ חיבור הראוט של החנויות - וודאי שבקובץ stores.js קיים הנתיב router.get('/')
-app.use("/api/stores", storesRoutes);
-
+app.use("/api/stores", storesRoutes); // ⭐ ודאי שבקובץ stores.js יש router.get("/")
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -140,13 +137,15 @@ httpServer.listen(PORT, () => {
 });
 
 /* ======================= לוגיקה של ניקוי מוצרים והחזרים ======================= */
-// (כאן נשארות הפונקציות המקוריות שלך: removeExpiredProducts, checkExpiredOrders וכו')
 
 async function removeExpiredProducts() {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    await Inventory.deleteMany({ expiryDate: { $lt: today } });
+    const result = await Inventory.deleteMany({ expiryDate: { $lt: today } });
+    if (result.deletedCount > 0) {
+      console.log(`🗑️ Removed ${result.deletedCount} expired products`);
+    }
   } catch (error) {
     console.error("❌ שגיאה בהסרת מוצרים שפג תוקפם:", error);
   }
@@ -220,6 +219,7 @@ setInterval(removeExpiredProducts, TWENTY_FOUR_HOURS);
 setInterval(sendExpiringNotifications, TWENTY_FOUR_HOURS);
 setInterval(checkExpiredOrders, ONE_MINUTE);
 
+// הרצה ראשונית
 removeExpiredProducts();
 sendExpiringNotifications();
 checkExpiredOrders();
