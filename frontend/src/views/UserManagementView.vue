@@ -116,6 +116,13 @@
                 <span class="badge" :class="`badge-${user.role}`">
                   {{ getRoleLabel(user.role) }}
                 </span>
+                <span
+                  v-if="user.courierOptIn"
+                  class="badge badge-courier"
+                  style="margin-right: 0.5em; background: #667eea; color: #fff"
+                >
+                  משלוחן
+                </span>
               </div>
             </div>
 
