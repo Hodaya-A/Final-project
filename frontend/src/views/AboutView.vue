@@ -78,7 +78,7 @@
       </section>
 
       <section class="team-section">
-        <h2 class="section-title">המוחות מאחורי הפרויקט</h2>
+        <h2 class="section-title">צוות הפרויקט</h2>
         <div class="team-grid">
           <div class="team-card">
             <div class="img-wrapper">
