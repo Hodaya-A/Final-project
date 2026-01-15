@@ -66,20 +66,15 @@ const DEFAULT_SHOP_ID = "FrzzphZ80X6CEYONGelr";
 
 /* ======================= Routes ======================= */
 
-/** * GET /api/inventory/sync-locations
- * ⭐ פונקציית תיקון: מעדכנת את מיקום המוצרים במונגו לפי מיקום החנויות בפיירבייס
- */
+/** GET /api/inventory/sync-locations */
 router.get("/sync-locations", async (req, res) => {
   try {
-    const db = req.app.get("db"); // שליפת Firestore שהגדרנו ב-server.js
+    const db = req.app.get("db");
     if (!db)
       return res
         .status(500)
         .json({ error: "Firebase DB connection not found" });
 
-    console.log("🛠️ [SYNC] Starting product location synchronization...");
-
-    // 1. שליפת כל החנויות מהפיירבייס
     const storesSnapshot = await db.collection("stores").get();
     const storeLocations = {};
     storesSnapshot.forEach((doc) => {
@@ -89,7 +84,6 @@ router.get("/sync-locations", async (req, res) => {
       }
     });
 
-    // 2. עדכון כל מוצר במונגו לפי ה-shopId שלו
     const products = await Inventory.find({});
     let updatedCount = 0;
 
@@ -101,13 +95,11 @@ router.get("/sync-locations", async (req, res) => {
       }
     }
 
-    console.log(`✅ [SYNC] Complete. Updated ${updatedCount} products.`);
     res.json({
       success: true,
       message: `Successfully updated ${updatedCount} products.`,
     });
   } catch (error) {
-    console.error("❌ Sync Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -119,7 +111,7 @@ router.get("/", async (req, res) => {
       category,
       q,
       _page = 1,
-      _limit = 1000, // ⭐ תיקון: מוגדר ל-1000 כדי למנוע חיתוך ב-50
+      _limit = 1000,
       sellerId,
       minPrice,
       maxPrice,
@@ -141,40 +133,21 @@ router.get("/", async (req, res) => {
       if (maxPrice) filter.price.$lte = Number(maxPrice);
     }
 
-    const page = parseInt(_page);
-    const limit = Math.min(parseInt(_limit), 2000);
-    const skip = (page - 1) * limit;
-
     const items = await Inventory.find(filter)
-      .skip(skip)
-      .limit(limit)
+      .skip((parseInt(_page) - 1) * parseInt(_limit))
+      .limit(parseInt(_limit))
       .sort({ name: 1 })
       .lean();
 
-    console.log(`📡 [API] Sending ${items.length} items to frontend.`);
-
-    const cleanedItems = items.map((item) => ({
-      ...item,
-      _id: String(item._id),
-      shopId: item.shopId ? String(item.shopId) : undefined,
-      sellerId: item.sellerId ? String(item.sellerId) : undefined,
-      salePrice: item.salePrice || item.priceDiscounted,
-    }));
-
-    res.json(cleanedItems);
+    res.json(
+      items.map((item) => ({
+        ...item,
+        _id: String(item._id),
+        salePrice: item.salePrice || item.priceDiscounted,
+      }))
+    );
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
-  }
-});
-
-/** GET /api/inventory/:id */
-router.get("/:id", async (req, res) => {
-  try {
-    const item = await Inventory.findById(req.params.id);
-    if (!item) return res.status(404).json({ error: "Product not found" });
-    res.json(item.toObject());
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch product" });
   }
 });
 
@@ -195,7 +168,14 @@ router.post("/", async (req, res) => {
       sellerId,
     } = req.body;
 
+    // --- ולידציה לשיפור אמינות הנתונים (דוח אלפא עמ' 14, סיכון 9) ---
     if (!name) return res.status(400).json({ error: "Missing product name" });
+
+    // בדיקה למניעת מחיר שלילי
+    if (price < 0 || salePrice < 0) {
+      return res.status(400).json({ error: "Price cannot be negative" });
+    }
+    // -----------------------------------------------------------
 
     let finalImageUrl = imageUrl || null;
     if (!finalImageUrl) {
@@ -204,7 +184,7 @@ router.post("/", async (req, res) => {
         const imgs = await fetchImagesFromGoogle(searchQuery, barcode || "");
         finalImageUrl = imgs?.[0] || null;
       } catch (err) {
-        console.warn(`⚠️ שגיאה בשליפת תמונה עבור "${name}":`, err.message);
+        console.warn(`⚠️ Error fetching image for "${name}":`, err.message);
       }
     }
 
@@ -259,84 +239,6 @@ router.delete("/:id", async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Delete failed" });
-  }
-});
-
-/** POST /api/inventory/upload */
-router.post("/upload", upload.single("file"), async (req, res) => {
-  const tmpPath = req.file?.path;
-  if (!tmpPath) return res.status(400).json({ error: "No file uploaded" });
-
-  const {
-    mode = "update",
-    sellerId,
-    useAI = false,
-    shopId = DEFAULT_SHOP_ID,
-  } = req.body;
-
-  try {
-    if (mode === "renew") await Inventory.deleteMany({ sellerId });
-
-    const db = req.app.get("db");
-    let shopLocation = { type: "Point", coordinates: [34.7818, 32.0853] };
-
-    if (db && shopId) {
-      const storeDoc = await db.collection("stores").doc(shopId).get();
-      if (storeDoc.exists && storeDoc.data().location) {
-        shopLocation = storeDoc.data().location;
-      }
-    }
-
-    const fileName = req.file.originalname.toLowerCase();
-    let rows = [];
-    if (fileName.endsWith(".csv")) {
-      const buf = fs.readFileSync(tmpPath);
-      const text = iconv.decode(buf, "utf8");
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-      rows = parsed.data;
-    } else {
-      const wb = XLSX.readFile(tmpPath);
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(ws);
-    }
-
-    const bulk = rows.map((row, idx) => ({
-      updateOne: {
-        filter: { shopId, barcode: row.barcode || `auto_${Date.now()}_${idx}` },
-        update: {
-          $set: {
-            ...row,
-            shopId,
-            sellerId,
-            location: shopLocation,
-            updatedAt: new Date(),
-          },
-        },
-        upsert: true,
-      },
-    }));
-
-    if (bulk.length) await Inventory.bulkWrite(bulk, { ordered: false });
-    fs.unlinkSync(tmpPath);
-    res.json({ ok: true, processed: bulk.length });
-  } catch (err) {
-    if (tmpPath) fs.unlinkSync(tmpPath);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.post("/fix-missing-seller", async (req, res) => {
-  try {
-    const { shopId, sellerId } = req.body;
-    if (!shopId || !sellerId)
-      return res.status(400).json({ error: "Required" });
-    const result = await Inventory.updateMany(
-      { shopId, $or: [{ sellerId: { $exists: false } }, { sellerId: null }] },
-      { $set: { sellerId } }
-    );
-    res.json({ ok: true, fixed: result.modifiedCount });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fix products" });
   }
 });
 

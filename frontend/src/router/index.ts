@@ -13,6 +13,11 @@ import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/about',
+    name: 'about',
+    component: () => import('@/views/AboutView.vue'),
+  },
+  {
     path: '/map',
     name: 'ProductMapView',
     component: () => import('@/views/ProductMapView.vue'),

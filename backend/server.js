@@ -19,7 +19,7 @@ import productRoutes from "./routes/products.js";
 import reportRoutes from "./routes/reports.js";
 import imagesRoutes from "./routes/images.js";
 import ordersRouter from "./routes/orders.js";
-import paymentsRoutes, { setSocketIO } from "./routes/payments.js"; // ⭐ יבוא משולב ותקין
+import paymentsRoutes, { setSocketIO } from "./routes/payments.js";
 import storesRoutes from "./routes/stores.js";
 import emailRouter from "./routes/email.js";
 import geocodeRoutes from "./routes/geocode.js";
@@ -50,35 +50,15 @@ const io = new Server(httpServer, {
   },
 });
 
-// Initialize Socket.IO for payments logic
 setSocketIO(io);
-
-// Make io and db available to routes
 app.set("io", io);
 app.set("db", db);
 
-// Socket.io connection handler
+// Socket.io connection handler (Quiet Mode)
 io.on("connection", (socket) => {
-  console.log("🔌 Client connected:", socket.id);
-
-  socket.on("join-shop", (shopId) => {
-    socket.join(`shop-${shopId}`);
-    console.log(`📦 Socket ${socket.id} joined shop-${shopId}`);
-  });
-
-  socket.on("join-customer", (userId) => {
-    socket.join(`customer-${userId}`);
-    console.log(`👤 Socket ${socket.id} joined customer-${userId}`);
-  });
-
-  socket.on("join-courier", (courierId) => {
-    socket.join(`courier-${courierId}`);
-    console.log(`🚚 Socket ${socket.id} joined courier-${courierId}`);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("🔌 Client disconnected:", socket.id);
-  });
+  socket.on("join-shop", (shopId) => socket.join(`shop-${shopId}`));
+  socket.on("join-customer", (userId) => socket.join(`customer-${userId}`));
+  socket.on("join-courier", (courierId) => socket.join(`courier-${courierId}`));
 });
 
 /* ======================= Middleware ======================= */
@@ -97,8 +77,6 @@ app.use(
 );
 
 app.use(express.json());
-
-// סטטי
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/images", express.static("uploads/images"));
 
@@ -106,12 +84,14 @@ app.use("/uploads/images", express.static("uploads/images"));
 mongoose
   .connect(process.env.MONGO_URI)
   .then(async () => {
-    //console.log("✅ Connected to MongoDB");
-    // ⭐ לוג בדיקה: כמה מוצרים יש באמת במסד הנתונים?
-    const count = await Inventory.countDocuments();
-    //console.log(`📊 Total products found in MongoDB: ${count}`);
+    // MongoDB connected successfully
   })
-  .catch((err) => console.error("❌ שגיאה בחיבור למונגו:", err));
+  .catch((err) => {
+    // Keep only critical errors
+    if (process.env.NODE_ENV !== "test") {
+      console.error("❌ MongoDB Connection Error:", err);
+    }
+  });
 
 /* ======================= Routes ======================= */
 app.use("/api/inventory", inventoryRoutes);
@@ -121,7 +101,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api", imagesRoutes);
 app.use("/api/orders", ordersRouter);
 app.use("/api/payments", paymentsRoutes);
-app.use("/api/stores", storesRoutes); // ⭐ ודאי שבקובץ stores.js יש router.get("/")
+app.use("/api/stores", storesRoutes);
 app.use("/api", emailRouter);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/upload", uploadRoutes);
@@ -131,10 +111,13 @@ app.use("/api/analytics", analyticsRoutes);
 
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-  // console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  // console.log(`🔌 Socket.io is ready for connections`);
-});
+
+// ⭐ תנאי חשוב: אל תתחיל להאזין לפורט אם אנחנו בתוך בדיקות Jest
+if (process.env.NODE_ENV !== "test") {
+  httpServer.listen(PORT, () => {
+    // Server started silently
+  });
+}
 
 /* ======================= לוגיקה של ניקוי מוצרים והחזרים ======================= */
 
@@ -142,23 +125,25 @@ async function removeExpiredProducts() {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const result = await Inventory.deleteMany({ expiryDate: { $lt: today } });
-    if (result.deletedCount > 0) {
-      console.log(`🗑️ Removed ${result.deletedCount} expired products`);
-    }
+    await Inventory.deleteMany({ expiryDate: { $lt: today } });
   } catch (error) {
-    console.error("❌ שגיאה בהסרת מוצרים שפג תוקפם:", error);
+    if (process.env.NODE_ENV !== "test")
+      console.error("❌ Error removing expired products:", error);
   }
 }
 
-async function sendExpiringNotifications() {
+// server.js
+// server.js
+const sendExpiringNotifications = async () => {
+  // מוודא שהחיבור פעיל לפני הניסיון לשלוף נתונים
+  if (mongoose.connection.readyState !== 1) return;
+
   try {
     await createExpiringProductNotifications();
   } catch (error) {
-    console.error("❌ שגיאה ביצירת התראות:", error);
+    // השתקה שקטה כדי לא ללכלך את הטרמינל בטסטים
   }
-}
-
+};
 async function refundShippingIfNeeded(captureId, amount) {
   if (!captureId || !amount || amount <= 0) return;
   try {
@@ -173,7 +158,8 @@ async function refundShippingIfNeeded(captureId, amount) {
     });
     await client.execute(req);
   } catch (error) {
-    console.error("❌ שגיאה בזיכוי משלוח:", error);
+    if (process.env.NODE_ENV !== "test")
+      console.error("❌ Error refunding shipping:", error);
   }
 }
 
@@ -208,7 +194,8 @@ async function checkExpiredOrders() {
       });
     }
   } catch (error) {
-    console.error("❌ שגיאה בבדיקת הזמנות שפג תוקפן:", error);
+    if (process.env.NODE_ENV !== "test")
+      console.error("❌ Error checking expired orders:", error);
   }
 }
 
@@ -223,3 +210,6 @@ setInterval(checkExpiredOrders, ONE_MINUTE);
 removeExpiredProducts();
 sendExpiringNotifications();
 checkExpiredOrders();
+
+// ⭐ ייצוא משתני הליבה עבור בדיקות אינטגרציה
+export { app, httpServer, io };
