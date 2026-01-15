@@ -106,10 +106,10 @@ app.use("/uploads/images", express.static("uploads/images"));
 mongoose
   .connect(process.env.MONGO_URI)
   .then(async () => {
-    console.log("✅ Connected to MongoDB");
+    //console.log("✅ Connected to MongoDB");
     // ⭐ לוג בדיקה: כמה מוצרים יש באמת במסד הנתונים?
     const count = await Inventory.countDocuments();
-    console.log(`📊 Total products found in MongoDB: ${count}`);
+    //console.log(`📊 Total products found in MongoDB: ${count}`);
   })
   .catch((err) => console.error("❌ שגיאה בחיבור למונגו:", err));
 
@@ -132,8 +132,8 @@ app.use("/api/analytics", analyticsRoutes);
 /* ======================= Start Server ======================= */
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`🔌 Socket.io is ready for connections`);
+  // console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  // console.log(`🔌 Socket.io is ready for connections`);
 });
 
 /* ======================= לוגיקה של ניקוי מוצרים והחזרים ======================= */
