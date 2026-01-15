@@ -24,7 +24,6 @@ export async function createNotificationsForNewProduct(product) {
         !product.location.coordinates ||
         product.location.coordinates.length < 2
       ) {
-        // console.log(`⚠️ מוצר ${product.name} אין לו מיקום תקין`);
         continue;
       }
 
@@ -76,13 +75,11 @@ export async function createNotificationsForNewProduct(product) {
 
     if (notifications.length > 0) {
       await Notification.insertMany(notifications);
-      console.log(
-        `✅ נוצרו ${notifications.length} התראות למוצר: ${product.name}`
-      );
     }
 
     return notifications.length;
   } catch (error) {
+    // השארתי רק את השגיאות הקריטיות למקרה שמשהו יקרוס
     console.error("Error creating notifications:", error);
     return 0;
   }
@@ -117,13 +114,9 @@ export async function createExpiringProductNotifications() {
       expiryDate: { $gte: today, $lte: threeDaysFromNow },
     });
 
-    console.log(`🔍 מצאתי ${expiringProducts.length} מוצרים לפני פקיעה`);
-
     let totalNotifications = 0;
 
     for (const product of expiringProducts) {
-      // console.log(`\n📦 בודק מוצר: ${product.name} (${product.shopCity || "לא ידוע"})`);
-
       const usersSnapshot = await db.collection("users").get();
 
       for (const userDoc of usersSnapshot.docs) {
@@ -139,7 +132,6 @@ export async function createExpiringProductNotifications() {
           !product.location.coordinates ||
           product.location.coordinates.length < 2
         ) {
-          // console.log(`⚠️ מוצר ${product.name} אין לו מיקום תקין (expiring)`);
           continue;
         }
 
@@ -150,15 +142,7 @@ export async function createExpiringProductNotifications() {
           product.location.coordinates[0]
         );
 
-        /* console.log(
-          `📍 מרחק ל-${product.name}: ${(distance / 1000).toFixed(1)} ק"מ (משתמש: ${userDoc.id})`
-        );
-        */
-
-        if (distance > prefs.maxDistance) {
-          // console.log(`❌ מוצר רחוק מדי`);
-          continue;
-        }
+        if (distance > prefs.maxDistance) continue;
 
         const existingNotification = await Notification.findOne({
           userId: userDoc.id,
@@ -167,10 +151,7 @@ export async function createExpiringProductNotifications() {
           createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         });
 
-        if (existingNotification) {
-          // console.log(`⚠️ התראה כבר נשלחה היום`);
-          continue;
-        }
+        if (existingNotification) continue;
 
         await Notification.create({
           userId: userDoc.id,
@@ -188,12 +169,10 @@ export async function createExpiringProductNotifications() {
           isRead: false,
         });
 
-        // console.log(`✅ התראה נוצרה למשתמש ${userDoc.id}`);
         totalNotifications++;
       }
     }
 
-    console.log(`✅ סיום: נוצרו ${totalNotifications} התראות חדשות.`);
     return totalNotifications;
   } catch (error) {
     console.error("Error creating expiring notifications:", error);
