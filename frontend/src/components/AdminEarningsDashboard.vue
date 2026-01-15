@@ -50,36 +50,7 @@
         </div>
       </div>
 
-      <!-- Daily Chart -->
-      <div class="chart-section" v-if="dailyEarnings.length > 0">
-        <h2>התפלגות יומית</h2>
-        <div class="chart-container">
-          <canvas ref="chartCanvas"></canvas>
-        </div>
-      </div>
-
-      <!-- Daily Breakdown Table -->
-      <div class="table-section" v-if="dailyEarnings.length > 0">
-        <h2>פירוט יומי</h2>
-        <table class="earnings-table">
-          <thead>
-            <tr>
-              <th>תאריך</th>
-              <th>רווחים</th>
-              <th>הזמנות</th>
-              <th>ממוצע לזמנה</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="day in dailyEarnings" :key="day._id">
-              <td>{{ formatDate(day._id) }}</td>
-              <td class="amount">₪{{ formatCurrency(day.dailyFee) }}</td>
-              <td>{{ day.ordersCount }}</td>
-              <td>₪{{ (day.dailyFee / day.ordersCount).toFixed(2) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- התפלגות יומית הוסרה לפי בקשתך -->
     </div>
   </div>
 </template>
