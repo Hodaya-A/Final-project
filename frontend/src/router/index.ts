@@ -210,13 +210,22 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.roles) {
     const requiredRoles = to.meta.roles as string[]
 
-    // הנחה: ב-store שלך יש שדה בשם role.
-    // אם השדה נקרא אחרת (למשל userStore.user?.role), יש לשנות כאן בהתאם.
-    const userRole = userStore.role
-
-    if (!userRole || !requiredRoles.includes(userRole)) {
-      // אם למשתמש אין תפקיד, או שהתפקיד שלו לא נמצא ברשימה המורשית -> חסימה
-      return next('/')
+    // בדיקה מיוחדת לשליחים - תומך גם ב-role וגם ב-isCourier
+    if (requiredRoles.includes('courier')) {
+      if (!userStore.isCourier) {
+        console.warn('Access denied: courier role required', {
+          role: userStore.role,
+          isCourier: userStore.isCourier,
+        })
+        return next('/')
+      }
+    } else {
+      // בדיקה רגילה לתפקידים אחרים
+      const userRole = userStore.role
+      if (!userRole || !requiredRoles.includes(userRole)) {
+        console.warn('Access denied: role mismatch', { required: requiredRoles, actual: userRole })
+        return next('/')
+      }
     }
   }
 
