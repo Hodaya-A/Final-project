@@ -1,10 +1,5 @@
 <template>
   <div class="store-reports">
-    <div class="debug-box" v-if="reportData && reportData.length > 0">
-      <h3>🔍 בדיקה (הצצה לנתון הראשון)</h3>
-      <pre dir="ltr">{{ JSON.stringify(reportData[0], null, 2).slice(0, 200) }}...</pre>
-    </div>
-
     <h1 class="page-title">דוחות לחנות שלך</h1>
 
     <div class="buttons">
@@ -25,11 +20,11 @@
       <div class="summary-cards">
         <div class="card">
           <span>סה"כ הכנסות</span>
-          <strong>₪{{ (reportData.totalRevenue || 0).toFixed(2) }}</strong>
+          <strong>₪{{ getSafeTotalRevenue() }}</strong>
         </div>
         <div class="card">
           <span>סה"כ הזמנות</span>
-          <strong>{{ reportData.orderCount || 0 }}</strong>
+          <strong>{{ getSafeOrderCount() }}</strong>
         </div>
       </div>
 
@@ -44,15 +39,15 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, name) in reportData.productStats" :key="name">
-              <td>{{ name }}</td>
+            <tr v-for="(item, index) in getSalesItems()" :key="index">
+              <td>{{ item.name }}</td>
               <td>
                 <span class="stock-badge">
-                  {{ item.quantity ?? item.currentStock ?? item.stock ?? '-' }}
+                  {{ item.currentStock ?? '-' }}
                 </span>
               </td>
-              <td>{{ item.sold }}</td>
-              <td>₪{{ item.total.toFixed(2) }}</td>
+              <td>{{ item.sold ?? 0 }}</td>
+              <td>₪{{ (item.total ?? 0).toFixed(2) }}</td>
             </tr>
           </tbody>
         </table>
@@ -148,7 +143,9 @@ async function loadReport(type: string) {
       return
     }
 
+    console.log('🔍 טוען דוח:', type, 'עבור מוכר:', id)
     const { data } = await axios.get(`/api/reports/${type}?sellerId=${id}`)
+    console.log('📊 תגובה מהשרת:', data)
     reportData.value = data
   } catch (err) {
     console.error('שגיאה בטעינת דוח', err)
@@ -170,21 +167,49 @@ function formatDate(dateStr: string) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('he-IL')
 }
+
+// פונקציות עזר לדוח מכירות
+function getSafeTotalRevenue() {
+  if (!reportData.value) return '0.00'
+  const revenue = reportData.value.totalRevenue ?? reportData.value.total ?? 0
+  return Number(revenue).toFixed(2)
+}
+
+function getSafeOrderCount() {
+  if (!reportData.value) return 0
+  return reportData.value.orderCount ?? reportData.value.count ?? 0
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSalesItems(): any[] {
+  if (!reportData.value) return []
+
+  // אם יש productStats כאובייקט - להמיר למערך
+  if (reportData.value.productStats && typeof reportData.value.productStats === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return Object.entries(reportData.value.productStats).map(([name, data]: [string, any]) => ({
+      name,
+      currentStock: data.quantity ?? data.currentStock ?? data.stock ?? '-',
+      sold: data.sold ?? 0,
+      total: data.total ?? 0,
+    }))
+  }
+
+  // אם זה כבר מערך
+  if (Array.isArray(reportData.value.productStats)) {
+    return reportData.value.productStats
+  }
+
+  // אם reportData עצמו הוא מערך
+  if (Array.isArray(reportData.value)) {
+    return reportData.value
+  }
+
+  return []
+}
 </script>
 
 <style scoped>
-.debug-box {
-  background: #fff3cd;
-  border: 1px solid #ffeeba;
-  color: #856404;
-  padding: 10px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  direction: rtl;
-  font-family: monospace;
-  font-size: 12px;
-}
-
 .store-reports {
   max-width: 1000px;
   margin: 2rem auto;
