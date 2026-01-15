@@ -174,17 +174,7 @@ function addToCart() {
       ? props.product.salePrice
       : props.product.price
 
-  console.log('[Cart] Adding item:', {
-    id: props.product._id,
-    name: props.product.name,
-    price: priceToAdd,
-    originalPrice: props.product.price,
-    salePrice: props.product.salePrice,
-    imageUrl,
-    shopId,
-    shopName,
-    sellerId,
-  })
+  // Removed console.log for adding item to cart
 
   cartStore.addToCart({
     id: props.product._id,
@@ -198,7 +188,7 @@ function addToCart() {
 }
 
 onMounted(() => {
-  console.log('ProductCard props.product:', props.product)
+  // ...existing code...
 })
 </script>
 
