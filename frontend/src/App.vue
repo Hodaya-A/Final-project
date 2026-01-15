@@ -132,11 +132,18 @@ onBeforeUnmount(() => {
 }
 
 /* 🔽 Layout ראשי */
+
 .layout {
   display: grid;
-  grid-template-columns: 1fr; /* סל צר + תוכן */
+  grid-template-columns: 1fr;
   flex: 1;
-  min-height: calc(100vh - 160px); /* סך הכל פחות topbar + navbar + footer */
+  min-height: calc(100vh - 160px);
+}
+
+@media (min-width: 769px) {
+  .layout {
+    grid-template-columns: 1fr auto;
+  }
 }
 
 /* 🛒 צד שמאל - סל קבוע */
@@ -146,17 +153,43 @@ onBeforeUnmount(() => {
   overflow-y: hidden;
   height: 100%;
   position: sticky;
-  top: 160px; /* גובה TopBar + Navbar */
+  top: 160px;
+  z-index: 2000;
+}
+
+@media (max-width: 768px) {
+  .cart-sidebar {
+    display: none !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 3000 !important;
+    background: #fffbe6 !important;
+    border: none !important;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  }
 }
 
 /* 🧺 תוכן ראשי */
 .main-content {
   background: var(--bg-secondary);
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 2rem;
   width: 100%;
   min-height: calc(100vh - 250px);
-  margin-top: 170px; /* TopBar (60px) + NavbarA (110px) = 170px */
+  margin-top: 170px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 0.5rem !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    margin-top: 120px;
+  }
 }
 
 /* 🔻 תחתית הדף */

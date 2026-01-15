@@ -58,6 +58,44 @@ ${orderId} עודכן: ${status}` } if (message) { toast[type](message, { timeou
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+// הצגת טואסט למנהל על שינוי סטטוס הזמנה
+function showManagerOrderStatusToast(orderId: string, status: string) {
+  let message = ''
+  let type: 'success' | 'info' | 'warning' | 'error' = 'info'
+  switch (status) {
+    case 'APPROVED':
+      message = `הזמנה ${orderId} אושרה!`
+      type = 'success'
+      break
+    case 'READY_FOR_PICKUP':
+      message = `הזמנה ${orderId} מוכנה לאיסוף!`
+      type = 'info'
+      break
+    case 'COURIER_ASSIGNED':
+      message = `שליח שוייך להזמנה ${orderId}`
+      type = 'info'
+      break
+    case 'IN_DELIVERY':
+      message = `הזמנה ${orderId} נאספה למשלוח.`
+      type = 'info'
+      break
+    case 'DELIVERED':
+      message = `הזמנה ${orderId} נמסרה.`
+      type = 'success'
+      break
+    case 'REJECTED':
+      message = `הזמנה ${orderId} בוטלה.`
+      type = 'error'
+      break
+    default:
+      message = `סטטוס הזמנה ${orderId} עודכן: ${status}`
+  }
+  if (message) {
+    toast[type](message, { timeout: 6000 })
+  }
+}
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { getSocket } from '@/services/socket'
 import { useUserStore } from '@/stores/user'
@@ -253,6 +291,7 @@ onBeforeUnmount(() => {
 .order-modal {
   background: var(--bg-primary, #ffffff);
   width: min(650px, 100%);
+  max-width: 95vw;
   max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -260,6 +299,16 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+@media (max-width: 768px) {
+  .order-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    min-width: 0 !important;
+    border-radius: 12px;
+    margin: 0 auto;
+  }
 }
 
 .order-header {

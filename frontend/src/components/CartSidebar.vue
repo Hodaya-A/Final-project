@@ -171,6 +171,45 @@ const goToCheckout = () => {
   flex-direction: column;
 }
 
+@media (max-width: 768px) {
+  .cart-sidebar {
+    left: 0;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    min-width: 0 !important;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    z-index: 3000;
+    background: #fff;
+    border: none;
+    animation: cart-modal-fadein 0.25s;
+  }
+  .cart-summary-top,
+  .cart-footer {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 0 !important;
+  }
+  .close-btn {
+    right: 1.2rem;
+    top: 1.2rem;
+    z-index: 4000;
+  }
+}
+
+@keyframes cart-modal-fadein {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* כפתור סגירה */
 .close-btn {
   position: absolute;
@@ -379,6 +418,15 @@ const goToCheckout = () => {
   font-weight: bold;
   font-size: 1.4rem;
   line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .qty-btn {
+    width: 52px;
+    height: 52px;
+    font-size: 2rem;
+    border-radius: 14px;
+  }
 }
 
 .qty-btn:hover {

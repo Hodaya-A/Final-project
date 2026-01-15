@@ -48,12 +48,12 @@
         <p v-if="product.shopName" class="product-shop">{{ product.shopName }}</p>
 
         <!-- מחיר רגיל + מחיר מבצע -->
-        <p class="product-price">
-          <span v-if="product.salePrice" class="discounted">
-            ₪{{ product.salePrice.toFixed(2) }}
-          </span>
-          <span :class="{ original: product.salePrice }"> ₪{{ product.price.toFixed(2) }} </span>
-        </p>
+        <div class="price-display">
+          <div class="price-row">
+            <span class="price-sale">₪{{ displayDiscountedPrice }}</span>
+            <span v-if="hasDiscount" class="price-old">₪{{ displayOriginalPrice }}</span>
+          </div>
+        </div>
 
         <!-- תאריך תפוגה -->
         <p class="product-expiry">פג תוקף: {{ formattedDate }}</p>
@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import type { Product } from '@/stores/products'
 import axios from 'axios'
@@ -77,6 +77,13 @@ const props = defineProps<{ product: Product }>()
 const formattedDate = new Date(props.product.expiryDate || '').toLocaleDateString('he-IL')
 
 const fileInput = ref<HTMLInputElement | null>(null)
+// Price logic matching Product type
+const displayOriginalPrice = computed(() => props.product.price || 0)
+const displayDiscountedPrice = computed(() => (props.product.salePrice ?? props.product.price) || 0)
+const hasDiscount = computed(
+  () =>
+    typeof props.product.salePrice === 'number' && props.product.salePrice < props.product.price,
+)
 
 // חישוב ימים עד תפוגה
 const daysUntilExpiry = computed(() => {
@@ -162,20 +169,52 @@ function addToCart() {
   const shopName = (props.product as { shopName?: string }).shopName
   const sellerId = props.product.sellerId
 
-  // אין צורך להוסיף localhost - ה-proxy מטפל בזה
+  const priceToAdd =
+    typeof props.product.salePrice === 'number' && props.product.salePrice > 0
+      ? props.product.salePrice
+      : props.product.price
+
+  // Removed console.log for adding item to cart
+
   cartStore.addToCart({
     id: props.product._id,
     name: props.product.name,
-    price: props.product.salePrice || props.product.price,
+    price: priceToAdd,
     imageUrl,
-    shopId: shopId, // ✅ מזהה החנות
-    shopName: shopName, // ✅ שם החנות
-    sellerId: sellerId, // ✅ מזהה המוכר
+    shopId: shopId,
+    shopName: shopName,
+    sellerId: sellerId,
   })
 }
+
+onMounted(() => {
+  // ...existing code...
+})
 </script>
 
 <style scoped>
+/* Centered price row, no animation */
+.price-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0.5em 0;
+}
+.price-old {
+  text-decoration: line-through;
+  color: #222;
+  font-size: 0.95em;
+  opacity: 0.7;
+}
+.price-sale {
+  font-size: 1.35em;
+  font-weight: 900;
+  color: var(--primary, #4a90e2);
+  letter-spacing: -0.5px;
+  margin-right: 2px;
+  margin-left: 2px;
+}
 .product-card-wrapper {
   display: flex;
   flex-direction: column;
@@ -353,23 +392,29 @@ function addToCart() {
   font-size: 1.1rem;
   margin: 0.75rem 0;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
 }
 
 .product-price .original {
   text-decoration: line-through;
-  color: var(--neutral-light, #9ca3af);
-  margin-left: 0.5rem;
+  color: #222;
+  margin-left: 0.2rem;
   font-size: 0.95rem;
   font-weight: 500;
+  order: 2;
 }
 
 .product-price .discounted {
-  background: var(--gradient-primary);
+  background: linear-gradient(90deg, #a78bfa, #7c3aed);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-size: 1.4rem;
   font-weight: 800;
+  order: 1;
 }
 
 .product-expiry {

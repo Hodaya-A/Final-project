@@ -67,6 +67,18 @@ const handleRegister = async () => {
   border: 1px solid #ddd;
   border-radius: 8px;
   background-color: #fff;
+  width: 95vw;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .register-form {
+    width: 90vw !important;
+    max-width: 95vw !important;
+    min-width: 0 !important;
+    border-radius: 12px;
+    margin: 0 auto;
+  }
 }
 
 .register-form h2 {

@@ -101,19 +101,14 @@ export const useCartStore = defineStore('cart', {
       sellerId?: string // ✅ מזהה המוכר
       quantity?: number
     }) {
-      console.log('🛒 [Cart] addToCart called with:', payload)
+      // Removed console.log for addToCart called
 
       const existingShopId = this.items[0]?.shopId
       const existingShopName = this.items[0]?.shopName
       const incomingShopId = payload.shopId
       const incomingShopName = payload.shopName
 
-      console.log('🛒 [Cart] Shop validation:', {
-        existingShopId,
-        incomingShopId,
-        itemsInCart: this.items.length,
-        match: existingShopId === incomingShopId,
-      })
+      // Removed console.log for shop validation
 
       // חנות אחת בכל פעם: אם יש סל קיים מחנויות אחרת, הצג אישור לפני מחיקה
       if (
@@ -151,13 +146,13 @@ export const useCartStore = defineStore('cart', {
           sellerId: payload.sellerId, // ✅
           quantity: qty,
         }
-        console.log('🛒 [Cart] Created new item:', newItem)
+        // Removed console.log for created new item
         this.items.push(newItem)
       }
 
       // שמור לוקאלי + spoon in server save
       this.persistToLocal()
-      console.log('🛒 [Cart] After persist, items in localStorage:', this.items)
+      // Removed console.log for after persist
 
       try {
         this.autoSave?.()
