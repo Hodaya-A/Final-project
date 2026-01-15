@@ -1,114 +1,213 @@
 import express from "express";
-import Store from "../models/Store.js"; // מודל ה-MongoDB הקיים שלך
-import { db } from "../config/firebaseAdmin.js"; // ודאי שהנתיב לקובץ הגדרות ה-Firebase Admin נכון
+import Store from "../models/Store.js"; // מודל ה-MongoDB
+import Inventory from "../models/Inventory.js"; // לצורך בדיקת מלאי בחנויות
+import { db } from "../config/firebaseAdmin.js"; // חיבור ל-Firebase Firestore
+import axios from "axios";
 
 const router = express.Router();
 
 /**
+ * GET /api/stores/cleanup
+ * ⭐ מנקה חנויות כפולות (לפי שם) או חנויות שאין להן אף מוצר במלאי
+ */
+router.get("/cleanup", async (req, res) => {
+  try {
+    console.log("🧹 [CLEANUP] Starting store cleanup process...");
+    const snapshot = await db.collection("stores").get();
+
+    if (snapshot.empty) return res.json({ message: "No stores found." });
+
+    const seenNames = new Set();
+    const toDelete = [];
+    const summary = { deletedDuplicates: 0, deletedEmpty: 0 };
+
+    for (const doc of snapshot.docs) {
+      const store = doc.data();
+      const storeId = doc.id;
+
+      // 1. בדיקת כפילות לפי שם (מוחק חנויות עם שם זהה שכבר הופיעו)
+      if (seenNames.has(store.name)) {
+        console.log(`🗑️ Found duplicate store: ${store.name} (ID: ${storeId})`);
+        toDelete.push(db.collection("stores").doc(storeId).delete());
+        summary.deletedDuplicates++;
+        continue;
+      }
+      seenNames.add(store.name);
+
+      // 2. בדיקה אם קיימים מוצרים המשויכים לחנות זו ב-MongoDB
+      const productCount = await Inventory.countDocuments({ shopId: storeId });
+      if (productCount === 0) {
+        console.log(
+          `🗑️ Found empty store (no products): ${store.name} (ID: ${storeId})`
+        );
+        toDelete.push(db.collection("stores").doc(storeId).delete());
+        summary.deletedEmpty++;
+      }
+    }
+
+    // ביצוע המחיקות ב-Firebase
+    await Promise.all(toDelete);
+
+    res.json({
+      success: true,
+      message: `Cleanup finished. Deleted ${summary.deletedDuplicates} duplicates and ${summary.deletedEmpty} empty stores.`,
+      details: summary,
+    });
+  } catch (error) {
+    console.error("🔥 [CLEANUP] Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/stores/fix-locations
+ * פונקציית עזר: הופכת כתובות טקסטואליות לקואורדינטות ומעדכנת את ה-Firebase
+ */
+router.get("/fix-locations", async (req, res) => {
+  try {
+    console.log("🛠️ [API STORES] Starting locations fix process...");
+    const snapshot = await db.collection("stores").get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "No stores found to fix" });
+    }
+
+    const updates = [];
+
+    for (const doc of snapshot.docs) {
+      const store = doc.data();
+      const fullAddress = `${store.street || ""} ${store.houseNumber || ""}, ${
+        store.city || ""
+      }`;
+
+      if (!store.city && !store.street) {
+        console.log(`⏩ Skipping ${store.name} - no address provided.`);
+        continue;
+      }
+
+      try {
+        const geoRes = await axios.get(
+          `http://localhost:${process.env.PORT || 3000}/api/geocode`,
+          { params: { address: fullAddress } }
+        );
+
+        const geoData = Array.isArray(geoRes.data)
+          ? geoRes.data[0]
+          : geoRes.data;
+
+        if (geoData && geoData.lat && geoData.lon) {
+          updates.push(
+            db
+              .collection("stores")
+              .doc(doc.id)
+              .update({
+                location: {
+                  type: "Point",
+                  coordinates: [
+                    parseFloat(geoData.lon),
+                    parseFloat(geoData.lat),
+                  ],
+                },
+              })
+          );
+          console.log(`✅ Coordinates generated for: ${store.name}`);
+        }
+      } catch (err) {
+        console.error(`❌ Geocoding failed for ${store.name}:`, err.message);
+      }
+    }
+
+    await Promise.all(updates);
+    res.json({
+      success: true,
+      message: `Successfully updated ${updates.length} stores with coordinates.`,
+    });
+  } catch (error) {
+    console.error("🔥 [FIX LOCATIONS] Error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * GET /api/stores
- * שליפת כל החנויות מקולקציית STORES ב-Firebase Firestore
- * זה הנתיב שפותר את שגיאת ה-404 במפה
+ * שליפת כל החנויות מ-Firebase Firestore
  */
 router.get("/", async (req, res) => {
   try {
-    const snapshot = await db.collection("STORES").get();
-    const stores = [];
+    const snapshot = await db.collection("stores").get();
+    if (snapshot.empty) return res.json([]);
 
+    const stores = [];
     snapshot.forEach((doc) => {
-      stores.push({
-        _id: doc.id, // שימוש ב-ID של המסמך כ-ID של החנות
-        ...doc.data(),
-      });
+      stores.push({ _id: doc.id, ...doc.data() });
     });
 
     res.json(stores);
   } catch (error) {
-    console.error("Error fetching all stores from Firebase:", error);
-    res.status(500).json({ error: "Failed to fetch stores from Firebase" });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch stores", details: error.message });
   }
 });
 
 /**
  * GET /api/stores/:storeId
- * שליפת פרטי חנות בודדת (MongoDB)
+ * שליפת פרטי חנות בודדת מ-MongoDB
  */
 router.get("/:storeId", async (req, res) => {
   try {
     const { storeId } = req.params;
     const store = await Store.findOne({ storeId });
-
-    if (!store) {
-      return res.status(404).json({ error: "Store not found" });
-    }
-
+    if (!store)
+      return res.status(404).json({ error: "Store not found in MongoDB" });
     res.json(store);
   } catch (error) {
-    console.error("Error fetching store:", error);
     res.status(500).json({ error: "Failed to fetch store" });
   }
 });
 
 /**
  * POST /api/stores/:storeId
- * עדכון או יצירת פרטי חנות (MongoDB)
+ * עדכון או יצירת פרטי חנות ב-MongoDB
  */
 router.post("/:storeId", async (req, res) => {
   try {
     const { storeId } = req.params;
-    const {
-      name,
-      city,
-      street,
-      houseNumber,
-      commissionRate,
-      description,
-      phone,
-      email,
-      bankAccount,
-      isActive,
-      logoUrl,
-    } = req.body;
-
-    if (commissionRate !== undefined) {
-      if (commissionRate < 0 || commissionRate > 1) {
-        return res.status(400).json({
-          error: "Commission rate must be between 0 and 1",
-        });
-      }
-    }
+    const data = req.body;
 
     let store = await Store.findOne({ storeId });
 
     if (!store) {
       store = new Store({
         storeId,
-        name: name || "New Store",
-        commissionRate: commissionRate || 0.15,
+        name: data.name || "New Store",
+        commissionRate: data.commissionRate || 0.15,
       });
     }
 
-    if (name !== undefined) store.name = name;
-    if (city !== undefined) store.city = city;
-    if (street !== undefined) store.street = street;
-    if (houseNumber !== undefined) store.houseNumber = houseNumber;
-    if (commissionRate !== undefined) store.commissionRate = commissionRate;
-    if (description !== undefined) store.description = description;
-    if (phone !== undefined) store.phone = phone;
-    if (email !== undefined) store.email = email;
-    if (logoUrl !== undefined) store.logoUrl = logoUrl;
-    if (bankAccount !== undefined) store.bankAccount = bankAccount;
-    if (isActive !== undefined) store.isActive = isActive;
+    // עדכון שדות
+    const fields = [
+      "name",
+      "city",
+      "street",
+      "houseNumber",
+      "commissionRate",
+      "description",
+      "phone",
+      "email",
+      "logoUrl",
+      "bankAccount",
+      "isActive",
+    ];
+    fields.forEach((field) => {
+      if (data[field] !== undefined) store[field] = data[field];
+    });
 
     store.updatedAt = new Date();
     await store.save();
 
-    res.json({
-      success: true,
-      message: "Store updated successfully",
-      store,
-    });
+    res.json({ success: true, store });
   } catch (error) {
-    console.error("Error updating store:", error);
     res.status(500).json({ error: "Failed to update store" });
   }
 });
@@ -121,14 +220,10 @@ router.patch("/:storeId/commission", async (req, res) => {
     const { storeId } = req.params;
     const { commissionRate } = req.body;
 
-    if (commissionRate === undefined || commissionRate === null) {
-      return res.status(400).json({ error: "Commission rate is required" });
-    }
-
     if (commissionRate < 0 || commissionRate > 1) {
-      return res.status(400).json({
-        error: "Commission rate must be between 0 and 1",
-      });
+      return res
+        .status(400)
+        .json({ error: "Commission must be between 0 and 1" });
     }
 
     const store = await Store.findOneAndUpdate(
@@ -137,18 +232,10 @@ router.patch("/:storeId/commission", async (req, res) => {
       { new: true }
     );
 
-    if (!store) {
-      return res.status(404).json({ error: "Store not found" });
-    }
-
-    res.json({
-      success: true,
-      message: "Commission rate updated successfully",
-      commissionRate: store.commissionRate,
-    });
+    if (!store) return res.status(404).json({ error: "Store not found" });
+    res.json({ success: true, commissionRate: store.commissionRate });
   } catch (error) {
-    console.error("Error updating commission rate:", error);
-    res.status(500).json({ error: "Failed to update commission rate" });
+    res.status(500).json({ error: "Failed to update commission" });
   }
 });
 
@@ -159,18 +246,10 @@ router.get("/:storeId/commission", async (req, res) => {
   try {
     const { storeId } = req.params;
     const store = await Store.findOne({ storeId }, { commissionRate: 1 });
-
-    if (!store) {
-      return res.status(404).json({ error: "Store not found" });
-    }
-
-    res.json({
-      storeId,
-      commissionRate: store.commissionRate,
-    });
+    if (!store) return res.status(404).json({ error: "Store not found" });
+    res.json({ storeId, commissionRate: store.commissionRate });
   } catch (error) {
-    console.error("Error fetching commission rate:", error);
-    res.status(500).json({ error: "Failed to fetch commission rate" });
+    res.status(500).json({ error: "Failed to fetch commission" });
   }
 });
 

@@ -1,46 +1,5 @@
 <template>
   <div class="product-map-container">
-    <div class="product-map-view">
-      <h1>מוצרים בסביבה שלך</h1>
-
-      <div class="top-inputs">
-        <input
-          v-model="searchQuery"
-          @input="loadProducts"
-          type="text"
-          placeholder=" חפש לפי שם מוצר..."
-          class="search-box"
-        />
-        <input
-          v-model="locationInput"
-          @keyup.enter="geocodeLocation"
-          placeholder=" הקלד כתובת למשל: הרצל 45, רמת גן"
-          class="location-box"
-        />
-        <button @click="geocodeLocation" class="location-btn">מצא כתובת</button>
-      </div>
-
-      <button @click="loadProducts" class="refresh-btn">רענן מוצרים</button>
-      <p class="count">מוצרים שנמצאו בטווח החיפוש: {{ productCount }}</p>
-
-      <div class="radius-slider">
-        <label> טווח מרחק (בק"מ):</label>
-        <div class="value">{{ radiusInKm }} ק"מ</div>
-        <Slider
-          v-model="radiusInKm"
-          :min="1"
-          :max="50"
-          :step="1"
-          :dot-size="20"
-          :tooltip="true"
-          @change="loadProducts"
-        />
-      </div>
-
-      <div id="map" class="map"></div>
-      <p v-if="!userLat || !userLng" class="warn">נא לאשר מיקום או להקליד כתובת לסינון לפי רדיוס</p>
-    </div>
-
     <aside class="category-sidebar">
       <h3>קטגוריות</h3>
       <div v-for="(color, category) in categoryColors" :key="category" class="category-item">
@@ -57,6 +16,53 @@
         </label>
       </div>
     </aside>
+
+    <div class="product-map-view">
+      <h1>מוצרים בסביבה שלך</h1>
+
+      <div class="top-inputs">
+        <div class="search-group">
+          <input
+            v-model="searchQuery"
+            @input="loadProducts"
+            type="text"
+            placeholder="חפש לפי שם מוצר..."
+            class="custom-input"
+          />
+          <input
+            v-model="locationInput"
+            @keyup.enter="geocodeLocation"
+            placeholder="הקלד כתובת למשל: הרצל 45, רמת גן"
+            class="custom-input"
+          />
+          <button @click="geocodeLocation" class="purple-btn">מצא כתובת</button>
+          <button @click="loadProducts" class="refresh-btn">רענן מוצרים</button>
+        </div>
+      </div>
+
+      <div class="info-bar">
+        <p class="count">
+          מוצרים שנמצאו: <strong>{{ productCount }}</strong>
+        </p>
+        <div class="radius-control">
+          <label
+            >טווח מרחק: <strong>{{ radiusInKm }} ק"מ</strong></label
+          >
+          <Slider
+            v-model="radiusInKm"
+            :min="1"
+            :max="50"
+            :step="1"
+            :dot-size="20"
+            class="custom-slider"
+            @change="loadProducts"
+          />
+        </div>
+      </div>
+
+      <div id="map" class="map"></div>
+      <p v-if="!userLat || !userLng" class="warn-msg">נא לאשר מיקום או להקליד כתובת לסינון מדויק</p>
+    </div>
   </div>
 </template>
 
@@ -68,7 +74,6 @@ import 'leaflet/dist/leaflet.css'
 import Slider from 'vue3-slider'
 import { useRouter, useRoute } from 'vue-router'
 
-// הגדרת מבנה חנות (Firebase)
 interface Store {
   _id: string
   name: string
@@ -79,7 +84,6 @@ interface Store {
   }
 }
 
-// הגדרת מבנה מוצר (MongoDB)
 interface Product {
   _id: string
   name: string
@@ -94,7 +98,7 @@ const router = useRouter()
 const route = useRoute()
 const userLat = ref<number | null>(null)
 const userLng = ref<number | null>(null)
-const radiusInKm = ref(10)
+const radiusInKm = ref(15)
 const searchQuery = ref('')
 const locationInput = ref('')
 const selectedCategories = ref<string[]>([])
@@ -120,17 +124,16 @@ const categoryColors: Record<string, string> = {
   'חלב, ביצים וסלטים': '#1abc9c',
 }
 
-// הגדרת האייקון הסגול של החנות
 const shopIcon = L.divIcon({
-  html: `<div style="background-color: #4f46e5; border: 2px solid white; border-radius: 50%; padding: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+  html: `<div style="background-color: #6366f1; border: 2px solid white; border-radius: 50%; padding: 7px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
       </svg>
     </div>`,
   className: '',
-  iconSize: [38, 38],
-  iconAnchor: [19, 19],
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
 })
 
 async function geocodeLocation() {
@@ -141,7 +144,7 @@ async function geocodeLocation() {
     if (result && result.lat && result.lon) {
       userLat.value = parseFloat(result.lat)
       userLng.value = parseFloat(result.lon)
-      map.setView([userLat.value, userLng.value], 16)
+      map.setView([userLat.value, userLng.value], 13)
       await loadProducts()
     }
   } catch (err) {
@@ -168,10 +171,9 @@ function getCloudPosition(lat: number, lng: number) {
 
 async function loadProducts() {
   try {
-    // משיכת נתונים משולבת ממונגו ופיירבייס
     const [storesRes, invRes] = await Promise.all([
       axios.get('/api/stores'),
-      axios.get('/api/inventory'),
+      axios.get('/api/inventory?_limit=1000'),
     ])
 
     const allStores: Store[] = Array.isArray(storesRes.data) ? storesRes.data : []
@@ -183,7 +185,6 @@ async function loadProducts() {
 
     const targetProductId = route.query.select as string
 
-    // הצגת כל החנויות (האייקון הסגול)
     allStores.forEach((store) => {
       if (!store.location?.coordinates) return
       const [lng, lat] = store.location.coordinates
@@ -192,7 +193,6 @@ async function loadProducts() {
         .bindTooltip(`<strong>${store.name}</strong><br/>📍 ${store.address}`, { sticky: true })
     })
 
-    // סינון מוצרי המלאי
     const filteredItems = allInventoryItems.filter((item) => {
       const isSelected = item._id === targetProductId
       const matchName = item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -214,33 +214,30 @@ async function loadProducts() {
       userCircle = L.circle([userLat.value, userLng.value], {
         radius: radiusInKm.value * 1000,
         color: '#6366f1',
-        fillOpacity: 0.1,
-        weight: 1,
+        fillOpacity: 0.05,
+        weight: 1.5,
       }).addTo(map)
     }
 
-    // ציור נקודות המוצרים (העיגולים הצבעוניים)
     filteredItems.forEach((item) => {
       if (!item.location) return
       const [centerLng, centerLat] = item.location.coordinates
       const [finalLat, finalLng] = getCloudPosition(centerLat, centerLng)
-      const isSelected = item._id === targetProductId
       const color = categoryColors[item.category] || '#666'
 
       const marker = L.circleMarker([finalLat, finalLng], {
-        radius: 10,
+        radius: 9,
         color: '#ffffff',
         weight: 2,
         fillColor: color,
         fillOpacity: 0.9,
       }).addTo(productLayer)
 
-      // בועת מידע ללא מחיר
       marker.bindPopup(`
         <div style="direction: rtl; text-align: right; font-family: sans-serif; min-width: 140px;">
           <strong style="font-size:1.1em;">${item.name}</strong><br/>
           <button id="btn-${item._id}"
-            style="width: 100%; margin-top:10px; background: #6366f1; color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+            style="width: 100%; margin-top:10px; background: #6366f1; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold;">
             לפרטים נוספים
           </button>
         </div>
@@ -251,45 +248,31 @@ async function loadProducts() {
         if (btn)
           btn.onclick = () => router.push({ name: 'product-details', params: { id: item._id } })
       })
-
-      if (isSelected) {
-        marker.bringToFront()
-        setTimeout(() => marker.openPopup(), 600)
-      }
     })
 
-    if (!userLat.value && allStores.length > 0 && !targetProductId) {
-      const group = L.featureGroup([
-        ...storeLayer.getLayers(),
-        ...productLayer.getLayers(),
-      ] as L.Layer[])
-      map.fitBounds(group.getBounds().pad(0.1))
-    }
+    // כאן הסרתי את ה-fitBounds האוטומטי כדי לשמור על המבט הכללי של המפה
   } catch (error) {
     console.error('Error loading map data:', error)
   }
 }
 
 onMounted(() => {
-  map = L.map('map').setView([32.08, 34.78], 13)
+  window.scrollTo(0, 0)
+
+  // שינוי המיקוד לכל ארץ ישראל (קו רוחב 31.5, קו אורך 34.8) וזום נמוך (7)
+  map = L.map('map').setView([31.5, 34.8], 7.5)
+
   storeLayer = L.layerGroup().addTo(map)
   productLayer = L.layerGroup().addTo(map)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map)
 
-  const queryLat = route.query.lat
-  const queryLng = route.query.lng
-
-  if (queryLat && queryLng) {
-    userLat.value = parseFloat(queryLat as string)
-    userLng.value = parseFloat(queryLng as string)
-    map.setView([userLat.value, userLng.value], 18)
-    loadProducts()
-  } else if ('geolocation' in navigator) {
+  if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         userLat.value = pos.coords.latitude
         userLng.value = pos.coords.longitude
-        map.setView([userLat.value, userLng.value], 16)
+        // כאשר המשתמש מאשר מיקום, אנחנו עוברים לזום קרוב יותר
+        map.setView([userLat.value, userLng.value], 13)
         loadProducts()
       },
       () => loadProducts(),
@@ -303,140 +286,195 @@ onMounted(() => {
 <style scoped>
 .product-map-container {
   display: flex;
-  gap: 1.5rem;
-  background: #f8f9fa;
-  padding: 1.5rem;
+  flex-direction: row; /* קטגוריות מימין */
+  gap: 2rem;
+  background: #fcfcff;
+  padding: 2rem;
   direction: rtl;
   min-height: 100vh;
 }
-.product-map-view {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.product-map-view h1 {
-  color: #6366f1;
-  font-size: 2.2rem;
-  margin-bottom: 1rem;
-  font-weight: 800;
-  text-align: center;
-}
+
 .category-sidebar {
-  width: 250px;
+  width: 280px;
   background: white;
   padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.08);
   height: fit-content;
   position: sticky;
-  top: 1.5rem;
+  top: 2rem;
 }
+
 .category-sidebar h3 {
-  color: #333;
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-  font-weight: bold;
-  border-bottom: 2px solid #eee;
+  color: #4f46e5;
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+  border-bottom: 3px solid #f0f2ff;
   padding-bottom: 0.5rem;
 }
+
 .category-item {
   margin-bottom: 0.8rem;
   display: flex;
   align-items: center;
-  padding: 0.4rem;
-  border-radius: 8px;
+  padding: 0.5rem;
+  border-radius: 10px;
   transition: background 0.2s;
 }
+
 .category-item:hover {
-  background: #f0f4ff;
+  background: #f5f7ff;
 }
+
 .category-item input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  margin-left: 0.75rem;
+  margin-left: 1rem;
   accent-color: #6366f1;
 }
+
 .category-item label {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: #555;
+  gap: 0.7rem;
+  font-size: 1rem;
+  color: #444;
+  font-weight: 500;
 }
+
 .category-item .circle {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   display: inline-block;
-  border: 1px solid rgba(0, 0, 0, 0.1);
 }
-.top-inputs {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  background: white;
-  padding: 1rem;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-.search-box,
-.location-box {
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  border: 1px solid #ddd;
+
+.product-map-view {
   flex: 1;
-  min-width: 200px;
-  font-size: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
-.location-btn {
+
+.product-map-view h1 {
+  color: #312e81;
+  font-size: 2.4rem;
+  margin-bottom: 0.5rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.top-inputs {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.search-group {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.custom-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  border: 2px solid #eef2ff;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.3s;
+}
+
+.custom-input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.purple-btn {
   background: #6366f1;
   color: white;
   font-weight: bold;
-  padding: 0 1.5rem;
-  border-radius: 10px;
+  padding: 0.8rem 1.8rem;
+  border-radius: 12px;
   border: none;
   cursor: pointer;
+  transition: 0.3s;
 }
+
+.purple-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-2px);
+}
+
 .refresh-btn {
-  background: #10b981;
-  color: white;
-  font-weight: bold;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 200px;
-  align-self: center;
-}
-.radius-slider {
-  padding: 1rem 2rem;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-.value {
-  text-align: center;
+  background: #eef2ff;
   color: #6366f1;
   font-weight: bold;
-  font-size: 1.2rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
 }
+
+.refresh-btn:hover {
+  background: #e0e7ff;
+}
+
+.info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 1rem 1.5rem;
+  border-radius: 15px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.count {
+  font-size: 1.1rem;
+  color: #555;
+}
+
+.count strong {
+  color: #6366f1;
+}
+
+.radius-control {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: 0.6;
+}
+
+.custom-slider {
+  flex: 1;
+}
+
 .map {
-  height: 600px;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  height: 500px;
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
   z-index: 1;
+  border: 4px solid white;
 }
-.warn {
+
+.warn-msg {
   text-align: center;
-  color: #c0392b;
-  background: #fadbd8;
-  padding: 0.8rem;
-  border-radius: 8px;
+  color: #ef4444;
+  background: #fef2f2;
+  padding: 1rem;
+  border-radius: 12px;
+  font-weight: bold;
 }
-@media (max-width: 768px) {
+
+@media (max-width: 1024px) {
   .product-map-container {
     flex-direction: column-reverse;
     padding: 1rem;
@@ -444,9 +482,6 @@ onMounted(() => {
   .category-sidebar {
     width: 100%;
     position: static;
-  }
-  .map {
-    height: 400px;
   }
 }
 </style>

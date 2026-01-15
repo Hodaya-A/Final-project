@@ -53,7 +53,6 @@ const SYNONYMS = {
   description: ["description", "תיאור", "פירוט", "תיאור מפורט", "פרטים"],
 };
 
-// פונקציה למציאת כותרת מתאימה
 const findHeader = (headers, wanted) => {
   const options = SYNONYMS[wanted] || [wanted];
   const normalized = headers.map((h) => (h ?? "").toString().trim());
@@ -63,8 +62,55 @@ const findHeader = (headers, wanted) => {
   return idx >= 0 ? headers[idx] : null;
 };
 
-// מזהה חנות ברירת מחדל (Firebase storeId)
 const DEFAULT_SHOP_ID = "FrzzphZ80X6CEYONGelr";
+
+/* ======================= Routes ======================= */
+
+/** * GET /api/inventory/sync-locations
+ * ⭐ פונקציית תיקון: מעדכנת את מיקום המוצרים במונגו לפי מיקום החנויות בפיירבייס
+ */
+router.get("/sync-locations", async (req, res) => {
+  try {
+    const db = req.app.get("db"); // שליפת Firestore שהגדרנו ב-server.js
+    if (!db)
+      return res
+        .status(500)
+        .json({ error: "Firebase DB connection not found" });
+
+    console.log("🛠️ [SYNC] Starting product location synchronization...");
+
+    // 1. שליפת כל החנויות מהפיירבייס
+    const storesSnapshot = await db.collection("stores").get();
+    const storeLocations = {};
+    storesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.location) {
+        storeLocations[doc.id] = data.location;
+      }
+    });
+
+    // 2. עדכון כל מוצר במונגו לפי ה-shopId שלו
+    const products = await Inventory.find({});
+    let updatedCount = 0;
+
+    for (const product of products) {
+      if (storeLocations[product.shopId]) {
+        product.location = storeLocations[product.shopId];
+        await product.save();
+        updatedCount++;
+      }
+    }
+
+    console.log(`✅ [SYNC] Complete. Updated ${updatedCount} products.`);
+    res.json({
+      success: true,
+      message: `Successfully updated ${updatedCount} products.`,
+    });
+  } catch (error) {
+    console.error("❌ Sync Error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /** GET /api/inventory */
 router.get("/", async (req, res) => {
@@ -73,14 +119,13 @@ router.get("/", async (req, res) => {
       category,
       q,
       _page = 1,
-      _limit = 50,
+      _limit = 1000, // ⭐ תיקון: מוגדר ל-1000 כדי למנוע חיתוך ב-50
       sellerId,
       minPrice,
       maxPrice,
     } = req.query;
 
     const filter = {};
-
     if (sellerId) filter.sellerId = sellerId;
     if (category && !q) filter.category = category;
     else if (q) {
@@ -106,50 +151,34 @@ router.get("/", async (req, res) => {
       .sort({ name: 1 })
       .lean();
 
-    const cleanedItems = items.map((item) => {
-      const obj = {
-        ...item,
-        _id: String(item._id),
-        shopId: item.shopId ? String(item.shopId) : undefined,
-        sellerId: item.sellerId ? String(item.sellerId) : undefined,
-        // ⭐ התיקון הקריטי למחיר מבצע בשליפה
-        salePrice: item.salePrice || item.priceDiscounted,
-      };
+    console.log(`📡 [API] Sending ${items.length} items to frontend.`);
 
-      if (
-        obj.imageUrl &&
-        !obj.imageUrl.startsWith("http://") &&
-        !obj.imageUrl.startsWith("https://")
-      ) {
-        obj.imageUrl = null;
-      }
-      return obj;
-    });
+    const cleanedItems = items.map((item) => ({
+      ...item,
+      _id: String(item._id),
+      shopId: item.shopId ? String(item.shopId) : undefined,
+      sellerId: item.sellerId ? String(item.sellerId) : undefined,
+      salePrice: item.salePrice || item.priceDiscounted,
+    }));
 
     res.json(cleanedItems);
   } catch (err) {
-    console.error("❌ שגיאה בשליפת מלאי:", err);
-    res.status(500).json({ ok: false, error: err.message || "Server error" });
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-/** GET /api/inventory/:id — שליפת מוצר בודד */
+/** GET /api/inventory/:id */
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const item = await Inventory.findById(id);
-
-    if (!item) {
-      return res.status(404).json({ error: "Product not found" });
-    }
+    const item = await Inventory.findById(req.params.id);
+    if (!item) return res.status(404).json({ error: "Product not found" });
     res.json(item.toObject());
   } catch (err) {
-    console.error("❌ שגיאה בשליפת מוצר:", err);
     res.status(500).json({ error: "Failed to fetch product" });
   }
 });
 
-/** POST /api/inventory — הוספת פריט יחיד */
+/** POST /api/inventory */
 router.post("/", async (req, res) => {
   try {
     const shopId = req.user?.shopId || DEFAULT_SHOP_ID;
@@ -165,444 +194,134 @@ router.post("/", async (req, res) => {
       imageUrl,
       sellerId,
     } = req.body;
+
     if (!name) return res.status(400).json({ error: "Missing product name" });
 
     let finalImageUrl = imageUrl || null;
-
     if (!finalImageUrl) {
       try {
         const searchQuery = brand ? `${name} ${brand}` : name;
         const imgs = await fetchImagesFromGoogle(searchQuery, barcode || "");
-        finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
+        finalImageUrl = imgs?.[0] || null;
       } catch (err) {
         console.warn(`⚠️ שגיאה בשליפת תמונה עבור "${name}":`, err.message);
       }
     }
 
-    let profile = null;
-    try {
-      profile = await ImportProfile.findOne({ shopId });
-    } catch (err) {
-      console.warn(`⚠️ לא נמצא פרופיל עבור shopId: ${shopId}`);
-    }
+    const db = req.app.get("db");
+    let shopLocation = { type: "Point", coordinates: [34.7818, 32.0853] };
 
-    const shopLocation = profile?.shopLocation || {
-      type: "Point",
-      coordinates: [34.7818, 32.0853],
-    };
-    const shopPlace = profile?.shopAddress || {
-      city: "תל אביב",
-      street: "",
-      number: "",
-    };
-    const fullAddress =
-      shopPlace.street && shopPlace.number
-        ? `${shopPlace.street} ${shopPlace.number}`
-        : shopPlace.street || "";
+    if (db) {
+      const storeDoc = await db.collection("stores").doc(shopId).get();
+      if (storeDoc.exists && storeDoc.data().location) {
+        shopLocation = storeDoc.data().location;
+      }
+    }
 
     const item = await Inventory.create({
       shopId,
-      barcode:
-        barcode ||
-        `MANUAL-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      barcode: barcode || `MANUAL-${Date.now()}`,
       name,
       brand: brand || "",
       category: category || "",
       price: salePrice ?? price ?? 0,
       salePrice,
-      quantity: Number.isNaN(quantity) ? 0 : quantity,
+      quantity: Number(quantity) || 0,
       expiryDate,
       imageUrl: finalImageUrl,
       location: shopLocation,
-      place: {
-        city: shopPlace.city || "",
-        address: fullAddress,
-      },
-      ...(sellerId ? { sellerId } : {}),
+      sellerId,
       updatedAt: new Date(),
     });
 
     res.json(item);
   } catch (err) {
-    console.error("❌ שגיאה בהוספת מוצר:", err);
     res.status(500).json({ error: "Failed to add product" });
   }
 });
 
-/** PUT /api/inventory/:id — עדכון מוצר */
+/** PUT /api/inventory/:id */
 router.put("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateData = { ...req.body };
-    delete updateData._id;
-
-    if (updateData.sellerId) {
-      const existingProduct = await Inventory.findById(id);
-      if (existingProduct && existingProduct.sellerId !== updateData.sellerId) {
-        return res
-          .status(403)
-          .json({ error: "Not authorized to update this product" });
-      }
-    }
-
-    const updated = await Inventory.findByIdAndUpdate(id, updateData, {
+    const updated = await Inventory.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
-
-    if (!updated) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
     res.json(updated);
   } catch (err) {
-    console.error("❌ שגיאה בעדכון מוצר:", err);
-    res.status(500).json({ error: "Failed to update product" });
+    res.status(500).json({ error: "Update failed" });
   }
 });
 
-/** DELETE /api/inventory/all — מחיקת כל המלאי */
-router.delete("/all", async (req, res) => {
-  try {
-    const sellerId = req.query.sellerId;
-    if (!sellerId) {
-      return res.status(400).json({ error: "Missing sellerId" });
-    }
-
-    const result = await Inventory.deleteMany({ sellerId });
-    console.log(`🗑️ נמחקו ${result.deletedCount} מוצרים של המוכר: ${sellerId}`);
-    res.json({ ok: true, deletedCount: result.deletedCount });
-  } catch (err) {
-    console.error("❌ שגיאה במחיקת כל המלאי:", err);
-    res.status(500).json({ error: "Failed to delete all inventory" });
-  }
-});
-
-/** DELETE /api/inventory/:id — מחיקת מוצר */
+/** DELETE /api/inventory/:id */
 router.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
-    const sellerId = req.query.sellerId;
-
-    if (sellerId) {
-      const existingProduct = await Inventory.findById(id);
-      if (existingProduct && existingProduct.sellerId !== sellerId) {
-        return res
-          .status(403)
-          .json({ error: "Not authorized to delete this product" });
-      }
-    }
-
-    await Inventory.findByIdAndDelete(id);
+    await Inventory.findByIdAndDelete(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error("❌ שגיאה במחיקת מוצר:", err);
-    res.status(500).json({ error: "Failed to delete product" });
+    res.status(500).json({ error: "Delete failed" });
   }
 });
 
-/** POST /api/inventory/upload — העלאת קובץ מלאי */
+/** POST /api/inventory/upload */
 router.post("/upload", upload.single("file"), async (req, res) => {
-  console.log("=".repeat(80));
-  console.log("📤 התקבל בקשת העלאה ל-/api/inventory/upload");
-
   const tmpPath = req.file?.path;
-  if (!tmpPath) {
-    return res.status(400).json({ error: "No file uploaded" });
-  }
+  if (!tmpPath) return res.status(400).json({ error: "No file uploaded" });
 
-  const mode = req.body.mode || "update";
-  const sellerId = req.body.sellerId || req.query.sellerId;
-  const useAI = req.body.useAI === "true" || req.body.useAI === true;
-
-  if (!sellerId) {
-    console.error("❌ חסר sellerId!");
-    return res.status(400).json({ error: "Missing sellerId" });
-  }
-
-  const shopId = req.body.shopId || DEFAULT_SHOP_ID;
-  const shopName = req.body.shopName || "לא ידוע";
-  const shopCity = req.body.shopCity || "";
-  const shopStreet = req.body.shopStreet || "";
-  const shopNumber = req.body.shopNumber || "";
+  const {
+    mode = "update",
+    sellerId,
+    useAI = false,
+    shopId = DEFAULT_SHOP_ID,
+  } = req.body;
 
   try {
-    if (mode === "renew") {
-      if (sellerId) {
-        await Inventory.deleteMany({ sellerId });
-      } else {
-        await Inventory.deleteMany({ shopId });
+    if (mode === "renew") await Inventory.deleteMany({ sellerId });
+
+    const db = req.app.get("db");
+    let shopLocation = { type: "Point", coordinates: [34.7818, 32.0853] };
+
+    if (db && shopId) {
+      const storeDoc = await db.collection("stores").doc(shopId).get();
+      if (storeDoc.exists && storeDoc.data().location) {
+        shopLocation = storeDoc.data().location;
       }
     }
 
-    let profile = await ImportProfile.findOne({ shopId });
-
-    if (!profile) {
-      profile = new ImportProfile({
-        shopId,
-        name: "Default Profile",
-        shopName: "החנות שלי",
-        shopLocation: {
-          type: "Point",
-          coordinates: [34.7818, 32.0853],
-        },
-        shopAddress: { city: "תל אביב", street: "", number: "" },
-        fileOptions: {
-          encoding: "utf8",
-          delimiter: ",",
-          headerRowIndex: 0,
-          dataStartRow: 1,
-          priceInAgorot: false,
-          dateFormat: "YYYY-MM-DD",
-        },
-        mapping: {
-          barcode: "ברקוד",
-          name: "שם מוצר",
-          brand: "מותג",
-          price: "מחיר",
-          quantity: "כמות",
-          category: "קטגוריה",
-          salePrice: "מחיר מבצע",
-          expiryDate: "תוקף",
-        },
-      });
-      await profile.save();
-    }
-
-    const fileName = (req.file.originalname || "").toLowerCase();
-    const isCSV = fileName.endsWith(".csv");
-    const isXLSX = /\.(xlsx?|xls)$/.test(fileName);
-
+    const fileName = req.file.originalname.toLowerCase();
     let rows = [];
-    let headers = [];
-
-    if (isCSV) {
+    if (fileName.endsWith(".csv")) {
       const buf = fs.readFileSync(tmpPath);
-      const encoding = profile?.fileOptions?.encoding || "utf8";
-      const text = iconv.decode(buf, encoding);
-      const delimiter = profile?.fileOptions?.delimiter || ",";
-      const headerRowIndex = profile?.fileOptions?.headerRowIndex ?? 0;
-      const dataStartRow =
-        profile?.fileOptions?.dataStartRow ?? headerRowIndex + 1;
-      const parsed = Papa.parse(text, {
-        header: false,
-        skipEmptyLines: true,
-        delimiter,
-      });
-      headers = parsed.data[headerRowIndex] || [];
-      const dataRows = parsed.data.slice(dataStartRow);
-      rows = dataRows.map((r) => {
-        const obj = {};
-        headers.forEach((h, i) => (obj[String(h).trim()] = r[i]));
-        return obj;
-      });
-    } else if (isXLSX) {
+      const text = iconv.decode(buf, "utf8");
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+      rows = parsed.data;
+    } else {
       const wb = XLSX.readFile(tmpPath);
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const all = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-      const headerRowIndex = profile?.fileOptions?.headerRowIndex ?? 0;
-      const dataStartRow =
-        profile?.fileOptions?.dataStartRow ?? headerRowIndex + 1;
-      headers =
-        all[headerRowIndex].map((h) => (h ?? "").toString().trim()) || [];
-      rows = all.slice(dataStartRow).map((r) => {
-        const obj = {};
-        headers.forEach((h, i) => (obj[h] = r[i]));
-        return obj;
-      });
-    } else {
-      return res.status(400).json({ error: "Unsupported file type" });
+      rows = XLSX.utils.sheet_to_json(ws);
     }
 
-    const mapping = {};
-    const wanted = [
-      "barcode",
-      "name",
-      "brand",
-      "price",
-      "priceOriginal",
-      "priceDiscounted",
-      "quantity",
-      "category",
-      "salePrice",
-      "expiryDate",
-      "imageUrl",
-      "description",
-    ];
-
-    if (profile?.mapping) {
-      wanted.forEach((k) => {
-        const mapped = profile.mapping[k]?.trim();
-        mapping[k] =
-          headers.find((h) => String(h).trim() === mapped) ||
-          findHeader(headers, k);
-      });
-    } else {
-      wanted.forEach((k) => (mapping[k] = findHeader(headers, k)));
-    }
-
-    const bulk = [];
-    const priceInAgorot = !!profile?.fileOptions?.priceInAgorot;
-    const dateFormat = profile?.fileOptions?.dateFormat || "YYYY-MM-DD";
-
-    for (const [idx, row] of rows.entries()) {
-      const pick = (key) => {
-        const col = mapping[key];
-        return col ? row[col] : undefined;
-      };
-
-      const rawBarcode = (pick("barcode") ?? "").toString().trim();
-      const rawName = (pick("name") ?? "").toString().trim();
-      const rawBrand = (pick("brand") ?? "").toString().trim();
-      const rawPrice = pick("price");
-      const rawQty = pick("quantity");
-
-      if (!rawName) continue;
-
-      let price = Number(String(rawPrice).replace(/[^\d.-]/g, ""));
-      if (Number.isNaN(price)) price = 0;
-      if (priceInAgorot) price = price / 100;
-
-      let priceOriginal;
-      if (mapping.priceOriginal) {
-        const po = Number(
-          String(pick("priceOriginal")).replace(/[^\d.-]/g, "")
-        );
-        if (!Number.isNaN(po)) priceOriginal = priceInAgorot ? po / 100 : po;
-      }
-
-      let priceDiscounted;
-      if (mapping.priceDiscounted) {
-        const pd = Number(
-          String(pick("priceDiscounted")).replace(/[^\d.-]/g, "")
-        );
-        if (!Number.isNaN(pd)) priceDiscounted = priceInAgorot ? pd / 100 : pd;
-      }
-
-      const quantity = Number(String(rawQty).replace(/[^\d.-]/g, ""));
-
-      // ⭐ לוגיקה חכמה לחישוב מחיר מבצע
-      let salePrice;
-      const rawSalePrice = pick("salePrice");
-      const rawPriceDiscounted = pick("priceDiscounted");
-
-      if (mapping.salePrice) {
-        const sp = Number(String(rawSalePrice).replace(/[^\d.-]/g, ""));
-        if (!Number.isNaN(sp)) salePrice = priceInAgorot ? sp / 100 : sp;
-      }
-
-      if (
-        (salePrice === undefined || salePrice === 0) &&
-        mapping.priceDiscounted
-      ) {
-        const pd = Number(String(rawPriceDiscounted).replace(/[^\d.-]/g, ""));
-        if (!Number.isNaN(pd)) salePrice = priceInAgorot ? pd / 100 : pd;
-      }
-
-      let expiryDate;
-      if (mapping.expiryDate) {
-        const raw = String(pick("expiryDate") ?? "").trim();
-        const d = dayjs(raw, [dateFormat, "DD/MM/YYYY", "YYYY-MM-DD"], true);
-        if (d.isValid()) expiryDate = d.toDate();
-      }
-
-      let finalImageUrl = null;
-      if (mapping.imageUrl) {
-        const urlFromFile = String(pick("imageUrl") ?? "").trim();
-        if (urlFromFile) finalImageUrl = urlFromFile;
-      }
-
-      if (!finalImageUrl) {
-        try {
-          if (useAI) {
-            const searchName = rawBrand ? `${rawName} ${rawBrand}` : rawName;
-            console.log(`🎨 מייצר תמונה באמצעות AI עבור: "${searchName}"`);
-            try {
-              finalImageUrl = await generateImageWithDALLE(
-                searchName,
-                mapping.category ? String(pick("category") || "") : ""
-              );
-            } catch (aiError) {
-              const imgs = await fetchImagesFromGoogle(searchName, rawBarcode);
-              finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
-            }
-          } else {
-            const searchName = rawBrand ? `${rawName} ${rawBrand}` : rawName;
-            console.log(`🔍 מחפש תמונה ב-Google עבור: "${searchName}"`);
-            const imgs = await fetchImagesFromGoogle(searchName, rawBarcode);
-            finalImageUrl = imgs && imgs.length > 0 ? imgs[0] : null;
-          }
-        } catch (e) {
-          console.warn("⚠️ שגיאה בשליפת תמונה:", e.message);
-        }
-      }
-
-      const shopLocation = { type: "Point", coordinates: [34.7818, 32.0853] };
-      const fullAddress =
-        shopStreet && shopNumber
-          ? `${shopStreet} ${shopNumber}`
-          : shopStreet || "";
-      const descriptionFromFile = mapping.description
-        ? String(pick("description") || "")
-        : "";
-
-      const doc = {
-        shopId,
-        barcode: rawBarcode || "",
-        name: rawName,
-        brand: rawBrand || "",
-        category: mapping.category ? String(pick("category") || "") : "",
-        price: priceDiscounted || price || 0,
-        priceOriginal,
-        priceDiscounted,
-        salePrice,
-        quantity: Number.isNaN(quantity) ? 0 : quantity,
-        expiryDate,
-        location: shopLocation,
-        place: { city: shopCity || "", address: fullAddress },
-        shopName: shopName || "",
-        shopAddress: fullAddress,
-        shopCity: shopCity || "",
-        ...(finalImageUrl ? { imageUrl: finalImageUrl } : {}),
-        ...(descriptionFromFile ? { description: descriptionFromFile } : {}),
-        sellerId,
-        updatedAt: new Date(),
-      };
-
-      bulk.push({
-        updateOne: {
-          filter: {
+    const bulk = rows.map((row, idx) => ({
+      updateOne: {
+        filter: { shopId, barcode: row.barcode || `auto_${Date.now()}_${idx}` },
+        update: {
+          $set: {
+            ...row,
             shopId,
-            barcode: rawBarcode || `auto_${Date.now()}_${idx}`,
+            sellerId,
+            location: shopLocation,
+            updatedAt: new Date(),
           },
-          update: { $set: doc },
-          upsert: true,
         },
-      });
-    }
+        upsert: true,
+      },
+    }));
 
     if (bulk.length) await Inventory.bulkWrite(bulk, { ordered: false });
-
-    console.log("✅ קובץ עובד בהצלחה, מוחק קובץ זמני");
     fs.unlinkSync(tmpPath);
-
-    res.json({
-      ok: true,
-      mode,
-      totalRows: rows.length,
-      processed: bulk.length,
-      errors: [],
-    });
+    res.json({ ok: true, processed: bulk.length });
   } catch (err) {
-    console.error("❌ שגיאה חמורה בעיבוד קובץ מלאי!", err);
-    try {
-      fs.unlinkSync(tmpPath);
-    } catch {}
-    res
-      .status(500)
-      .json({
-        error: "Failed to process inventory file",
-        details: err.message,
-      });
+    if (tmpPath) fs.unlinkSync(tmpPath);
+    res.status(500).json({ error: err.message });
   }
 });
 

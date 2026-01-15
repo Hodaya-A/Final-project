@@ -161,7 +161,7 @@ try {
   const parsed = JSON.parse(raw);
   if (Array.isArray(parsed)) {
     citiesList = parsed;
-    console.log(`✅ נטענו ${citiesList.length} ערים מתוך cities.json`);
+    //console.log(` נטענו ${citiesList.length} ערים מתוך cities.json`);
   } else {
     citiesList = ["ירושלים", "תל אביב-יפו", "חיפה", "באר שבע"];
   }
@@ -169,7 +169,7 @@ try {
   citiesList = ["ירושלים", "תל אביב-יפו", "חיפה", "באר שבע"];
 }
 
-// ✅ אימות כתובת מורכב
+//  אימות כתובת מורכב
 router.get("/validate", async (req, res) => {
   const { address } = req.query;
   const addr = String(address || "").trim();
