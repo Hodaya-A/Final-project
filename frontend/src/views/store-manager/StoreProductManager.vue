@@ -864,10 +864,10 @@ function downloadExcel() {
 
 async function loadProducts() {
   try {
-    console.log('🔄 טוען מוצרים מהשרת...')
+    //console.log(' טוען מוצרים מהשרת...')
     const { data } = await axios.get(`/api/inventory?sellerId=${encodeURIComponent(sellerId)}`)
     products.value = [...data]
-    console.log(`✅ נטענו ${products.value.length} מוצרים`)
+    //console.log(`✅ נטענו ${products.value.length} מוצרים`)
   } catch (err) {
     console.error('שגיאה בטעינת מוצרים:', err)
     products.value = []
@@ -882,11 +882,11 @@ async function deleteAllInventory() {
 
   try {
     await axios.delete(`/api/inventory/all?sellerId=${encodeURIComponent(sellerId)}`)
-    alert('✅ כל המלאי נמחק בהצלחה!')
+    alert(' כל המלאי נמחק בהצלחה!')
     await loadProducts()
   } catch (err) {
     console.error('שגיאה במחיקת המלאי:', err)
-    alert('❌ שגיאה במחיקת המלאי')
+    alert(' שגיאה במחיקת המלאי')
   }
 }
 
@@ -897,7 +897,7 @@ onMounted(() => {
 async function handleSubmit() {
   const product = {
     name: name.value,
-    brand: brand.value, // ✅ הוספת המותג לאובייקט
+    brand: brand.value, //  הוספת המותג לאובייקט
     price: price.value,
     salePrice: salePrice.value,
     quantity: quantity.value,
@@ -911,16 +911,16 @@ async function handleSubmit() {
   try {
     if (editingId.value) {
       await axios.put(`/api/inventory/${editingId.value}`, product)
-      alert('✅ המוצר עודכן בהצלחה!')
+      alert(' המוצר עודכן בהצלחה!')
     } else {
       await axios.post('/api/products', product)
-      alert('✅ המוצר נוסף בהצלחה!')
+      alert(' המוצר נוסף בהצלחה!')
     }
     clearForm()
     loadProducts()
   } catch (err) {
     console.error('שגיאה:', err)
-    alert('❌ שגיאה בשמירת המוצר')
+    alert(' שגיאה בשמירת המוצר')
   }
 }
 
@@ -940,11 +940,11 @@ async function deleteProduct(id: string) {
   if (confirm('האם למחוק מוצר זה?')) {
     try {
       await axios.delete(`/api/inventory/${id}?sellerId=${encodeURIComponent(sellerId)}`)
-      alert('✅ המוצר נמחק בהצלחה!')
+      alert(' המוצר נמחק בהצלחה!')
       loadProducts()
     } catch (err) {
       console.error('שגיאה במחיקה:', err)
-      alert('❌ שגיאה במחיקת המוצר')
+      alert(' שגיאה במחיקת המוצר')
     }
   }
 }
