@@ -291,6 +291,7 @@ onBeforeUnmount(() => {
 .order-modal {
   background: var(--bg-primary, #ffffff);
   width: min(650px, 100%);
+  max-width: 95vw;
   max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -298,6 +299,16 @@ onBeforeUnmount(() => {
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+@media (max-width: 768px) {
+  .order-modal {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    min-width: 0 !important;
+    border-radius: 12px;
+    margin: 0 auto;
+  }
 }
 
 .order-header {

@@ -486,6 +486,55 @@ function wasConvertedToPickup(order: Order) {
   border-radius: 16px;
   padding: 1.5rem;
   transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .orders-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  .order-card {
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(99, 102, 241, 0.07);
+    padding: 1.1rem 0.7rem;
+    margin: 0 0.1rem;
+    display: block;
+  }
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e8f0fe;
+    margin-bottom: 0.7rem;
+  }
+  .order-details {
+    padding: 0.5rem 0 0 0;
+    margin: 0;
+    border: none;
+  }
+  .item-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.7rem 0.3rem;
+  }
+  .item-image {
+    width: 100%;
+    max-width: 220px;
+    height: auto;
+    margin-bottom: 0.5rem;
+    align-self: center;
+  }
+  .item-info {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0;
+  }
 }
 
 .order-card:hover {

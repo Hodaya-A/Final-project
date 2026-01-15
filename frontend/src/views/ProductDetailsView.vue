@@ -303,6 +303,48 @@ const handleImageError = (event: Event) => {
     padding: 30px;
   }
 }
+
+@media (max-width: 768px) {
+  .product-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .product-image-section {
+    max-width: 100%;
+    width: 100%;
+    padding: 10px 0 0 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .product-image-section img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 260px;
+    object-fit: contain;
+    border-radius: 0;
+  }
+  .product-info-section {
+    max-width: 100%;
+    width: 100%;
+    padding: 16px 8px 24px 8px;
+    box-sizing: border-box;
+  }
+  .btn-add-to-cart {
+    width: 100%;
+    font-size: 1.5rem;
+    padding: 22px 0;
+    border-radius: 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+  }
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
 .spinner {
   width: 50px;
   height: 50px;
