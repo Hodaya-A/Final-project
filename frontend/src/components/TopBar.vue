@@ -17,6 +17,7 @@
           @keydown.enter="submitSearch"
           placeholder="חיפוש מוצר או קטגוריה..."
           class="search-input"
+          style="width: 220px; max-width: 40vw;"
         />
 
         <!-- מסנן מחיר -->
@@ -67,6 +68,9 @@
         </div>
 
         <button class="search-button" @click="submitSearch">חיפוש</button>
+            <router-link to="/about" class="about-button" style="margin-right: 10px; background: #fff; color: #7c3aed; border-radius: 20px; padding: 7px 18px; font-weight: 500; border: 1px solid #7c3aed; transition: background 0.2s;">
+              הסיפור שלנו
+            </router-link>
       </div>
     </div>
 
