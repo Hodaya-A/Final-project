@@ -815,16 +815,21 @@ const submitSearch = () => {
 }
 
 .search-button {
-  padding: 0.5rem 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.5rem 1.2rem;
+  min-width: 64px;
   background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
   color: white;
   border: none;
   border-radius: 50px;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .search-button:hover {
