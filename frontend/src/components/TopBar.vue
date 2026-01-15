@@ -1,186 +1,319 @@
 <template>
   <header class="top-bar">
-    <!-- לוגו -->
-    <div class="logo">
-      <router-link to="/" class="brand">
-        <img src="@/assets/logo2.png" alt="Fresh End Logo" class="logo-img" />
-      </router-link>
-    </div>
-
-    <!-- שדה חיפוש ומסננים -->
-    <div class="search-container">
-      <div class="search-wrapper">
-        <input
-          type="text"
-          v-model="searchTerm"
-          ref="searchInput"
-          @keydown.enter="submitSearch"
-          placeholder="חיפוש מוצר או קטגוריה..."
-          class="search-input"
-        />
-
-        <!-- מסנן מחיר -->
-        <div class="filter-dropdown" ref="priceDropdownRef">
-          <button class="filter-toggle" @click="togglePriceFilter">
-            <span class="filter-icon">▼</span>
-            מחיר
+    <!-- MOBILE VIEW -->
+    <template v-if="isMobile">
+      <div class="mobile-row">
+        <div class="logo mobile-logo">
+          <router-link to="/" class="brand">
+            <img src="@/assets/logo2.png" alt="Fresh End Logo" class="logo-img" />
+          </router-link>
+        </div>
+        <div class="search-container mobile-search-container">
+          <div class="search-wrapper mobile-search-wrapper">
+            <input
+              type="text"
+              v-model="searchTerm"
+              ref="searchInput"
+              @keydown.enter="submitSearch"
+              placeholder="חיפוש מוצר או קטגוריה..."
+              class="search-input mobile-search-input"
+            />
+            <button class="search-button mobile-search-button" @click="submitSearch">חיפוש</button>
+          </div>
+        </div>
+        <div class="mobile-hamburger-wrapper">
+          <button class="hamburger" @click="toggleHamburgerMenu">
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
-          <div v-if="showPriceFilter" class="dropdown-content">
-            <div class="price-inputs">
-              <input
-                type="number"
-                v-model.number="minPrice"
-                placeholder="0 ₪"
-                class="price-input"
-                min="0"
-                max="100"
-              />
-              <span class="separator">—</span>
-              <input
-                type="number"
-                v-model.number="maxPrice"
-                placeholder="+20,000 ₪"
-                class="price-input"
-                min="0"
-                max="100"
-              />
-            </div>
-            <div class="price-sliders">
-              <input
-                type="range"
-                v-model.number="minPrice"
-                :min="0"
-                :max="100"
-                :step="1"
-                class="price-slider"
-              />
-              <input
-                type="range"
-                v-model.number="maxPrice"
-                :min="0"
-                :max="100"
-                :step="1"
-                class="price-slider"
-              />
-            </div>
-          </div>
-        </div>
-
-        <button class="search-button" @click="submitSearch">חיפוש</button>
-      </div>
-    </div>
-
-    <!-- ניווט ואייקונים -->
-    <div class="nav-icons">
-      <!-- ניהול מערכת - רק למנהלים -->
-      <router-link
-        v-if="userStore.role === 'admin'"
-        to="/admin"
-        class="icon-button"
-        title="ניהול מערכת"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          width="28"
-          height="28"
-        >
-          <path
-            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
-          />
-        </svg>
-      </router-link>
-
-      <!-- מוצרים לפי מפה -->
-      <router-link to="/map" class="icon-button" title="מוצרים לפי מיקום">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          width="28"
-          height="28"
-        >
-          <path
-            d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-          />
-        </svg>
-      </router-link>
-
-      <!-- הזמנות קודמות -->
-      <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-          width="28"
-          height="28"
-          class="icon-svg"
-        >
-          <path
-            d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"
-          />
-        </svg>
-      </router-link>
-
-      <!-- התראות -->
-      <div class="notification-wrapper" v-if="userStore.isLoggedIn">
-        <div class="icon-button" @click="toggleNotifications" title="התראות">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            width="28"
-            height="28"
-          >
-            <path
-              d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
-            />
-          </svg>
-          <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
-        </div>
-      </div>
-
-      <!-- תפריט משתמש -->
-      <div class="user-menu-wrapper" :class="{ open: showMenu }">
-        <div class="icon-button" @click="toggleMenu" ref="userIconRef">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-            width="28"
-            height="28"
-          >
-            <path
-              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-            />
-          </svg>
-        </div>
-        <transition name="fade-slide">
-          <div v-if="showMenu" class="user-dropdown" :style="dropdownStyle">
-            <template v-if="userStore.isLoggedIn">
-              <p class="username">שלום, {{ userStore.email }}</p>
-              <hr class="divider" />
-              <router-link to="/profile" class="profile-link" @click="showMenu = false">
-                הפרופיל שלי
+          <div v-if="isMenuOpen" class="mobile-dropdown-menu">
+            <!-- All nav icons and user menu, as in desktop -->
+            <div class="nav-icons mobile-nav-icons">
+              <router-link
+                v-if="userStore.role === 'admin'"
+                to="/admin"
+                class="icon-button"
+                title="ניהול מערכת"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                >
+                  <path
+                    d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+                  />
+                </svg>
               </router-link>
-              <button @click="logout">התנתקות</button>
-            </template>
-            <template v-else>
-              <router-link to="/auth" class="login-link">התחברות / הצטרפות</router-link>
-            </template>
+              <router-link to="/map" class="icon-button" title="מוצרים לפי מיקום">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                >
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                  />
+                </svg>
+              </router-link>
+              <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                  width="28"
+                  height="28"
+                  class="icon-svg"
+                >
+                  <path
+                    d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"
+                  />
+                </svg>
+              </router-link>
+              <div class="notification-wrapper" v-if="userStore.isLoggedIn">
+                <div class="icon-button" @click="toggleNotifications" title="התראות">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    width="28"
+                    height="28"
+                  >
+                    <path
+                      d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+                    />
+                  </svg>
+                  <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+                </div>
+              </div>
+              <div class="user-menu-wrapper" :class="{ open: showMenu }">
+                <div class="icon-button" @click="toggleMenu" ref="userIconRef">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    width="28"
+                    height="28"
+                  >
+                    <path
+                      d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+                    />
+                  </svg>
+                </div>
+                <transition name="fade-slide">
+                  <div v-if="showMenu" class="user-dropdown" :style="dropdownStyle">
+                    <template v-if="userStore.isLoggedIn">
+                      <p class="username">שלום, {{ userStore.email }}</p>
+                      <hr class="divider" />
+                      <router-link to="/profile" class="profile-link" @click="showMenu = false"
+                        >הפרופיל שלי</router-link
+                      >
+                      <button @click="logout">התנתקות</button>
+                    </template>
+                    <template v-else>
+                      <router-link to="/auth" class="login-link">התחברות / הצטרפות</router-link>
+                    </template>
+                  </div>
+                </transition>
+              </div>
+            </div>
           </div>
-        </transition>
+        </div>
       </div>
-    </div>
+      <CartSidebar :isOpen="isCartOpen" @close="isCartOpen = false" />
+    </template>
 
-    <!-- קומפוננטת CartSidebar -->
-    <CartSidebar :isOpen="isCartOpen" @close="isCartOpen = false" />
+    <!-- DESKTOP VIEW -->
+    <template v-else>
+      <!-- ...existing desktop layout... -->
+      <div class="logo">
+        <router-link to="/" class="brand">
+          <img src="@/assets/logo2.png" alt="Fresh End Logo" class="logo-img" />
+        </router-link>
+      </div>
+      <div class="search-container">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            v-model="searchTerm"
+            ref="searchInput"
+            @keydown.enter="submitSearch"
+            placeholder="חיפוש מוצר או קטגוריה..."
+            class="search-input"
+          />
+          <!-- מסנן מחיר -->
+          <div class="filter-dropdown" ref="priceDropdownRef">
+            <button class="filter-toggle" @click="togglePriceFilter">
+              <span class="filter-icon">▼</span>
+              מחיר
+            </button>
+            <div v-if="showPriceFilter" class="dropdown-content">
+              <div class="price-inputs">
+                <input
+                  type="number"
+                  v-model.number="minPrice"
+                  placeholder="0 ₪"
+                  class="price-input"
+                  min="0"
+                  max="100"
+                />
+                <span class="separator">—</span>
+                <input
+                  type="number"
+                  v-model.number="maxPrice"
+                  placeholder="+20,000 ₪"
+                  class="price-input"
+                  min="0"
+                  max="100"
+                />
+              </div>
+              <div class="price-sliders">
+                <input
+                  type="range"
+                  v-model.number="minPrice"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  class="price-slider"
+                />
+                <input
+                  type="range"
+                  v-model.number="maxPrice"
+                  :min="0"
+                  :max="100"
+                  :step="1"
+                  class="price-slider"
+                />
+              </div>
+            </div>
+          </div>
+          <button class="search-button" @click="submitSearch">חיפוש</button>
+        </div>
+      </div>
+      <div class="nav-icons">
+        <!-- ניהול מערכת - רק למנהלים -->
+        <router-link
+          v-if="userStore.role === 'admin'"
+          to="/admin"
+          class="icon-button"
+          title="ניהול מערכת"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+          >
+            <path
+              d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+            />
+          </svg>
+        </router-link>
+        <router-link to="/map" class="icon-button" title="מוצרים לפי מיקום">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+          >
+            <path
+              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+            />
+          </svg>
+        </router-link>
+        <router-link to="/my-orders" class="icon-button" title="ההזמנות שלי">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            width="28"
+            height="28"
+            class="icon-svg"
+          >
+            <path
+              d="M21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5l9 5.25 9-5.25Zm-9 3.25L4.62 5.77A3 3 0 0 1 6 5h12a3 3 0 0 1 1.38.32L12 9.75Z"
+            />
+          </svg>
+        </router-link>
+        <div class="notification-wrapper" v-if="userStore.isLoggedIn">
+          <div class="icon-button" @click="toggleNotifications" title="התראות">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+            >
+              <path
+                d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"
+              />
+            </svg>
+            <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount }}</span>
+          </div>
+        </div>
+        <div class="user-menu-wrapper" :class="{ open: showMenu }">
+          <div class="icon-button" @click="toggleMenu" ref="userIconRef">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+              width="28"
+              height="28"
+            >
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+              />
+            </svg>
+          </div>
+          <transition name="fade-slide">
+            <div v-if="showMenu" class="user-dropdown" :style="dropdownStyle">
+              <template v-if="userStore.isLoggedIn">
+                <p class="username">שלום, {{ userStore.email }}</p>
+                <hr class="divider" />
+                <router-link to="/profile" class="profile-link" @click="showMenu = false"
+                  >הפרופיל שלי</router-link
+                >
+                <button @click="logout">התנתקות</button>
+              </template>
+              <template v-else>
+                <router-link to="/auth" class="login-link">התחברות / הצטרפות</router-link>
+              </template>
+            </div>
+          </transition>
+        </div>
+      </div>
+      <CartSidebar :isOpen="isCartOpen" @close="isCartOpen = false" />
+    </template>
   </header>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+// Mobile detection and hamburger menu state
+const isMobile = ref(window.innerWidth <= 768)
+const isMenuOpen = ref(false)
+
+function checkMobile() {
+  isMobile.value = window.innerWidth <= 768
+}
+
+function toggleHamburgerMenu() {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+onMounted(() => {
+  window.addEventListener('resize', checkMobile)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { signOut } from 'firebase/auth'
@@ -341,6 +474,133 @@ const submitSearch = () => {
 </script>
 
 <style scoped>
+/* MOBILE STYLES */
+@media (max-width: 768px) {
+  .top-bar {
+    height: 48px;
+    padding: 0.5rem 0.5rem;
+    gap: 0.5rem;
+  }
+  .mobile-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 0.5rem;
+  }
+  .mobile-logo {
+    width: 91px;
+    min-width: 91px;
+    height: 91px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+  }
+  .logo-img {
+    height: 91px !important;
+    max-width: 203px !important;
+    border-radius: 10px;
+    padding: 0;
+  }
+  .mobile-search-container {
+    flex: 1;
+    max-width: 120px;
+    min-width: 80px;
+    margin: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-search-wrapper {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 24px;
+    padding: 0.1rem;
+    gap: 0.1rem;
+    width: 100%;
+    max-width: 120px;
+  }
+  .mobile-search-input {
+    min-width: 40px;
+    max-width: 80px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+  .mobile-search-button {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 24px;
+  }
+  .mobile-hamburger-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+    /* Default order, right side */
+  }
+  .hamburger {
+    background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+    border: 1px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 7px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    transition:
+      box-shadow 0.2s,
+      background 0.2s;
+  }
+  .hamburger span {
+    display: block;
+    width: 16px;
+    height: 2.5px;
+    margin: 3px 0;
+    background: #fff;
+    border-radius: 2px;
+    transition:
+      background 0.2s,
+      box-shadow 0.2s;
+    box-shadow: 0 1px 2px rgba(102, 126, 234, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-dropdown-menu {
+    position: fixed;
+    top: 52px;
+    right: 8px;
+    left: auto;
+    transform: none;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+    border-radius: 12px;
+    padding: 16px 10px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 180px;
+    max-width: 95vw;
+    border: 1px solid var(--primary);
+  }
+  /* removed duplicate/erroneous nested .mobile-dropdown-menu */
+  .mobile-nav-icons {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .icon-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+}
 .header {
   max-height: 48px;
 }
@@ -369,7 +629,7 @@ const submitSearch = () => {
   z-index: 50;
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  /* overflow-x: hidden;  -- removed to allow dropdown to extend outside */
   box-sizing: border-box;
   height: 60px;
 }
@@ -395,114 +655,134 @@ const submitSearch = () => {
   display: flex;
   align-items: center;
   background: white;
-  border-radius: 50px;
-  padding: 0.25rem;
-  gap: 0.3rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  width: 100%;
-  max-width: 800px;
-}
-
-.search-input {
-  flex: 1;
-  padding: 0.5rem 1rem;
-  border: none;
-  outline: none;
-  font-size: 0.85rem;
-  background: transparent;
-  text-align: right;
-  direction: rtl;
-  color: #333;
-}
-
-.search-input::placeholder {
-  color: #999;
-}
-
-.filter-dropdown {
-  position: relative;
-}
-
-.filter-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.5rem 1rem;
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: #333;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.filter-toggle:hover {
-  border-color: #667eea;
-  color: #667eea;
-}
-
-.filter-icon {
-  font-size: 0.7rem;
-  transition: transform 0.3s ease;
-}
-
-.filter-dropdown.active .filter-icon {
-  transform: rotate(180deg);
-}
-
-.dropdown-content {
-  position: fixed;
-  top: calc(var(--dropdown-top, 80px));
-  right: auto;
-  left: var(--dropdown-left, 50%);
-  transform: translateX(-50%);
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  padding: 1.5rem;
-  min-width: 300px;
-  z-index: 1000;
-}
-
-.price-inputs {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.price-input {
-  flex: 1;
-  padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 0.9rem;
-  outline: none;
-  direction: rtl;
-}
-
-.price-input:focus {
-  border-color: #667eea;
-}
-
-.separator {
-  color: #999;
-  font-weight: bold;
-}
-
-.price-sliders {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
-}
-
-.price-slider {
-  width: 100%;
+  @media (max-width: 768px) {
+    .top-bar {
+      height: 48px;
+      padding: 0.5rem 0.5rem;
+      gap: 0.5rem;
+      /* overflow-x: visible; */
+    }
+    .mobile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 0.5rem;
+    }
+    .mobile-logo {
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+    }
+    .logo-img {
+      height: 36px !important;
+      max-width: 80px !important;
+      border-radius: 10px;
+      padding: 0;
+    }
+    .mobile-search-container {
+      flex: 1;
+      max-width: 120px;
+      min-width: 80px;
+      margin: 0 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mobile-search-wrapper {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 24px;
+      padding: 0.1rem;
+      gap: 0.1rem;
+      width: 100%;
+      max-width: 120px;
+    }
+    .mobile-search-input {
+      min-width: 40px;
+      max-width: 80px;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+    }
+    .mobile-search-button {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      border-radius: 24px;
+    }
+    .mobile-hamburger-wrapper {
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+    .hamburger {
+      background: var(--gradient-primary, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+      border: 1px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+      transition:
+        box-shadow 0.2s,
+        background 0.2s;
+    }
+    .hamburger:hover {
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+      background: var(--primary);
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 3px;
+      margin: 3px 0;
+      background: white;
+      border-radius: 2px;
+      transition: background 0.2s;
+    }
+    .hamburger:hover span {
+      background: #fff;
+    }
+    .mobile-dropdown-menu {
+      position: fixed;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+      border-radius: 12px;
+      padding: 16px 10px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 180px;
+      max-width: 95vw;
+      border: 1px solid var(--primary);
+      right: 0 !important; /* נצמד לקצה הימני של המסך */
+      left: auto !important; /* מבטל את המרכוז הקודם */
+      transform: none !important;
+    }
+    .mobile-nav-icons {
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+    }
+  }
   height: 6px;
   border-radius: 3px;
   background: #e0e0e0;
