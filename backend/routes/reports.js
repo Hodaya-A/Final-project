@@ -41,16 +41,16 @@ router.get("/sales", async (req, res) => {
 
     console.log(`🔒 מפיק דוח מכירות מאובטח עבור: ${sellerId}`);
 
-    const snapshot = await db.collection("orders").get();
+    // ✅ שליפה מ-MongoDB במקום Firebase
+    const orders = await Order.find({ sellerId: sellerId });
+    console.log(`📦 נמצאו ${orders.length} הזמנות עבור ${sellerId}`);
 
     let totalRevenue = 0;
     let orderCount = 0;
     let productStats = {};
 
     // 1. איסוף נתונים מההזמנות
-    snapshot.forEach((doc) => {
-      const order = doc.data();
-
+    orders.forEach((order) => {
       // ✅ סינון קפדני: אם ההזמנה לא שייכת למוכר הזה - דלג עליה
       if (order.sellerId !== sellerId) return;
 
@@ -139,11 +139,11 @@ router.get("/unsold", async (req, res) => {
     if (!sellerId)
       return res.status(400).json({ error: "sellerId is required" });
 
-    const snapshot = await db.collection("orders").get();
+    // ✅ שליפה מ-MongoDB במקום Firebase
+    const orders = await Order.find({ sellerId: sellerId });
     const soldNames = new Set();
 
-    snapshot.forEach((doc) => {
-      const o = doc.data();
+    orders.forEach((o) => {
       // ✅ סינון הזמנות לפי מוכר
       if (o.sellerId !== sellerId) return;
 
