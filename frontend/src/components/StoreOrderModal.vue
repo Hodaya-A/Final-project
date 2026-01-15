@@ -58,6 +58,44 @@ ${orderId} עודכן: ${status}` } if (message) { toast[type](message, { timeou
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'vue-toastification'
+const toast = useToast()
+// הצגת טואסט למנהל על שינוי סטטוס הזמנה
+function showManagerOrderStatusToast(orderId: string, status: string) {
+  let message = ''
+  let type: 'success' | 'info' | 'warning' | 'error' = 'info'
+  switch (status) {
+    case 'APPROVED':
+      message = `הזמנה ${orderId} אושרה!`
+      type = 'success'
+      break
+    case 'READY_FOR_PICKUP':
+      message = `הזמנה ${orderId} מוכנה לאיסוף!`
+      type = 'info'
+      break
+    case 'COURIER_ASSIGNED':
+      message = `שליח שוייך להזמנה ${orderId}`
+      type = 'info'
+      break
+    case 'IN_DELIVERY':
+      message = `הזמנה ${orderId} נאספה למשלוח.`
+      type = 'info'
+      break
+    case 'DELIVERED':
+      message = `הזמנה ${orderId} נמסרה.`
+      type = 'success'
+      break
+    case 'REJECTED':
+      message = `הזמנה ${orderId} בוטלה.`
+      type = 'error'
+      break
+    default:
+      message = `סטטוס הזמנה ${orderId} עודכן: ${status}`
+  }
+  if (message) {
+    toast[type](message, { timeout: 6000 })
+  }
+}
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { getSocket } from '@/services/socket'
 import { useUserStore } from '@/stores/user'
